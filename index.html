@@ -1,0 +1,82 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="node_modules/litegraph.js/css/litegraph.css">
+        <style>
+            html,body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+        </style>
+        <script>
+            const {LiteGraph, LGraph, LGraphCanvas} = require("litegraph.js");
+            const NodeGenerator = require("./nodeGenerator");
+            const CodeGenerator = require("./codeGenerator");
+        </script>
+    </head>
+    <body >
+        <canvas id='mycanvas' width='1920' height='1080'></canvas>
+        <script>
+            var graph = new LGraph();
+
+            var canvas = new LGraphCanvas("#mycanvas", graph);
+            console.log(canvas);
+
+            graph.onNodeAdded=function (node) {
+                console.log(node);
+            };
+            canvas.onNodeSelected=function (node) {
+                console.log(node)
+            }
+
+            function resizeCanvas() {
+                let width = window.innerWidth;
+                let height =  window.innerHeight;
+
+                canvas.resize(width, height);
+            }
+            window.addEventListener("resize", resizeCanvas);
+            resizeCanvas();
+
+            console.log("Initializing Bukkit Node generator...")
+            NodeGenerator.init().then(() => {
+
+                graph.addGlobalInput("Plugin", "org.bukkit.plugin.JavaPlugin");
+
+                for(let n in NodeGenerator.getClassesByName()){
+                    NodeGenerator.getOrCreateBukkitClassNode(n)
+                }
+
+                let methods= NodeGenerator.getMethods();
+                for(let i=0;i<methods.length;i++){
+                    NodeGenerator.getOrCreateBukkitMethodNode(methods[i])
+                }
+
+                console.log(NodeGenerator.getClassesByName())
+
+
+                addBukkitNode("org.bukkit.event.player.PlayerJoinEvent","event")
+
+                graph.start()
+
+            })
+
+            function addBukkitNode(className,classType) {
+                let nodeName = NodeGenerator.getOrCreateBukkitClassNode(className,classType);
+                console.log(nodeName);
+                if(!nodeName)return;
+                let node = LiteGraph.createNode(nodeName);
+                if(!node)return;
+                console.log(node)
+                graph.add(node);
+            }
+
+            function generateCode() {
+                CodeGenerator.generateClassCode(graph);
+            }
+
+
+        </script>
+    </body>
+</html>

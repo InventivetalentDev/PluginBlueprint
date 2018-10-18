@@ -1,0 +1,12 @@
+*.idea/
+*.iml
+*.iws
+*.settings
+*bin
+*.classpath
+*.project
+*.gitignore
+*doc
+
+node_modules
+package-lock.json
