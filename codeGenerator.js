@@ -55,6 +55,7 @@ function generateClassCode(graph) {
     fields.splice(0, fields.length);
     eventListenerMethods.splice(0, eventListenerMethods.length);
     generatedMethods.splice(0, generatedMethods.length);
+    objectMethods.splice(0, objectMethods.length);
     methodCalls.splice(0, methodCalls.length);
 }
 
