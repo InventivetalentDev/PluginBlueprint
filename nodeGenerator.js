@@ -191,7 +191,7 @@ function init() {
         };
 
 
-        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"-1": "red", "boolean": "green", "java.lang.String": "blue"})
+        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": "red", "boolean": "green", "java.lang.String": "blue"})
 
         fs.readFile("./data/classes.json", "utf-8", (err, data) => {
             if (err) {
