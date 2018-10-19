@@ -1,6 +1,7 @@
 const fs = require("fs");
 const {LiteGraph} = require("litegraph.js");
 const Colors = require("./colors");
+const nativeNodes = require("./nativeNodes");
 
 const classesByName = {};
 
@@ -172,6 +173,12 @@ function init() {
         // LiteGraph.registered_node_types = {};
         // LiteGraph.Nodes = {};
 
+        console.log("Registering " + nativeNodes.length + " native nodes...");
+        for (let n = 0; n < nativeNodes.length; n++) {
+            let nativeNode = nativeNodes[n];
+            LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
+        }
+
         LGraphCanvas.prototype.getMenuOptions = function () {
             return [
                 {content: "Add Node", has_submenu: true, callback: LGraphCanvas.onMenuAdd},
@@ -183,7 +190,7 @@ function init() {
         };
 
 
-        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"-1":"red","boolean": "green", "java.lang.String": "blue"})
+        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"-1": "red", "boolean": "green", "java.lang.String": "blue"})
 
         fs.readFile("./data/classes.json", "utf-8", (err, data) => {
             if (err) {
@@ -220,13 +227,13 @@ function init() {
             console.log("Loaded " + data.classes.length + " Bukkit classes");
 
             resolve();
-        })
+        });
+
     }))
 }
 
 function getOrCreateBukkitClassNode(className) {
 
-    console.log(classesByName);
     if (!classesByName.hasOwnProperty(className)) {
         console.warn("Class " + className + " does not exist or isn't loaded");
         return null;
@@ -243,7 +250,6 @@ function getOrCreateBukkitClassNode(className) {
     //
     // }
     let categoryName = classData.name;
-    console.log(categoryName)
 
     if (LiteGraph.registered_node_types.hasOwnProperty(categoryName)) {
         return categoryName;
@@ -263,7 +269,6 @@ function getOrCreateBukkitClassNode(className) {
 
     BukkitClassNode.title = simpleClassName;
 
-    console.log(simpleClassName);
     if (eventClasses.indexOf(className) !== -1) {
         BukkitClassNode.prototype.color = Colors.EVENT;
     }
@@ -281,8 +286,6 @@ function getOrCreateBukkitClassNode(className) {
 
     LiteGraph.registerNodeType(categoryName, BukkitClassNode);
 
-    console.log(BukkitClassNode);
-
     return categoryName;
 }
 
@@ -290,7 +293,7 @@ function addClassIO(node, className, isChildCall) {
     let classData = classesByName[className];
 
     if (!isChildCall) {
-        if(eventClasses.indexOf(className)===-1) {
+        if (eventClasses.indexOf(className) === -1) {
             node.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
         }
         node.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
@@ -302,8 +305,6 @@ function addClassIO(node, className, isChildCall) {
     if (!isChildCall && !classData.isInterface) {
         node.addOutput("THIS", className, {linkType: "this", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
-
-
 
 
     for (let m = 0; m < classData.methods.length; m++) {
@@ -334,14 +335,14 @@ function addClassIO(node, className, isChildCall) {
         } else*/
         if (method.return_type === "void") {
             if (method.parameters.length === 0) {
-                node.addInput(method.name, LiteGraph.ACTION, {linkType:"trigger", methodData: method});
+                node.addInput(method.name, LiteGraph.ACTION, {linkType: "trigger", methodData: method});
             } else if (method.parameters.length === 1) {
                 if (method.parameters[0].type === "boolean") {
-                    node.addInput(method.name, method.parameters[0].type, {linkType:"setter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+                    node.addInput(method.name, method.parameters[0].type, {linkType: "setter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
                 } else if (method.parameters[0].type === "number" || method.parameters[0].type === "int" || method.parameters[0].type === "double" || method.parameters[0].type === "float" || method.parameters[0].type === "short") {
-                    node.addInput(method.name, method.parameters[0].type, {linkType:"setter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+                    node.addInput(method.name, method.parameters[0].type, {linkType: "setter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
                 } else if (method.parameters[0].type === "string" || method.parameters[0].type === "java.lang.String") {
-                    node.addInput(method.name, method.parameters[0].type, {linkType:"setter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+                    node.addInput(method.name, method.parameters[0].type, {linkType: "setter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
                 } /*else if (objectClasses.indexOf(method.parameters[0].type) !== -1) {
                     node.addInput(method.name, method.parameters[0].type, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
                 }*/ else {
@@ -353,13 +354,13 @@ function addClassIO(node, className, isChildCall) {
             }
         } else if (method.parameters.length === 0) {
             if (method.return_type === "boolean") {
-                node.addOutput(method.name, method.return_type, {linkType:"getter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+                node.addOutput(method.name, method.return_type, {linkType: "getter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
             } else if (method.return_type === "number" || method.return_type === "int" || method.return_type === "double" || method.return_type === "float" || method.return_type === "short") {
-                node.addOutput(method.name, method.return_type, {linkType:"getter",methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+                node.addOutput(method.name, method.return_type, {linkType: "getter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
             } else if (method.return_type === "string" || method.return_type === "java.lang.String") {
-                node.addOutput(method.name, method.return_type, {linkType:"getter",methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+                node.addOutput(method.name, method.return_type, {linkType: "getter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
             } else if (objectClasses.indexOf(method.return_type) !== -1) {
-                node.addOutput(method.name, method.return_type, {linkType: "object", methodData: method,  colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+                node.addOutput(method.name, method.return_type, {linkType: "object", methodData: method, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
             } else {
                 // node.addOutput(method.name, method.return_type);
                 node.addOutput(method.name, classData.name + "#" + method.name, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
@@ -406,8 +407,6 @@ function getOrCreateBukkitMethodNode(classMethodName) {
     }
 
     let categoryName = className + "#" + methodName;
-    console.log("CategoryName:" + categoryName)
-    console.log(LiteGraph.registered_node_types)
 
     if (LiteGraph.registered_node_types.hasOwnProperty(categoryName)) {
         return categoryName;
@@ -432,8 +431,6 @@ function getOrCreateBukkitMethodNode(classMethodName) {
 
     LiteGraph.registerNodeType(categoryName, BukkitMethodNode);
 
-    console.log(BukkitMethodNode);
-
     return categoryName;
 }
 
@@ -443,7 +440,6 @@ function addMethodIO(node, classData, methodData) {
     node.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
 
     node.addInput("REF", classData.name + "#" + methodData.name, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
-
 
 
     if (methodData.parameters.length === 0) {
@@ -476,7 +472,7 @@ function addMethodIO(node, classData, methodData) {
         } else if (methodData.return_type === "string" || methodData.return_type === "java.lang.String") {
             node.addOutput("RETURN", methodData.return_type, {colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
         } else if (objectClasses.indexOf(methodData.return_type) !== -1) {
-            node.addOutput("RETURN", methodData.return_type, { colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+            node.addOutput("RETURN", methodData.return_type, {colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
         } else {
             node.addOutput("RETURN", methodData.return_type);
         }

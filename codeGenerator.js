@@ -19,9 +19,12 @@ function generateClassCode(graph) {
             if (graph._nodes[i].classType === "object") {
                 generateCodeForObjectClassNode(i, graph._nodes[i]);
             }
-        }
-        if (graph._nodes[i].constructor.name === "BukkitMethodNode") {
+        } else if (graph._nodes[i].constructor.name === "BukkitMethodNode") {
             generateCodeForMethodNode(i, graph._nodes[i]);
+        } else {
+            if (graph._nodes[i].classType === "native") {
+                generateCodeForNativeNode(i, graph._nodes[i]);
+            }
         }
     }
 
@@ -158,7 +161,7 @@ function generateCodeForObjectClassNode(n, node) {
                     let targetNode = node.getOutputNodes(o)[l];
                     execCode += "  node_" + targetNode.id + "_exec();\n";
                 }
-            }else {
+            } else {
 
                 fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
                 code += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name + "();\n";
@@ -237,6 +240,27 @@ function generateCodeForMethodNode(n, node) {
     methodCalls.push(code);
 }
 
+function generateCodeForNativeNode(n, node) {
+    if (!node.getNativeType) return;
+    if (!node.getOutputCode) return;
+
+    let nativeType = node.getNativeType();
+    let outputCode = node.getOutputCode();
+
+    if (!Array.isArray(nativeType) && !Array.isArray(outputCode)) {
+        fields.push("private " + nativeType + " node_" + node.id + "_output_0 = " + outputCode + ";");
+    } else if (Array.isArray(nativeType) && Array.isArray(outputCode)) {
+        if (nativeType.length !== outputCode.length) {
+            console.error("Array length mismatch for native node " + node.name);
+            return;
+        }
+        for (let i = 0; i < nativeType.length; i++) {
+            fields.push("private " + nativeType[i] + " node_" + node.id + "_output_" + i + " = " + outputCode[i] + ";");
+        }
+    } else {
+        console.error("Either the type or the output of native node " + node.name + " is not an array while the other is");
+    }
+}
 
 module.exports = {
     generateClassCode: generateClassCode
