@@ -27,7 +27,7 @@ function generateClassCode(graph) {
 
 
     let classCode = "" +
-        "package org.inventivetalent.pluginbluprint.generated;\n" +//TODO: custom package name
+        "package org.inventivetalent.pluginblueprint.generated;\n" +//TODO: custom package name
         "\n" +
         "public class GeneratedPlugin extends org.bukkit.plugin.java.JavaPlugin implements org.bukkit.event.Listener {\n" +
         "\n" +
