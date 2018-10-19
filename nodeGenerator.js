@@ -291,9 +291,9 @@ function addClassIO(node, className, isChildCall) {
 
     if (!isChildCall) {
         if(eventClasses.indexOf(className)===-1) {
-            node.addInput("EXEC", LiteGraph.ACTION, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+            node.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
         }
-        node.addOutput("EXEC", LiteGraph.EVENT, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+        node.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
     }
 
     if (!isChildCall && objectClasses.indexOf(className) !== -1) {
@@ -439,8 +439,8 @@ function getOrCreateBukkitMethodNode(classMethodName) {
 
 function addMethodIO(node, classData, methodData) {
 
-    node.addInput("EXEC", LiteGraph.ACTION, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
-    node.addOutput("EXEC", LiteGraph.EVENT, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    node.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    node.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
 
     node.addInput("REF", classData.name + "#" + methodData.name, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
 
