@@ -1,3 +1,5 @@
+const Colors = require("./colors");
+
 // String Constant
 
 function StringConstant() {
@@ -35,7 +37,7 @@ NumberConstant.prototype.getNativeType = function () {
     return this.properties.type;
 };
 NumberConstant.prototype.getOutputCode = function () {
-    return this.number;
+    return this.properties.number;
 };
 
 // Boolean Constant
@@ -57,8 +59,28 @@ BooleanConstant.prototype.getOutputCode = function () {
     return this.value;
 };
 
+
+// Console Log
+
+function ConsoleLog() {
+    this.classType = "native";
+    this.addInput("EXEC", "@EXEC",{shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addInput("", null);
+}
+
+ConsoleLog.title = "ConsoleLog";
+ConsoleLog.prototype.getNativeType = function () {
+    return "";
+};
+ConsoleLog.prototype.getOutputCode = function (input) {
+    return "System.out.println("+input+");";
+};
+
+
 module.exports = [
     StringConstant,
     NumberConstant,
-    BooleanConstant
+    BooleanConstant,
+
+    ConsoleLog
 ];

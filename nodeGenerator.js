@@ -7,6 +7,7 @@ const classesByName = {};
 
 const eventClasses = [];
 const objectClasses = [];
+const enumClasses = [];
 
 const methods = [];
 
@@ -211,6 +212,8 @@ function init() {
                     } else {
                         objectClasses.push(cl.name);
                     }
+                } else if (cl.isEnum) {
+                    enumClasses.push(cl.name);
                 }
 
                 for (let j = 0; j < data.classes[i].methods.length; j++) {
@@ -263,6 +266,9 @@ function getOrCreateBukkitClassNode(className) {
         if (objectClasses.indexOf(className) !== -1) {
             this.classType = "object";
         }
+        if (enumClasses.indexOf(className) !== -1) {
+            this.classType = "enum";
+        }
 
         this.classData = classData;
     }
@@ -293,10 +299,12 @@ function addClassIO(node, className, isChildCall) {
     let classData = classesByName[className];
 
     if (!isChildCall) {
-        if (eventClasses.indexOf(className) === -1) {
+        if (eventClasses.indexOf(className) === -1 && enumClasses.indexOf(className) === -1) {
             node.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
         }
-        node.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+        if( enumClasses.indexOf(className) === -1) {
+            node.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+        }
     }
 
     if (!isChildCall && objectClasses.indexOf(className) !== -1) {
