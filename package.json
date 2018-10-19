@@ -13,6 +13,6 @@
     "electron": "^3.0.4"
   },
   "dependencies": {
-    "litegraph.js": "../litegraph.js/"
+    "litegraph.js": "git://github.com/InventivetalentDev/litegraph.js.git"
   }
 }
