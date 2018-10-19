@@ -67,27 +67,34 @@ function generateCodeForEventClassNode(n, node) {
     fields.push("private " + node.type + " node_" + node.id + ";");
     code += "  node_" + node.id + " = event;\n";
 
+    // temporary variable so we can append the execution AFTER assigning variables
+    let execCode = "";
+
     for (let o = 0; o < node.outputs.length; o++) {
         let output = node.outputs[o];
         if (!output) continue;
         if (!output.links) continue;
         if (output.links.length > 0) {
-            if (output.name === "EXEC") continue;
 
             for (let l = 0; l < output.links.length; l++) {
                 let targetNode = node.getOutputNodes(o)[l];
 
-                /* if (output.linkType === "method") {
-                     generateMethod("event", output.methodData.name, node, output, targetNode, o, l);
-
-                 } else*/
-                if (output.linkType === "object") {
-                    code += "  node_" + node.getOutputNodes(o)[l].id + " = event." + output.name + "();\n";
-                } else if (output.linkType === "getter") {
-                    fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
-                    code += "  node_" + node.id + "_output_" + o + " = event." + output.name + "();\n";
+                if (output.type === "@EXEC") {
+                    execCode += "  node_" + targetNode.id + "_exec();\n";
                 } else {
-                    code += "  " + output.type + " output_" + o + "_" + l + " = event." + output.name + "();\n";
+
+                    /* if (output.linkType === "method") {
+                         generateMethod("event", output.methodData.name, node, output, targetNode, o, l);
+
+                     } else*/
+                    if (output.linkType === "object") {
+                        code += "  node_" + targetNode.id + " = event." + output.name + "();\n";
+                    } else if (output.linkType === "getter") {
+                        fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
+                        code += "  node_" + node.id + "_output_" + o + " = event." + output.name + "();\n";
+                    } else {
+                        code += "  " + output.type + " output_" + o + "_" + l + " = event." + output.name + "();\n";
+                    }
                 }
 
                 // if (targetInput.linkType === "trigger" || targetInput.linkType === "setter") {
@@ -109,6 +116,7 @@ function generateCodeForEventClassNode(n, node) {
         }
     }
 
+    code += execCode;
     code += "}\n";
 
     eventListenerMethods.push(code);
@@ -123,7 +131,7 @@ function generateCodeForEventClassNode(n, node) {
 // }
 
 function generateSetterMethodCall(methodName, targetNode, targetInput, inputIndex, obj, param) {
-    let code = "// SETTER for " + targetNode.title + "#" + methodName +"\n"+
+    let code = "// SETTER for " + targetNode.title + "#" + methodName + "\n" +
         "private void node_" + targetNode.id + "_in_" + inputIndex + "() {\n" +
         "  " + obj + "." + methodName + "(" + param + ");\n" +
         "}\n"
@@ -135,18 +143,26 @@ function generateSetterMethodCall(methodName, targetNode, targetInput, inputInde
 function generateCodeForObjectClassNode(n, node) {
     let field = "private " + node.type + " node_" + node.id + ";";
 
-    let code = "// CLASS EXECUTION for " + node.title +"\n"+
+    let code = "// CLASS EXECUTION for " + node.title + "\n" +
         "private void node_" + node.id + "_exec() {\n";
+    let execCode = "";
     for (let o = 0; o < node.outputs.length; o++) {
         let output = node.outputs[o];
         if (!output) continue;
         if (!output.links) continue;
         if (output.links.length > 0) {
-            if (output.name === "EXEC") continue;
             if (output.linkType === "method") continue;
 
-            fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
-            code += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name + "();\n";
+            if (output.type === "@EXEC") {
+                for (let l = 0; l < output.links.length; l++) {
+                    let targetNode = node.getOutputNodes(o)[l];
+                    execCode += "  node_" + targetNode.id + "_exec();\n";
+                }
+            }else {
+
+                fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
+                code += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name + "();\n";
+            }
         }
     }
 
@@ -169,7 +185,7 @@ function generateCodeForObjectClassNode(n, node) {
         }
     }
 
-
+    code += execCode;
     code += "}\n";
 
     objectMethods.push(code);
