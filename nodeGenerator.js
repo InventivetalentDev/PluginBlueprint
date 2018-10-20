@@ -379,6 +379,8 @@ function addClassIO(node, className, isChildCall) {
                 node.addOutput(method.name, method.return_type, {linkType: "getter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
             } else if (objectClasses.indexOf(method.return_type) !== -1) {
                 node.addOutput(method.name, method.return_type, {linkType: "object", methodData: method, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+            }else if(enumClasses.indexOf(method.return_type)!==-1){
+                node.addOutput(method.name, method.return_type, {linkType: "enum", methodData: method, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
             } else {
                 // node.addOutput(method.name, method.return_type);
                 node.addOutput(method.name, classData.name+"#"+methodSignature, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
@@ -488,6 +490,8 @@ function addMethodIO(node, classData, methodData) {
                 node.addInput(param.name, param.type, {paramData: param, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
             } else if (objectClasses.indexOf(param.type) !== -1) {
                 node.addInput(param.name, param.type, {paramData: param, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+            } else if (enumClasses.indexOf(param.type) !== -1) {
+                node.addInput(param.name, param.type, {paramData: param, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
             } else {
                 node.addInput(param.name, param.type, {paramData: param});
             }
@@ -505,6 +509,8 @@ function addMethodIO(node, classData, methodData) {
             node.addOutput("RETURN", methodData.return_type, {colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
         } else if (objectClasses.indexOf(methodData.return_type) !== -1) {
             node.addOutput("RETURN", methodData.return_type, {colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+        } else if (enumClasses.indexOf(methodData.return_type) !== -1) {
+            node.addOutput("RETURN", methodData.return_type, {colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
         } else {
             node.addOutput("RETURN", methodData.return_type);
         }

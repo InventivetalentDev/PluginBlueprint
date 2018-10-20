@@ -18,6 +18,9 @@ module.exports = {
     OBJECT_OFF: "#147808",
     OBJECT_ON: "#3FC42F",
 
+    ENUM_OFF: "#782f32",
+    ENUM_ON: "#e95c61",
+
     EXEC_OFF:"#911500",
     EXEC_ON:"#f62000"
 };
