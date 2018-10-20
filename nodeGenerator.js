@@ -193,9 +193,9 @@ function init() {
 
         LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": "red", "boolean": "green", "java.lang.String": "blue"})
 
-        fs.readFile("./data/classes.json", "utf-8", (err, data) => {
+        fs.readFile("./data/bukkitClasses.json", "utf-8", (err, data) => {
             if (err) {
-                console.error("Failed to read classes data file!")
+                console.error("Failed to read bukkit classes data file!")
                 reject();
                 return;
             }
