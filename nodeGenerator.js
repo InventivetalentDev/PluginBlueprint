@@ -422,7 +422,6 @@ function getOrCreateBukkitMethodNode(classMethodName) {
                 params.push(classData.methods[i].parameters[j].name);
             }
             let methodSignature = classData.methods[i].name + "(" + params.join(",") + ")";
-            console.log(methodSignature)
             if(methodSignature===split[1]) {
                 methodData = classData.methods[i];
                 break;
