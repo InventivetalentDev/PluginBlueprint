@@ -317,10 +317,18 @@ function addClassIO(node, className, isChildCall) {
 
     for (let m = 0; m < classData.methods.length; m++) {
         let method = classData.methods[m];
+
+
+        let params = [];
+        for(let i=0;i<method.parameters.length;i++){
+            params.push(method.parameters[i].name);
+        }
+        let methodSignature = method.name + "(" + params.join(",") + ")";
+
         let found = false;
         if (node.inputs) {
             for (let s = 0; s < node.inputs.length; s++) {
-                if (node.inputs[s].name === method.name) {
+                if (node.inputs[s].name === method.name||node.inputs[s].name===methodSignature) {
                     found = true;
                     break;
                 }
@@ -329,13 +337,15 @@ function addClassIO(node, className, isChildCall) {
         if (found) continue;
         if (node.outputs) {
             for (let s = 0; s < node.outputs.length; s++) {
-                if (node.outputs[s].name === method.name) {
+                if (node.outputs[s].name === method.name||node.outputs[s].name===methodSignature) {
                     found = true;
                     break;
                 }
             }
         }
         if (found) continue;
+
+
         /*if (method.name.startsWith("get")) {
             node.addOutput(method.name.substr(3), method.return_type);
         } else if (method.name.startsWith("set")) {
@@ -347,7 +357,7 @@ function addClassIO(node, className, isChildCall) {
             } else if (method.parameters.length === 1) {
                 if (method.parameters[0].type === "boolean") {
                     node.addInput(method.name, method.parameters[0].type, {linkType: "setter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
-                } else if (method.parameters[0].type === "number" || method.parameters[0].type === "int" || method.parameters[0].type === "double" || method.parameters[0].type === "float" || method.parameters[0].type === "short") {
+                } else if (method.parameters[0].type === "number" || method.parameters[0].type === "int" || method.parameters[0].type === "double" || method.parameters[0].type === "float" || method.parameters[0].type === "short"||method.parameters[0].type==="long"||method.parameters[0].type==="byte") {
                     node.addInput(method.name, method.parameters[0].type, {linkType: "setter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
                 } else if (method.parameters[0].type === "string" || method.parameters[0].type === "java.lang.String") {
                     node.addInput(method.name, method.parameters[0].type, {linkType: "setter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
@@ -355,15 +365,15 @@ function addClassIO(node, className, isChildCall) {
                     node.addInput(method.name, method.parameters[0].type, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
                 }*/ else {
                     // node.addInput(method.name, method.parameters[0].type);
-                    node.addOutput(method.name, classData.name + "#" + method.name, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
+                    node.addOutput( methodSignature, classData.name+"#"+methodSignature, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
                 }
             } else {
-                node.addOutput(method.name, classData.name + "#" + method.name, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
+                node.addOutput(methodSignature, classData.name+"#"+methodSignature, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
             }
         } else if (method.parameters.length === 0) {
             if (method.return_type === "boolean") {
                 node.addOutput(method.name, method.return_type, {linkType: "getter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
-            } else if (method.return_type === "number" || method.return_type === "int" || method.return_type === "double" || method.return_type === "float" || method.return_type === "short") {
+            } else if (method.return_type === "number" || method.return_type === "int" || method.return_type === "double" || method.return_type === "float" || method.return_type === "short"||method.return_type==="long"||method.return_type==="byte") {
                 node.addOutput(method.name, method.return_type, {linkType: "getter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
             } else if (method.return_type === "string" || method.return_type === "java.lang.String") {
                 node.addOutput(method.name, method.return_type, {linkType: "getter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
@@ -371,10 +381,10 @@ function addClassIO(node, className, isChildCall) {
                 node.addOutput(method.name, method.return_type, {linkType: "object", methodData: method, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
             } else {
                 // node.addOutput(method.name, method.return_type);
-                node.addOutput(method.name, classData.name + "#" + method.name, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
+                node.addOutput(method.name, classData.name+"#"+methodSignature, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
             }
         } else {
-            node.addOutput(method.name, classData.name + "#" + method.name, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
+            node.addOutput(methodSignature,classData.name+"#"+ methodSignature, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
         }
     }
 
@@ -405,8 +415,16 @@ function getOrCreateBukkitMethodNode(classMethodName) {
     let methodData;
     for (let i = 0; i < classData.methods.length; i++) {
         if (classData.methods[i].name === methodName) {
-            methodData = classData.methods[i];
-            break;
+            let params = [];
+            for(let j=0;j<classData.methods[i].parameters.length;j++){
+                params.push(classData.methods[i].parameters[j].name);
+            }
+            let methodSignature = classData.methods[i].name + "(" + params.join(",") + ")";
+            console.log(methodSignature)
+            if(methodSignature===split[1]) {
+                methodData = classData.methods[i];
+                break;
+            }
         }
     }
     if (!methodData) {
@@ -414,7 +432,7 @@ function getOrCreateBukkitMethodNode(classMethodName) {
         return null;
     }
 
-    let categoryName = className + "#" + methodName;
+    let categoryName = className + "#" + split[1];
 
     if (LiteGraph.registered_node_types.hasOwnProperty(categoryName)) {
         return categoryName;
@@ -444,10 +462,16 @@ function getOrCreateBukkitMethodNode(classMethodName) {
 
 function addMethodIO(node, classData, methodData) {
 
+    let params = [];
+    for(let i=0;i<methodData.parameters.length;i++){
+        params.push(methodData.parameters[i].name);
+    }
+    let methodSignature = methodData.name + "(" + params.join(",") + ")";
+
     node.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
     node.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
 
-    node.addInput("REF", classData.name + "#" + methodData.name, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
+    node.addInput("REF", classData.name + "#" +methodSignature, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
 
 
     if (methodData.parameters.length === 0) {
