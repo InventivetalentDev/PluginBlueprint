@@ -102,12 +102,12 @@ function generateCodeForEventClassNode(n, node) {
 
                      } else*/
                     if (output.linkType === "object") {
-                        code += "  node_" + targetNode.id + " = event." + output.name + "();\n";
+                        code += "  node_" + targetNode.id + " = event." + output.name.split("(")[0] + "();\n";
                     } else if (output.linkType === "getter") {
                         fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
-                        code += "  node_" + node.id + "_output_" + o + " = event." + output.name + "();\n";
+                        code += "  node_" + node.id + "_output_" + o + " = event." + output.name.split("(")[0] + "();\n";
                     } else {
-                        code += "  " + output.type + " output_" + o + "_" + l + " = event." + output.name + "();\n";
+                        code += "  " + output.type + " output_" + o + "_" + l + " = event." + output.name.split("(")[0] + "();\n";
                     }
                 }
 
@@ -177,7 +177,7 @@ function generateCodeForObjectClassNode(n, node) {
                 if(output.linkType==="this"){
                     code += "  node_" + node.id + "_output_" + o + " = node_" + node.id +";\n";
                 }else {
-                    code += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name + "();\n";
+                    code += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name.split("(")[0] + "();\n";
                 }
             }
         }
@@ -224,7 +224,7 @@ function generateCodeForEnumClassNode(n, node) {
         if (output.links.length > 0) {
             if (output.linkType === "method") continue;
 
-            fields.push("private " + output.type + " node_" + node.id + "_output_" + o + " = " + node.classData.name + "." + output.name + ";");
+            fields.push("private " + output.type + " node_" + node.id + "_output_" + o + " = " + node.classData.name + "." + output.name.split("(")[0] + ";");
         }
     }
 }
@@ -269,11 +269,11 @@ function generateCodeForMethodNode(n, node) {
 
         if (i === 0) continue;// EXEC
         if (i === 1) {// param opening bracket
-            code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.name);
+            code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.name.split("(")[0]);
             if (sourceNode.classType === "enum") {
-                code += " " + sourceNode.classData.name + "." + sourceOutput.name + "(";
+                code += " " + sourceNode.classData.name + "." + sourceOutput.name.split("(")[0] + "(";
             } else {
-                code += " node_" + linkInfo.origin_id + "." + sourceOutput.name + "(";
+                code += " node_" + linkInfo.origin_id + "." + sourceOutput.name.split("(")[0] + "(";
             }
             continue;
         }
