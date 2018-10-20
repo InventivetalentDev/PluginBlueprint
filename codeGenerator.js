@@ -319,17 +319,19 @@ function generateCodeForNativeNode(n, node) {
         if (!node.getNativeType) return;
 
         let nativeType = node.getNativeType();
+        let outputIndex=node.getOutputIndex();
 
 
         if (!Array.isArray(nativeType) && !Array.isArray(outputCode)) {
-            fields.push("private " + nativeType + " node_" + node.id + "_output_0 = " + outputCode + ";");
+            if(!outputIndex)outputIndex=0;
+            fields.push("private " + nativeType + " node_" + node.id + "_output_"+outputIndex+" = " + outputCode + ";");
         } else if (Array.isArray(nativeType) && Array.isArray(outputCode)) {
             if (nativeType.length !== outputCode.length) {
                 console.error("Array length mismatch for native node " + node.name);
                 return;
             }
             for (let i = 0; i < nativeType.length; i++) {
-                fields.push("private " + nativeType[i] + " node_" + node.id + "_output_" + i + " = " + outputCode[i] + ";");
+                fields.push("private " + nativeType[i] + " node_" + node.id + "_output_" + (outputIndex[i]||0) + " = " + outputCode[i] + ";");
             }
         } else {
             console.error("Either the type or the output of native node " + node.name + " is not an array while the other is");
@@ -342,11 +344,13 @@ function generateCodeForNativeNode(n, node) {
         if (!node.getNativeType) return;
 
         let nativeType = node.getNativeType();
+        let outputIndex=node.getOutputIndex();
 
         if (!Array.isArray(nativeType) && !Array.isArray(outputCode)) {
-            fields.push("private " + nativeType + " node_" + node.id + "_output_0;");
+            if(!outputIndex)outputIndex=0;
+            fields.push("private " + nativeType + " node_" + node.id + "_output_"+outputIndex+";");
             nativeCalls.push("private void node_" + node.id + "_exec() {\n" +
-                "node_" + node.id + "_output_0 = " + outputCode + "\n" +
+                "node_" + node.id + "_output_"+outputIndex+" = " + outputCode + "\n" +
                 "}\n");
         } else if (Array.isArray(nativeType) && Array.isArray(outputCode)) {
             if (nativeType.length !== outputCode.length) {
@@ -354,9 +358,9 @@ function generateCodeForNativeNode(n, node) {
                 return;
             }
             for (let i = 0; i < nativeType.length; i++) {
-                fields.push("private " + nativeType[i] + " node_" + node.id + "_output_" + i + ";");
+                fields.push("private " + nativeType[i] + " node_" + node.id + "_output_" + (outputIndex[i]||0) + ";");
                 nativeCalls.push("private void node_" + node.id + "_exec() {\n" +
-                    "node_" + node.id + "_output_" + i + " = " + outputCode[i] + "\n" +
+                    "node_" + node.id + "_output_" + (outputIndex[i]||0) + " = " + outputCode[i] + "\n" +
                     "}\n");
             }
         } else {

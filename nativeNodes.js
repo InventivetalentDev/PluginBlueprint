@@ -59,12 +59,36 @@ BooleanConstant.prototype.getOutputCode = function () {
     return this.value;
 };
 
+// Cast
+
+function Cast() {
+    this.classType = "native";
+    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addInput("", null);
+    this.addOutput("", null);
+    this.addProperty("castTo", "java.lang.Object");
+}
+
+Cast.title = "Cast";
+Cast.prototype.onDrawBackground = function () {
+    this.outputs[1].label = "(" + this.properties.castTo + ")";
+};
+Cast.prototype.getNativeType = function () {
+    return this.properties.castTo;
+};
+Cast.prototype.getOutputIndex = function () {
+return 1;
+};
+Cast.prototype.getOutputCode = function (input) {
+    return "(" + this.properties.castTo + ") " + input + ";";
+};
 
 // Console Log
 
 function ConsoleLog() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC",{shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
     this.addInput("", null);
 }
 
@@ -73,7 +97,7 @@ ConsoleLog.prototype.getNativeType = function () {
     return "";
 };
 ConsoleLog.prototype.getOutputCode = function (input) {
-    return "System.out.println("+input+");";
+    return "System.out.println(" + input + ");";
 };
 
 
@@ -81,6 +105,8 @@ module.exports = [
     StringConstant,
     NumberConstant,
     BooleanConstant,
+
+    Cast,
 
     ConsoleLog
 ];

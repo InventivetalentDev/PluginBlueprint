@@ -213,7 +213,7 @@ function init() {
 
                 let cl = data.classes[i];
 
-                if ((!cl.isAbstract || cl.isInterface) && !cl.isEnum) {
+                if (/*(!cl.isAbstract || cl.isInterface) &&*/ !cl.isEnum) {
                     if (cl.name.indexOf("Event") !== -1) {
                         eventClasses.push(cl.name);
                     } else {
@@ -249,7 +249,7 @@ function init() {
 
                     let cl = data.classes[i];
 
-                    if ((!cl.isAbstract || cl.isInterface) && !cl.isEnum) {
+                    if (/*(!cl.isAbstract || cl.isInterface) &&*/ !cl.isEnum) {
                             objectClasses.push(cl.name);
                     } else if (cl.isEnum) {
                         enumClasses.push(cl.name);
