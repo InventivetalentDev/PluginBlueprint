@@ -18,6 +18,7 @@ function onEventAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
     for (let i = 0; i < eventClasses.length; i++) {
+        if(!eventClasses[i].startsWith("org.bukkit"))continue;
         let v = eventClasses[i].substr("org.".length).split(".");
         v.pop();
         let v1 = v.join(".");
@@ -32,6 +33,7 @@ function onEventAdd(node, options, e, prevMenu) {
     function inner_clicked(v, option, e) {
         var values = [];
         for (let i = 0; i < eventClasses.length; i++) {
+            if(!eventClasses[i].startsWith("org.bukkit"))continue;
             let v0 = eventClasses[i].substr("org.".length).split(".");
             v0.pop();
             let v1 = v0.join(".");
@@ -60,6 +62,7 @@ function onObjectAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
     for (let i = 0; i < objectClasses.length; i++) {
+        if(!objectClasses[i].startsWith("org.bukkit"))continue;
         let v = objectClasses[i].substr("org.".length).split(".");
         v.pop();
         let v1 = v.join(".");
@@ -74,6 +77,7 @@ function onObjectAdd(node, options, e, prevMenu) {
     function inner_clicked(v, option, e) {
         var values = [];
         for (let i = 0; i < objectClasses.length; i++) {
+            if(!objectClasses[i].startsWith("org.bukkit"))continue;
             let v0 = objectClasses[i].substr("org.".length).split(".");
             v0.pop();
             let v1 = v0.join(".");
@@ -102,6 +106,7 @@ function onMethodAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
     for (let i = 0; i < methods.length; i++) {
+        if(!methods[i].startsWith("org.bukkit"))continue;
         let v = methods[i].substr("org.".length).split(".");
         v.pop();
         let v1 = v.join(".");
@@ -118,6 +123,7 @@ function onMethodAdd(node, options, e, prevMenu) {
         var values = [];
         let existingCategories = [];
         for (let i = 0; i < methods.length; i++) {
+            if(!methods[i].startsWith("org.bukkit"))continue;
             let split = methods[i].substr("org.".length).split(".");
             let classAndMethod = split[split.length - 1];
             split.pop();
@@ -138,6 +144,7 @@ function onMethodAdd(node, options, e, prevMenu) {
         var values = [];
         let existingCategories = [];
         for (let i = 0; i < methods.length; i++) {
+            if(!methods[i].startsWith("org.bukkit"))continue;
             let split0 = methods[i].substr("org.".length).split(".");
             let split1 = split0[split0.length - 1].split("#");
             let clazz = split1[0];
@@ -229,7 +236,40 @@ function init() {
 
             console.log("Loaded " + data.classes.length + " Bukkit classes");
 
-            resolve();
+            fs.readFile("./data/javaClasses.json", "utf-8", (err, data) => {
+                if (err) {
+                    console.error("Failed to read java classes data file!")
+                    reject();
+                    return;
+                }
+                data = JSON.parse(data);
+
+                for (let i = 0; i < data.classes.length; i++) {
+                    classesByName[data.classes[i].name] = data.classes[i];
+
+                    let cl = data.classes[i];
+
+                    if ((!cl.isAbstract || cl.isInterface) && !cl.isEnum) {
+                            objectClasses.push(cl.name);
+                    } else if (cl.isEnum) {
+                        enumClasses.push(cl.name);
+                    }
+                    //
+                    // for (let j = 0; j < data.classes[i].methods.length; j++) {
+                    //     let methodName = data.classes[i].name + "#" + data.classes[i].methods[j].name;
+                    //     let params = [];
+                    //     for (let k = 0; k < data.classes[i].methods[j].parameters.length; k++) {
+                    //         params.push(data.classes[i].methods[j].parameters[k].name);
+                    //     }
+                    //     methods.push(methodName + "(" + params.join(",") + ")");
+                    // }
+                }
+
+
+                console.log("Loaded " + data.classes.length + " Java classes");
+
+                resolve();
+            });
         });
 
     }))
