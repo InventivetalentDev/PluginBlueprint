@@ -314,7 +314,30 @@ function addClassIO(node, className, isChildCall) {
         node.addOutput("THIS", className, {linkType: "this", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
 
+    // for (let f = 0; f < classData.fields.length; f++) {
+    //     let field = classData.fields[f];
+    //     if (field.type === "boolean") {
+    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "getter", fieldData: field, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+    //     } else if (field.type === "number" || field.type === "int" || field.type === "double" || field.type === "float" || field.type === "short"||field.type==="long"||field.type==="byte") {
+    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "getter", fieldData: field, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+    //     } else if (field.type === "string" || field.type === "java.lang.String") {
+    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "getter", fieldData: field, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+    //     } else if (objectClasses.indexOf(field.type) !== -1) {
+    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "object", fieldData: field, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+    //     }else if(enumClasses.indexOf(field.type)!==-1){
+    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "enum", fieldData: field, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+    //     } else {
+    //         // node.addOutput(field.name, field.type);
+    //         // node.addOutput(field.name, classData.name+"#"+methodSignature, {linkType: "method", fieldData: field, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
+    //     }
+    //     //TODO: setters
+    // }
 
+    for (let f = 0; f < classData.enumConstants.length; f++) {
+        let en = classData.enumConstants[f];
+        node.addOutput(en, classData.name, {linkType: "enum", enumData: en, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+    }
+    
     for (let m = 0; m < classData.methods.length; m++) {
         let method = classData.methods[m];
 
