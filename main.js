@@ -1,6 +1,7 @@
 const {app, BrowserWindow} = require('electron');
 const {LiteGraph} = require("litegraph.js");
 const NodeGenerator = require("./nodeGenerator");
+const path = require("path");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -8,7 +9,11 @@ let win;
 
 function createWindow() {
     // Create the browser window.
-    win = new BrowserWindow({width: 800, height: 600, show: false})
+    win = new BrowserWindow({
+        width: 800,
+        height: 600,
+        show: false,
+        icon: path.join(__dirname, 'assets/icons/favicon.ico')})
 
 
     // and load the index.html of the app.
