@@ -173,9 +173,12 @@ function generateCodeForObjectClassNode(n, node) {
                     execCode += "  node_" + targetNode.id + "_exec();\n";
                 }
             } else {
-
                 fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
-                code += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name + "();\n";
+                if(output.linkType==="this"){
+                    code += "  node_" + node.id + "_output_" + o + " = node_" + node.id +";\n";
+                }else {
+                    code += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name + "();\n";
+                }
             }
         }
     }
