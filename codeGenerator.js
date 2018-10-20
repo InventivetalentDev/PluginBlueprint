@@ -202,6 +202,10 @@ function generateCodeForObjectClassNode(n, node) {
         }
     }
 
+    if (node.classData.name === "org.bukkit.plugin.java.JavaPlugin") {
+        code += "  node_" + node.id + " = this;\n";
+    }
+
     code += execCode;
     code += "}\n";
 
