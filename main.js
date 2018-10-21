@@ -84,7 +84,7 @@ app.on('activate', () => {
 
 function checkFileAssociation() {
     if (process.platform === 'win32' && process.argv.length >= 2) {
-        let p=process.argv[1];
+        let p = process.argv[1];
         if (p && p.length > 1) {
             openProject(path.dirname(p));
         }
@@ -176,22 +176,26 @@ ipcMain.on("createNewProject", function (event, arg) {
 
 
 ipcMain.on("showOpenProject", function (event, arg) {
-    let path = dialog.showOpenDialog({
-        properties: ["openDirectory"]
+    let p = dialog.showOpenDialog({
+        properties: ["openFile"],
+        filters: [
+            {name: 'Plugin Blueprint Projects', extensions: ['pbp']}
+        ]
     })
-    console.log(path);
+    console.log(p);
 
-    if (!path || path.length === 0) {
+    if (!p || p.length === 0) {
         return;
     }
-    if (Array.isArray(path)) {
-        path = path[0];
-        if (!path || path.length === 0) {
+    if (Array.isArray(p)) {
+        p = p[0];
+        if (!p || p.length === 0) {
             return;
         }
     }
+    p = path.dirname(p);
 
-    openProject(path);
+    openProject(p);
 })
 
 function openProject(arg) {
