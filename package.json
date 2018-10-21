@@ -7,12 +7,27 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron .",
     "build": "electron-packager . --out=dist/win --platform=win32 --arch=x64 --icon=assets/images/favicon.ico --asar=true --overwrite",
-    "setup": "electron-installer-windows --config setupConfig.json"
+    "setup": "electron-installer-windows --config setupConfig.json",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "org.inventivetalent.pluginblueprint",
+    "productName": "PluginBlueprint",
+    "copyright": "Copyright © 2018 Haylee Schäfer",
+    "directories": {
+      "output": "dist/out"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "author": "Haylee Schäfer",
   "license": "MIT",
   "devDependencies": {
     "electron": "^3.0.4",
+    "electron-builder": "^20.28.4",
     "electron-installer-windows": "^1.1.0",
     "electron-packager": "^12.2.0"
   },
