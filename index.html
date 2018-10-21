@@ -27,7 +27,13 @@
                             label: "Open", role: "open", click: () => {
                                 ipcRenderer.send("showOpenProject");
                             }
-                        }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            role: "toggledevtools"
+                        },
                     ]
                 }
             ]))

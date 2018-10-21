@@ -136,6 +136,12 @@
                             type: "separator"
                         },
                         {
+                            role: "toggledevtools"
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
                             label: "Close Project",
                             click: () => {
                                 saveGraphAndClose();
@@ -155,7 +161,7 @@
                             type: "separator"
                         },
                         {
-                            label:"Open output directory",click:()=>{
+                            label: "Open output directory", click: () => {
                                 ipcRenderer.send("openOutputDir");
                             }
                         },
