@@ -81,7 +81,22 @@
 
             function generateCode() {
                 let code = CodeGenerator.generateClassCode(graph);
-                ipcRenderer.send("codeGenerated", code);
+                ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
+            }
+
+
+            function generateCodeCompilePackage() {
+                let code = CodeGenerator.generateClassCode(graph);
+                ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true});
+            }
+
+
+            function compile() {
+                ipcRenderer.send("codeGenerated", {code: null, compile: true, pack: false});
+            }
+
+            function pack() {
+                ipcRenderer.send("codeGenerated", {code: null, compile: false, pack: true});
             }
 
             function saveGraph() {
@@ -107,33 +122,59 @@
                             }
                         },
                         {
-                            type:"separator"
+                            type: "separator"
                         },
                         {
                             label: "Save",
                             role: "save",
                             accelerator: "CommandOrControl+S",
-                            click: ()=>{
+                            click: () => {
                                 saveGraph()
                             }
                         },
                         {
-                            type:"separator"
+                            type: "separator"
                         },
                         {
-                            label:"Close Project",
-                            click:()=>{
+                            label: "Close Project",
+                            click: () => {
                                 saveGraphAndClose();
                             }
                         }
                     ]
                 },
                 {
-                    label:"Compile",
-                    submenu:[
+                    label: "Compile",
+                    submenu: [
                         {
-                            label:"Generate Code",click:()=>{
+                            label: "Generate Code, Compile, Package", click: () => {
+                                generateCodeCompilePackage();
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label:"Open output directory",click:()=>{
+                                ipcRenderer.send("openOutputDir");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Generate Code", click: () => {
                                 generateCode();
+                            }
+                        },
+                        {
+                            label: "Compile", click: () => {
+                                compile();
+                            }
+                        },
+                        {
+                            label: "Package", click: () => {
+                                pack();
                             }
                         }
                     ]

@@ -1,10 +1,12 @@
-const {app, BrowserWindow, ipcMain, dialog} = require('electron');
+const {app, BrowserWindow, ipcMain, dialog, Notification, shell} = require('electron');
 const {LiteGraph} = require("litegraph.js");
 const NodeGenerator = require("./nodeGenerator");
 const CodeGenerator = require("./codeGenerator");
+const javaCompiler = require("./javaCompiler");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
+const notifier = require("node-notifier");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -16,6 +18,7 @@ let currentProjectPath;
 function createWindow() {
     // Create the browser window.
     win = new BrowserWindow({
+        title: "PluginBlueprint Editor",
         width: 800,
         height: 600,
         show: false,
@@ -263,37 +266,93 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
     });
 });
 
-function saveCodeToFile(code,cb) {
-    if (!currentProject || !currentProjectPath) {
-        return;
-    }
-    if (!code) return;
-
-    fs.mkdirs(path.join(currentProjectPath, "src", "org", "inventivetalent", "pluginblueprint", "generated"),function (err) {
-        if (err) {
-            console.error("Failed to save code file");
-            console.error(err);
-            return;
+function saveCodeToFile(code) {
+    return new Promise((resolve, reject) => {
+        if (!currentProject || !currentProjectPath) {
+            return reject();
         }
-        fs.writeFile(path.join(currentProjectPath, "src", "org", "inventivetalent", "pluginblueprint", "generated", "GeneratedPlugin.java"), code, "utf-8", function (err) {
+        if (!code) return reject();
+
+        fs.mkdirs(path.join(currentProjectPath, "src", "org", "inventivetalent", "pluginblueprint", "generated"), function (err) {
             if (err) {
                 console.error("Failed to save code file");
                 console.error(err);
                 return;
             }
+            fs.writeFile(path.join(currentProjectPath, "src", "org", "inventivetalent", "pluginblueprint", "generated", "GeneratedPlugin.java"), code, "utf-8", function (err) {
+                if (err) {
+                    console.error("Failed to save code file");
+                    console.error(err);
+                    return;
+                }
 
-            if(cb)cb();
+                resolve();
+            });
         });
-    });
+    })
 
 }
 
+function makePluginYml() {
+    return "name: " + currentProject.name +
+        "\nversion: 0.0.0" +
+        "\nmain: org.inventivetalent.pluginblueprint.generated.GeneratedPlugin" +//TODO: custom package
+        "";
+}
+
+function compile() {
+    return new Promise((resolve, reject) => {
+        javaCompiler.compile(currentProjectPath).then((result) => {
+            let pluginYml = makePluginYml();
+            fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), pluginYml, function (err) {
+                resolve();
+            })
+        });
+    })
+}
+
+function pack() {
+    return javaCompiler.package(currentProjectPath, currentProject);
+}
+
 ipcMain.on("codeGenerated", function (event, arg) {
-    saveCodeToFile(arg);
+    let actions = [];
+    if (arg.code) {
+        actions.push(saveCodeToFile(arg.code));
+    }
+    if (arg.compile) {
+        actions.push(compile());
+    }
+    if (arg.pack) {
+        actions.push(pack());
+    }
+
+    Promise.all(actions).then(() => {
+        console.log("Done!");
+        showNotification("Done!");
+    })
 });
 
-ipcMain.on("codeGeneratedThenCompile", function (event, arg) {
-    saveCodeToFile(arg,function () {
-        //TODO
-    });
+ipcMain.on("openOutputDir", function (event, arg) {
+    shell.openItem(path.join(currentProjectPath, "output"));
 });
+
+function showNotification(body, title) {
+
+    notifier.notify({
+        appName: "org.inventivetalent.pluginblueprint",
+        title: title || "PluginBlueprint",
+        message: body || "-message-",
+        icon: path.join(__dirname, "assets/images/PluginBlueprint-x512.png"),
+        sound: false
+    }, function (err, res) {
+        console.log(err);
+        console.log(res);
+    })
+    // }
+
+    return {
+        close: function () {
+        }
+    }
+}
