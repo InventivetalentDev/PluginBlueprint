@@ -137,6 +137,19 @@ function generateCodeForEventClassNode(graph,n, node) {
         }
     }
 
+    for (let i = 0; i < node.inputs.length; i++) {
+        let input = node.inputs[i];
+        if (!input) continue;
+        if (!input.link) continue;
+        let linkInfo = graph.links[input.link];
+        if (!linkInfo) continue;
+
+        if (input.linkType === "trigger" || input.linkType === "setter") {
+            let m = generateSetterMethodCall(input.name, node, input, i, "node_" + node.id, input.linkType === "setter" ? "node_" + linkInfo.origin_id + "_output_" + linkInfo.origin_slot : "");
+            code += "  " + m + "();\n";
+        }
+    }
+
     code += execCode;
     code += "}\n";
 
