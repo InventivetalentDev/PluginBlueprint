@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require("path");
 const {LiteGraph} = require("litegraph.js");
 const Colors = require("./colors");
 const nativeNodes = require("./nativeNodes");
@@ -200,7 +201,8 @@ function init() {
 
         LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": "red", "boolean": "green", "java.lang.String": "blue"})
 
-        fs.readFile("./data/bukkitClasses.json", "utf-8", (err, data) => {
+
+        fs.readFile(path.join(__dirname, "data/bukkitClasses.json"), "utf-8", (err, data) => {
             if (err) {
                 console.error("Failed to read bukkit classes data file!")
                 reject();
@@ -236,7 +238,7 @@ function init() {
 
             console.log("Loaded " + data.classes.length + " Bukkit classes");
 
-            fs.readFile("./data/javaClasses.json", "utf-8", (err, data) => {
+            fs.readFile(path.join(__dirname, "data/javaClasses.json"), "utf-8", (err, data) => {
                 if (err) {
                     console.error("Failed to read java classes data file!")
                     reject();

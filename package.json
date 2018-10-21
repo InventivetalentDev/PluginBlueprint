@@ -1,6 +1,6 @@
 {
   "name": "pluginblueprint",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "UI to create Bukkit/Spigot plugins",
   "main": "main.js",
   "scripts": {
@@ -11,6 +11,13 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
   },
+  "files": [
+    "**/*",
+    "data",
+    "assets",
+    "*.js",
+    "*.html"
+  ],
   "build": {
     "appId": "org.inventivetalent.pluginblueprint",
     "productName": "PluginBlueprint",
@@ -18,10 +25,29 @@
     "directories": {
       "output": "dist/out"
     },
+    "files":[
+      "**/*",
+      "data/*",
+      "node_modules/litegraph.js/css/*"
+    ],
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
-    }
+    },
+    "fileAssociations": [
+      {
+        "ext": "pbp",
+        "name": "PluginBlueprint Project",
+        "description": "PluginBlueprint Project",
+        "icon": "build/icon.ico"
+      },
+      {
+        "ext": "pbg",
+        "name": "PluginBlueprint Graph",
+        "description": "PluginBlueprint Graph",
+        "icon": "build/icon.ico"
+      }
+    ]
   },
   "author": "Haylee Schäfer",
   "license": "MIT",
