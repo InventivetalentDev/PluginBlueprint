@@ -274,7 +274,7 @@ function saveCodeToFile(code,cb) {
             console.error(err);
             return;
         }
-        fs.writeFile(path.join(currentProjectPath, "classes", "org", "inventivetalent", "pluginblueprint", "generated", "GeneratedPlugin.pbj"), code, "utf-8", function (err) {
+        fs.writeFile(path.join(currentProjectPath, "classes", "org", "inventivetalent", "pluginblueprint", "generated", "GeneratedPlugin.java"), code, "utf-8", function (err) {
             if (err) {
                 console.error("Failed to save code file");
                 console.error(err);
