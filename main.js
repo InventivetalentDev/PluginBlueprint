@@ -1,6 +1,7 @@
 const {app, BrowserWindow, ipcMain, dialog} = require('electron');
 const {LiteGraph} = require("litegraph.js");
 const NodeGenerator = require("./nodeGenerator");
+const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs");
 
@@ -30,6 +31,15 @@ function createWindow() {
         win.webContents.openDevTools()
     })
 
+    win.on("close", function (e) {
+        let c=dialog.showMessageBox({
+            message: "Are you sure you want to exit?",
+            buttons: ["Yes", "No"]
+        })
+        if (c === 1) {
+            e.preventDefault();
+        }
+    })
 
     // Emitted when the window is closed.
     win.on('closed', () => {
@@ -71,7 +81,43 @@ ipcMain.on("openGraph", function (event, arg) {
     }
 });
 
-ipcMain.on("createNewProject", function (event, arg) {
+ipcMain.on("showCreateNewProject", function (event, arg) {
+    let path = dialog.showOpenDialog({
+        properties: ["openDirectory"]
+    })
+    console.log(path);
+
+    if (!path || path.length === 0) {
+        return;
+    }
+    if (Array.isArray(path)) {
+        path = path[0];
+        if (!path || path.length === 0) {
+            return;
+        }
+    }
+    let pathSplit = path.split("\\");
+
+    let name = pathSplit[pathSplit.length - 1];
+    prompt({
+        title: "Give your project a name",
+        label: "Project Name",
+        value: name,
+        height: 150
+    }).then((r) => {
+        if (r) {
+            name = r;
+            console.log(name);
+
+            createNewProject({
+                path: path,
+                name: name
+            })
+        }
+    })
+});
+
+function createNewProject(arg) {
     let projectFilePath = path.join(arg.path, "project.pbp");
     if (fs.existsSync(projectFilePath)) {
         dialog.showErrorBox("Project exists", "There is already a PluginBlueprint project in that directory");
@@ -104,17 +150,42 @@ ipcMain.on("createNewProject", function (event, arg) {
             }
         })
     });
+}
+
+ipcMain.on("createNewProject", function (event, arg) {
+    createNewProject(arg);
 });
 
-ipcMain.on("openProject",function (event,arg) {
-    if(!arg||arg.length===0)return;
+
+ipcMain.on("showOpenProject", function (event, arg) {
+    let path = dialog.showOpenDialog({
+        properties: ["openDirectory"]
+    })
+    console.log(path);
+
+    if (!path || path.length === 0) {
+        return;
+    }
+    if (Array.isArray(path)) {
+        path = path[0];
+        if (!path || path.length === 0) {
+            return;
+        }
+    }
+
+    openProject(path);
+})
+
+function openProject(arg) {
+    console.log("openProject", arg);
+    if (!arg || arg.length === 0) return;
     let projectFilePath = path.join(arg, "project.pbp");
     if (!fs.existsSync(projectFilePath)) {
-            console.error("No project file found");
-            dialog.showErrorBox("Not found", "Could not find a PluginBlueprint project in that directory");
-            return;
+        console.error("No project file found");
+        dialog.showErrorBox("Not found", "Could not find a PluginBlueprint project in that directory");
+        return;
     }
-    fs.readFile(projectFilePath,"utf-8",function (err,data) {
+    fs.readFile(projectFilePath, "utf-8", function (err, data) {
         if (err) {
             console.error("Failed to read project file");
             console.error(err);
@@ -122,11 +193,15 @@ ipcMain.on("openProject",function (event,arg) {
         }
 
         currentProjectPath = arg;
-        currentProject=JSON.parse(data);
+        currentProject = JSON.parse(data);
         if (win) {
             win.loadFile('graph.html');
         }
     })
+}
+
+ipcMain.on("openProject", function (event, arg) {
+    openProject(arg);
 })
 
 ipcMain.on("getProjectInfo", function (event, arg) {
@@ -148,27 +223,39 @@ ipcMain.on("getGraphData", function (event, arg) {
     });
 });
 
-ipcMain.on("saveGraphData",function (event,arg) {
-    console.log("saveGraphData");
+function saveGraphData(arg, cb) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
     // backup
-    let rs= fs.createReadStream(path.join(currentProjectPath,'graph.pbg'));
-    let ws=fs.createWriteStream(path.join(currentProjectPath,'graph.pbg.old'));
-    ws.on("close",function () {
+    let rs = fs.createReadStream(path.join(currentProjectPath, 'graph.pbg'));
+    let ws = fs.createWriteStream(path.join(currentProjectPath, 'graph.pbg.old'));
+    ws.on("close", function () {
         // write data
-        fs.writeFile(path.join(currentProjectPath,"graph.pbg"),JSON.stringify(arg),"utf-8",function (err) {
+        fs.writeFile(path.join(currentProjectPath, "graph.pbg"), JSON.stringify(arg), "utf-8", function (err) {
             if (err) {
                 console.error("Failed to save graph file");
                 console.error(err);
                 return;
             }
 
-            event.sender.send("graphDataSaved");
+            if (cb) cb();
         })
     });
     rs.pipe(ws);
+}
+
+ipcMain.on("saveGraphData", function (event, arg) {
+    console.log("saveGraphData");
+    saveGraphData(arg, function () {
+        event.sender.send("graphDataSaved")
+    });
+});
 
 
+ipcMain.on("saveGraphDataAndClose", function (event, arg) {
+    console.log("saveGraphData");
+    saveGraphData(arg, function () {
+        win.loadFile('index.html');
+    });
 });

@@ -10,63 +10,34 @@
 
         <script>
             const {ipcRenderer} = require("electron");
-            const { dialog} = require("electron").remote;
+            const {dialog, Menu} = require("electron").remote;
             const prompt = require("electron-prompt");
             const $ = require("jquery");
 
+            Menu.setApplicationMenu(Menu.buildFromTemplate([
+                {
+                    label: "File",
+                    submenu: [
+                        {
+                            label: "New", role: "new", click: () => {
+                                ipcRenderer.send("showCreateNewProject");
+                            }
+                        },
+                        {
+                            label: "Open", role: "open", click: () => {
+                                ipcRenderer.send("showOpenProject");
+                            }
+                        }
+                    ]
+                }
+            ]))
+
             $("#createNewProject").click(() => {
-                let path = dialog.showOpenDialog({
-                    properties: ["openDirectory"]
-                })
-                console.log(path);
-
-                if (!path || path.length === 0) {
-                    return;
-                }
-                if (Array.isArray(path)) {
-                    path = path[0];
-                    if (!path || path.length === 0) {
-                        return;
-                    }
-                }
-                let pathSplit = path.split("\\");
-
-                let name = pathSplit[pathSplit.length - 1];
-                prompt({
-                    title: "Give your project a name",
-                    label: "Project Name",
-                    value: name,
-                    height: 150
-                }).then((r) => {
-                    if (r) {
-                        name = r;
-                        console.log(name);
-
-                        ipcRenderer.send("createNewProject", {
-                            path: path,
-                            name: name
-                        })
-                    }
-                })
+                ipcRenderer.send("showCreateNewProject");
             })
 
             $("#openProject").click(() => {
-                let path = dialog.showOpenDialog({
-                    properties: ["openDirectory"]
-                })
-                console.log(path);
-
-                if (!path || path.length === 0) {
-                    return;
-                }
-                if (Array.isArray(path)) {
-                    path = path[0];
-                    if (!path || path.length === 0) {
-                        return;
-                    }
-                }
-
-                ipcRenderer.send("openProject", path);
+                ipcRenderer.send("showOpenProject");
             })
         </script>
     </body>
