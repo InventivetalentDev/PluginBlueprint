@@ -1,9 +1,10 @@
 const {app, BrowserWindow, ipcMain, dialog} = require('electron');
 const {LiteGraph} = require("litegraph.js");
 const NodeGenerator = require("./nodeGenerator");
+const CodeGenerator = require("./codeGenerator");
 const prompt = require("electron-prompt");
 const path = require("path");
-const fs = require("fs");
+const fs = require("fs-extra");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -32,7 +33,7 @@ function createWindow() {
     })
 
     win.on("close", function (e) {
-        let c=dialog.showMessageBox({
+        let c = dialog.showMessageBox({
             message: "Are you sure you want to exit?",
             buttons: ["Yes", "No"]
         })
@@ -137,6 +138,7 @@ function createNewProject(arg) {
         currentProjectPath = arg.path;
         currentProject = projectInfo;
 
+        fs.mkdirSync(path.join(arg.path, "classes"));
         fs.mkdirSync(path.join(arg.path, "output"));
         fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
             if (err) {
@@ -257,5 +259,40 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
     console.log("saveGraphData");
     saveGraphData(arg, function () {
         win.loadFile('index.html');
+    });
+});
+
+function saveCodeToFile(code,cb) {
+    if (!currentProject || !currentProjectPath) {
+        return;
+    }
+    if (!code) return;
+
+    fs.mkdirs(path.join(currentProjectPath, "classes", "org", "inventivetalent", "pluginblueprint", "generated"),function (err) {
+        if (err) {
+            console.error("Failed to save code file");
+            console.error(err);
+            return;
+        }
+        fs.writeFile(path.join(currentProjectPath, "classes", "org", "inventivetalent", "pluginblueprint", "generated", "GeneratedPlugin.pbj"), code, "utf-8", function (err) {
+            if (err) {
+                console.error("Failed to save code file");
+                console.error(err);
+                return;
+            }
+
+            if(cb)cb();
+        });
+    });
+
+}
+
+ipcMain.on("codeGenerated", function (event, arg) {
+    saveCodeToFile(arg);
+});
+
+ipcMain.on("codeGeneratedThenCompile", function (event, arg) {
+    saveCodeToFile(arg,function () {
+        //TODO
     });
 });

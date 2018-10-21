@@ -300,6 +300,7 @@ function getOrCreateBukkitClassNode(className) {
 
     function BukkitClassNode() {
         addClassIO(this, className);
+        this.nodeType = "BukkitClassNode";
         if (eventClasses.indexOf(className) !== -1) {
             this.classType = "event";
         }
@@ -504,6 +505,7 @@ function getOrCreateBukkitMethodNode(classMethodName) {
 
     function BukkitMethodNode() {
         addMethodIO(this, classData, methodData);
+        this.nodeType = "BukkitMethodNode";
         this.methodData = methodData;
     }
 

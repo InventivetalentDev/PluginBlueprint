@@ -80,7 +80,8 @@
             }
 
             function generateCode() {
-                CodeGenerator.generateClassCode(graph);
+                let code = CodeGenerator.generateClassCode(graph);
+                ipcRenderer.send("codeGenerated", code);
             }
 
             function saveGraph() {
@@ -123,6 +124,16 @@
                             label:"Close Project",
                             click:()=>{
                                 saveGraphAndClose();
+                            }
+                        }
+                    ]
+                },
+                {
+                    label:"Compile",
+                    submenu:[
+                        {
+                            label:"Generate Code",click:()=>{
+                                generateCode();
                             }
                         }
                     ]

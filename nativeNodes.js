@@ -15,6 +15,9 @@ StringConstant.prototype.onDrawBackground = function () {
 StringConstant.prototype.getNativeType = function () {
     return "java.lang.String";
 };
+StringConstant.prototype.getOutputIndex = function () {
+    return 0;
+};
 StringConstant.prototype.getOutputCode = function () {
     return "\"" + this.properties.string + "\"";
 };
@@ -36,6 +39,9 @@ NumberConstant.prototype.onDrawBackground = function () {
 NumberConstant.prototype.getNativeType = function () {
     return this.properties.type;
 };
+NumberConstant.prototype.getOutputIndex = function () {
+    return 0;
+};
 NumberConstant.prototype.getOutputCode = function () {
     return this.properties.number;
 };
@@ -55,8 +61,11 @@ BooleanConstant.prototype.onDrawBackground = function () {
 BooleanConstant.prototype.getNativeType = function () {
     return "boolean";
 };
+BooleanConstant.prototype.getOutputIndex = function () {
+    return 0;
+};
 BooleanConstant.prototype.getOutputCode = function () {
-    return this.value;
+    return this.properties.value;
 };
 
 // Cast
@@ -95,6 +104,9 @@ function ConsoleLog() {
 ConsoleLog.title = "ConsoleLog";
 ConsoleLog.prototype.getNativeType = function () {
     return "";
+};
+Cast.prototype.getOutputIndex = function () {
+    return -1;
 };
 ConsoleLog.prototype.getOutputCode = function (input) {
     return "System.out.println(" + input + ");";
