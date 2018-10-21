@@ -1,0 +1,106 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="../litegraph.js/css/litegraph.css">
+        <style>
+            html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id='mycanvas' width='1920' height='1080'></canvas>
+        <script>
+            const {ipcRenderer} = require("electron");
+            const {LiteGraph, LGraph, LGraphCanvas} = require("litegraph.js");
+            const NodeGenerator = require("./nodeGenerator");
+            const CodeGenerator = require("./codeGenerator");
+            // LiteGraph.debug=true;
+
+            var graph = new LGraph();
+
+            var canvas = new LGraphCanvas("#mycanvas", graph);
+            console.log(canvas);
+
+            var projectInfo = {};
+            ipcRenderer.send("getProjectInfo");
+
+            graph.onNodeAdded = function (node) {
+                console.log(node);
+            };
+            canvas.onNodeSelected = function (node) {
+                console.log(node)
+            }
+
+            function resizeCanvas() {
+                let width = window.innerWidth;
+                let height = window.innerHeight;
+
+                canvas.resize(width, height);
+            }
+
+            window.addEventListener("resize", resizeCanvas);
+            resizeCanvas();
+
+            console.log("Initializing Bukkit Node generator...")
+            NodeGenerator.init().then(() => {
+
+                // graph.addGlobalInput("Plugin", "org.bukkit.plugin.JavaPlugin");
+
+                for (let n in NodeGenerator.getClassesByName()) {
+                    NodeGenerator.getOrCreateBukkitClassNode(n)
+                }
+
+                let methods = NodeGenerator.getMethods();
+                for (let i = 0; i < methods.length; i++) {
+                    NodeGenerator.getOrCreateBukkitMethodNode(methods[i])
+                }
+
+                console.log(NodeGenerator.getClassesByName())
+
+
+                // addBukkitNode("org.bukkit.event.player.PlayerJoinEvent","event")
+
+
+                ipcRenderer.send("getGraphData");
+
+            })
+
+            function addBukkitNode(className, classType) {
+                let nodeName = NodeGenerator.getOrCreateBukkitClassNode(className, classType);
+                console.log(nodeName);
+                if (!nodeName) return;
+                let node = LiteGraph.createNode(nodeName);
+                if (!node) return;
+                console.log(node)
+                graph.add(node);
+            }
+
+            function generateCode() {
+                CodeGenerator.generateClassCode(graph);
+            }
+
+            function saveGraph() {
+                ipcRenderer.send("saveGraphData", graph.serialize());
+            }
+
+            ipcRenderer.on("projectInfo", function (event, arg) {
+                projectInfo = arg;
+                console.log("Project:")
+                console.log(arg);
+            });
+            ipcRenderer.on("graphData", function (event, arg) {
+                if (!arg || !arg.nodes) {
+                    console.warn("Empty graph data")
+                    return;
+                }
+                if (graph) {
+                    graph.configure(arg);
+                }
+            })
+
+        </script>
+    </body>
+</html>

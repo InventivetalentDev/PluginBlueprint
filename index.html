@@ -1,84 +1,73 @@
 <html>
     <head>
-        <link rel="stylesheet" href="../litegraph.js/css/litegraph.css">
-        <style>
-            html,body {
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-            }
-        </style>
-        <script>
-            const {LiteGraph, LGraph, LGraphCanvas} = require("litegraph.js");
-            const NodeGenerator = require("./nodeGenerator");
-            const CodeGenerator = require("./codeGenerator");
-        </script>
+
     </head>
-    <body >
-        <canvas id='mycanvas' width='1920' height='1080'></canvas>
+    <body>
+        <div>
+            <button id="createNewProject">Create new Project</button>
+            <button id="openProject">Open Project</button>
+        </div>
+
         <script>
-            // LiteGraph.debug=true;
+            const {ipcRenderer} = require("electron");
+            const { dialog} = require("electron").remote;
+            const prompt = require("electron-prompt");
+            const $ = require("jquery");
 
-            var graph = new LGraph();
+            $("#createNewProject").click(() => {
+                let path = dialog.showOpenDialog({
+                    properties: ["openDirectory"]
+                })
+                console.log(path);
 
-            var canvas = new LGraphCanvas("#mycanvas", graph);
-            console.log(canvas);
-
-            graph.onNodeAdded=function (node) {
-                console.log(node);
-            };
-            canvas.onNodeSelected=function (node) {
-                console.log(node)
-            }
-
-            function resizeCanvas() {
-                let width = window.innerWidth;
-                let height =  window.innerHeight;
-
-                canvas.resize(width, height);
-            }
-            window.addEventListener("resize", resizeCanvas);
-            resizeCanvas();
-
-            console.log("Initializing Bukkit Node generator...")
-            NodeGenerator.init().then(() => {
-
-                graph.addGlobalInput("Plugin", "org.bukkit.plugin.JavaPlugin");
-
-                for(let n in NodeGenerator.getClassesByName()){
-                    NodeGenerator.getOrCreateBukkitClassNode(n)
+                if (!path || path.length === 0) {
+                    return;
                 }
-
-                let methods= NodeGenerator.getMethods();
-                for(let i=0;i<methods.length;i++){
-                    NodeGenerator.getOrCreateBukkitMethodNode(methods[i])
+                if (Array.isArray(path)) {
+                    path = path[0];
+                    if (!path || path.length === 0) {
+                        return;
+                    }
                 }
+                let pathSplit = path.split("\\");
 
-                console.log(NodeGenerator.getClassesByName())
+                let name = pathSplit[pathSplit.length - 1];
+                prompt({
+                    title: "Give your project a name",
+                    label: "Project Name",
+                    value: name,
+                    height: 150
+                }).then((r) => {
+                    if (r) {
+                        name = r;
+                        console.log(name);
 
-
-                addBukkitNode("org.bukkit.event.player.PlayerJoinEvent","event")
-
-                graph.start()
-
+                        ipcRenderer.send("createNewProject", {
+                            path: path,
+                            name: name
+                        })
+                    }
+                })
             })
 
-            function addBukkitNode(className,classType) {
-                let nodeName = NodeGenerator.getOrCreateBukkitClassNode(className,classType);
-                console.log(nodeName);
-                if(!nodeName)return;
-                let node = LiteGraph.createNode(nodeName);
-                if(!node)return;
-                console.log(node)
-                graph.add(node);
-            }
+            $("#openProject").click(() => {
+                let path = dialog.showOpenDialog({
+                    properties: ["openDirectory"]
+                })
+                console.log(path);
 
-            function generateCode() {
-                CodeGenerator.generateClassCode(graph);
-            }
+                if (!path || path.length === 0) {
+                    return;
+                }
+                if (Array.isArray(path)) {
+                    path = path[0];
+                    if (!path || path.length === 0) {
+                        return;
+                    }
+                }
 
-
+                ipcRenderer.send("openProject", path);
+            })
         </script>
     </body>
 </html>
