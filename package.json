@@ -50,7 +50,7 @@
     ]
   },
   "author": "Haylee Schäfer",
-  "license": "MIT",
+  "license": "GNU LGPLv3",
   "devDependencies": {
     "electron": "^3.0.4",
     "electron-builder": "^20.28.4",
