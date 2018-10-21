@@ -138,6 +138,7 @@ function createNewProject(arg) {
         currentProjectPath = arg.path;
         currentProject = projectInfo;
 
+        fs.mkdirSync(path.join(arg.path, "src"));
         fs.mkdirSync(path.join(arg.path, "classes"));
         fs.mkdirSync(path.join(arg.path, "output"));
         fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
@@ -268,13 +269,13 @@ function saveCodeToFile(code,cb) {
     }
     if (!code) return;
 
-    fs.mkdirs(path.join(currentProjectPath, "classes", "org", "inventivetalent", "pluginblueprint", "generated"),function (err) {
+    fs.mkdirs(path.join(currentProjectPath, "src", "org", "inventivetalent", "pluginblueprint", "generated"),function (err) {
         if (err) {
             console.error("Failed to save code file");
             console.error(err);
             return;
         }
-        fs.writeFile(path.join(currentProjectPath, "classes", "org", "inventivetalent", "pluginblueprint", "generated", "GeneratedPlugin.java"), code, "utf-8", function (err) {
+        fs.writeFile(path.join(currentProjectPath, "src", "org", "inventivetalent", "pluginblueprint", "generated", "GeneratedPlugin.java"), code, "utf-8", function (err) {
             if (err) {
                 console.error("Failed to save code file");
                 console.error(err);
