@@ -9,6 +9,7 @@ function StringConstant() {
 }
 
 StringConstant.title = "String Constant";
+StringConstant.prototype.color = Colors.STRING_OFF;
 StringConstant.prototype.onDrawBackground = function () {
     this.outputs[0].label = this.properties.string;
 };
@@ -32,6 +33,7 @@ function NumberConstant() {
 }
 
 NumberConstant.title = "Number Constant";
+NumberConstant.prototype.color = Colors.NUMBER_OFF;
 NumberConstant.prototype.onDrawBackground = function () {
     this.outputs[0].label = this.properties.type + " " + this.properties.number;
     this.outputs[0].type = this.properties.type;
@@ -55,6 +57,7 @@ function BooleanConstant() {
 }
 
 BooleanConstant.title = "BooleanConstant";
+BooleanConstant.prototype.color = Colors.BOOLEAN_OFF;
 BooleanConstant.prototype.onDrawBackground = function () {
     this.outputs[0].label = this.properties.value;
 };
