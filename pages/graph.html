@@ -258,6 +258,7 @@
             })
             ipcRenderer.on("generateError",function (event,arg) {
                 $("#overlay").fadeOut();
+                console.error(arg);
             })
         </script>
     </body>

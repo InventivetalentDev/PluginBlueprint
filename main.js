@@ -408,8 +408,9 @@ ipcMain.on("codeGenerated", function (event, arg) {
         console.log("Done!");
         showNotification("Done!");
         event.sender.send("generateDone");
-    }).catch(()=>{
-        event.sender.send("generateError");
+    }).catch((err) => {
+        event.sender.send("generateError", err);
+        dialog.showErrorBox("Compilation Error", err.message);
     })
 });
 
