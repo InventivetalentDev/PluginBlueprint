@@ -4,7 +4,7 @@ const Colors = require("./colors");
 
 function StringConstant() {
     this.classType = "native";
-    this.addOutput("", "java.lang.String",{colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+    this.addOutput("", "java.lang.String", {colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
     this.addProperty("string", "");
 }
 
@@ -27,7 +27,7 @@ StringConstant.prototype.getOutputCode = function () {
 
 function NumberConstant() {
     this.classType = "native";
-    this.addOutput("", "int",{colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+    this.addOutput("", "int", {colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
     this.addProperty("type", "int", "enum", {values: ["byte", "char", "short", "int", "long", "float", "double"]});
     this.addProperty("number", 0);
 }
@@ -52,7 +52,7 @@ NumberConstant.prototype.getOutputCode = function () {
 
 function BooleanConstant() {
     this.classType = "native";
-    this.addOutput("", "boolean",{colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+    this.addOutput("", "boolean", {colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
     this.addProperty("value", false);
 }
 
@@ -90,7 +90,7 @@ Cast.prototype.getNativeType = function () {
     return this.properties.castTo;
 };
 Cast.prototype.getOutputIndex = function () {
-return 1;
+    return 1;
 };
 Cast.prototype.getOutputCode = function (input) {
     return "(" + this.properties.castTo + ") " + input + ";";
@@ -108,7 +108,7 @@ ConsoleLog.title = "ConsoleLog";
 ConsoleLog.prototype.getNativeType = function () {
     return "";
 };
-Cast.prototype.getOutputIndex = function () {
+ConsoleLog.prototype.getOutputIndex = function () {
     return -1;
 };
 ConsoleLog.prototype.getOutputCode = function (input) {

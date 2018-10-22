@@ -15,6 +15,9 @@ module.exports = {
     FUNCTION_OFF: "#406578",
     FUNCTION_ON: "#00b2c4",
 
+    ABSTRACT_FUNCTION_OFF: "#282f78",
+    ABSTRACT_FUNCTION_ON: "#4a55ef",
+
     OBJECT_OFF: "#147808",
     OBJECT_ON: "#3FC42F",
 

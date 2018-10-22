@@ -419,7 +419,11 @@ function addClassIO(node, className, isChildCall) {
         } else*/
         if (method.return_type === "void") {
             if (method.parameters.length === 0) {
-                node.addInput(method.name, LiteGraph.ACTION, {linkType: "trigger", methodData: method});
+                if(method.isAbstract){
+                    node.addOutput(methodSignature, "@EXEC", {linkType: "abstractMethod", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.ABSTRACT_FUNCTION_OFF, colorOn: Colors.ABSTRACT_FUNCTION_OFF});
+                }else {
+                    node.addInput(method.name, LiteGraph.ACTION, {linkType: "trigger", methodData: method});
+                }
             } else if (method.parameters.length === 1) {
                 if (method.parameters[0].type === "boolean") {
                     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
@@ -543,7 +547,7 @@ function addMethodIO(node, classData, methodData) {
 
 
     if (methodData.parameters.length === 0) {
-        node.addInput(methodData.name, LiteGraph.ACTION);
+        // node.addInput(methodData.name, LiteGraph.ACTION);
     } else {
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
@@ -565,7 +569,7 @@ function addMethodIO(node, classData, methodData) {
     }
 
     if (methodData.return_type === "void") {
-        node.addOutput("RETURN", LiteGraph.EVENT);
+        // node.addOutput("RETURN", LiteGraph.EVENT);
     } else {
         if (methodData.return_type === "boolean") {
             node.addOutput("RETURN", methodData.return_type+methodData.return_type_dimension, {colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});

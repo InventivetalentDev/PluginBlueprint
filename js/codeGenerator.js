@@ -12,31 +12,31 @@ const generatedMethods = [];
 const methodCalls = [];
 const nativeCalls = [];
 
-function generateClassCode(graph,projectInfo) {
+function generateClassCode(graph, projectInfo) {
     console.log(graph)
     for (let i = 0; i < graph._nodes.length; i++) {
         if (graph._nodes[i].nodeType === "BukkitClassNode") {
             if (graph._nodes[i].classType === "event") {
-                generateCodeForEventClassNode(graph,i, graph._nodes[i]);
+                generateCodeForEventClassNode(graph, i, graph._nodes[i]);
             }
             if (graph._nodes[i].classType === "object") {
-                generateCodeForObjectClassNode(graph,i, graph._nodes[i]);
+                generateCodeForObjectClassNode(graph, i, graph._nodes[i]);
             }
             if (graph._nodes[i].classType === "enum") {
-                generateCodeForEnumClassNode(graph,i, graph._nodes[i]);
+                generateCodeForEnumClassNode(graph, i, graph._nodes[i]);
             }
         } else if (graph._nodes[i].nodeType === "BukkitMethodNode") {
-            generateCodeForMethodNode(graph,i, graph._nodes[i]);
+            generateCodeForMethodNode(graph, i, graph._nodes[i]);
         } else {
             if (graph._nodes[i].classType === "native") {
-                generateCodeForNativeNode(graph,i, graph._nodes[i]);
+                generateCodeForNativeNode(graph, i, graph._nodes[i]);
             }
         }
     }
 
 
     let classCode = "" +
-        "package "+projectInfo.package+";\n" +
+        "package " + projectInfo.package + ";\n" +
         "\n" +
         "public class GeneratedPlugin extends org.bukkit.plugin.java.JavaPlugin implements org.bukkit.event.Listener {\n" +
         "\n" +
@@ -76,7 +76,7 @@ function generateClassCode(graph,projectInfo) {
     return classCode;
 }
 
-function generateCodeForEventClassNode(graph,n, node) {
+function generateCodeForEventClassNode(graph, n, node) {
     let code = "" +
         "@org.bukkit.event.EventHandler\n" +
         "public void on(" + node.type + " event) {\n";
@@ -98,7 +98,7 @@ function generateCodeForEventClassNode(graph,n, node) {
                 let linkInfo = graph.links[output.links[l]];
                 console.log(graph.links)
                 console.log(linkInfo)
-                if(!linkInfo)continue;
+                if (!linkInfo) continue;
 
                 if (output.type === "@EXEC") {
                     execCode += "  node_" + linkInfo.target_id + "_exec();\n";
@@ -110,7 +110,7 @@ function generateCodeForEventClassNode(graph,n, node) {
                      } else*/
                     fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
                     if (output.linkType === "object") {
-                        code += "  node_" + linkInfo.target_id+ " = event." + output.name.split("(")[0] + "();\n";//TODO: probably redundant
+                        code += "  node_" + linkInfo.target_id + " = event." + output.name.split("(")[0] + "();\n";//TODO: probably redundant
                         code += "  node_" + node.id + "_output_" + o + " = event." + output.name.split("(")[0] + "();\n";
                     } else if (output.linkType === "getter") {
                         code += "  node_" + node.id + "_output_" + o + " = event." + output.name.split("(")[0] + "();\n";
@@ -175,7 +175,7 @@ function generateSetterMethodCall(methodName, targetNode, targetInput, inputInde
     return "node_" + targetNode.id + "_in_" + inputIndex;
 }
 
-function generateCodeForObjectClassNode(graph,n, node) {
+function generateCodeForObjectClassNode(graph, n, node) {
     let field = "private " + node.type + " node_" + node.id + ";";
 
     let code = "// CLASS EXECUTION for " + node.title + "\n" +
@@ -183,6 +183,7 @@ function generateCodeForObjectClassNode(graph,n, node) {
     let initCode = "";
     let execCode = "";
     let otherCode = "";
+    let abstractMethods = 0;
     for (let o = 0; o < node.outputs.length; o++) {
         let output = node.outputs[o];
         if (!output) continue;
@@ -190,23 +191,27 @@ function generateCodeForObjectClassNode(graph,n, node) {
         if (output.links.length > 0) {
             if (output.linkType === "method") continue;
 
-            if (output.type === "@EXEC") {
+            if (output.type === "@EXEC" && output.linkType !== "abstractMethod") {
                 for (let l = 0; l < output.links.length; l++) {
                     let linkInfo = graph.links[output.links[l]];
-                    if(!linkInfo)continue;
+                    if (!linkInfo) continue;
                     execCode += "  node_" + linkInfo.target_id + "_exec();\n";
                 }
             } else {
-                fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
-                if(output.linkType==="this"){
-                    otherCode += "  node_" + node.id + "_output_" + o + " = node_" + node.id +";\n";
-                }else {
+                if (output.linkType !== "abstractMethod")
+                    fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
+                if (output.linkType === "this") {
+                    otherCode += "  node_" + node.id + "_output_" + o + " = node_" + node.id + ";\n";
+                } else if (output.linkType === "abstractMethod") {
+                    abstractMethods++;
+                } else {
                     otherCode += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name.split("(")[0] + "();\n";
                 }
             }
         }
     }
 
+    let hasRef = false;
     for (let i = 0; i < node.inputs.length; i++) {
         let input = node.inputs[i];
         if (!input) continue;
@@ -223,13 +228,43 @@ function generateCodeForObjectClassNode(graph,n, node) {
         if (input.linkType === "trigger" || input.linkType === "setter") {
             let m = generateSetterMethodCall(input.name, node, input, i, "node_" + node.id, input.linkType === "setter" ? "node_" + linkInfo.origin_id + "_output_" + linkInfo.origin_slot : "");
             execCode += "  " + m + "();\n";
-        }else if (input.linkType === "ref") {
+        } else if (input.linkType === "ref") {
             initCode += "  node_" + node.id + " = node_" + linkInfo.origin_id + "_output_" + linkInfo.origin_slot + ";\n";
+            hasRef = true;
         }
     }
 
     if (node.classData.name === "org.bukkit.plugin.java.JavaPlugin") {
         initCode += "  node_" + node.id + " = this;\n";
+        hasRef = true;
+    }
+
+    if (!hasRef) {
+        if (abstractMethods > 0) {
+            initCode += "  node_" + node.id + " = new " + node.classData.name + "() {\n"
+            for (let o = 0; o < node.outputs.length; o++) {
+                let output = node.outputs[o];
+                if (!output) continue;
+                if (!output.links) continue;
+                if (output.links.length > 0) {
+                    if (output.linkType === "abstractMethod") {
+                        if (output.methodData.parameters.length === 0) {
+                            initCode += "    public void " + output.name.split("(")[0] + "() {\n";
+                            for (let l = 0; l < output.links.length; l++) {
+                                let linkInfo = graph.links[output.links[l]];
+                                if (!linkInfo) continue;
+                                initCode += "      node_" + linkInfo.target_id + "_exec();\n"
+                            }
+                            initCode += "  }\n"
+                        }
+                    }
+                }
+            }
+
+            initCode += "};\n";
+        } else {
+            initCode += "  node_" + node.id + " = new " + node.classData.name + "();\n"
+        }
     }
 
     code += initCode;
@@ -244,7 +279,7 @@ function generateCodeForObjectClassNode(graph,n, node) {
     return field;
 }
 
-function generateCodeForEnumClassNode(graph,n, node) {
+function generateCodeForEnumClassNode(graph, n, node) {
     for (let o = 0; o < node.outputs.length; o++) {
         let output = node.outputs[o];
         if (!output) continue;
@@ -257,7 +292,7 @@ function generateCodeForEnumClassNode(graph,n, node) {
     }
 }
 
-function generateCodeForMethodNode(graph,n, node) {
+function generateCodeForMethodNode(graph, n, node) {
     let code = "// METHOD EXECUTION for %obj#%method\n" +
         "private void node_" + node.id + "_exec() {\n";
 
@@ -274,8 +309,8 @@ function generateCodeForMethodNode(graph,n, node) {
             } else if (output.type === "@EXEC") {
                 for (let l = 0; l < output.links.length; l++) {
                     let linkInfo = graph.links[output.links[l]];
-                    if(!linkInfo)continue;
-                    execCode += "  node_" + linkInfo.target_id+ "_exec();\n";
+                    if (!linkInfo) continue;
+                    execCode += "  node_" + linkInfo.target_id + "_exec();\n";
                 }
             }
         }
@@ -325,19 +360,19 @@ function generateCodeForMethodNode(graph,n, node) {
     methodCalls.push(code);
 }
 
-function generateCodeForNativeNode(graph,n, node) {
+function generateCodeForNativeNode(graph, n, node) {
     console.log(node)
     if (!node.getOutputCode) return;
 
     let inputVars = [];
-    if(node.inputs) {
+    if (node.inputs) {
         for (let i = 0; i < node.inputs.length; i++) {
             let input = node.inputs[i];
             if (!input) continue;
             if (!input.link) continue;
             let linkInfo = graph.links[input.link];
             if (!linkInfo) continue;
-            if(input.type==="@EXEC")continue;
+            if (input.type === "@EXEC") continue;
 
             inputVars.push("node_" + linkInfo.origin_id + "_output_" + linkInfo.origin_slot);
         }
@@ -345,57 +380,81 @@ function generateCodeForNativeNode(graph,n, node) {
 
     let outputCode = node.getOutputCode(inputVars);
 
-    if ((!node.inputs||node.inputs.length === 0) && node.outputs&&node.outputs.length > 0) {
+    let code = "";
+    if ((!node.inputs || node.inputs.length === 0) && node.outputs && node.outputs.length > 0) {
         if (!node.getNativeType) return;
 
         let nativeType = node.getNativeType();
-        let outputIndex=node.getOutputIndex();
+        let outputIndex = node.getOutputIndex();
 
 
         if (!Array.isArray(nativeType) && !Array.isArray(outputCode)) {
-            if(!outputIndex)outputIndex=0;
-            fields.push("private " + nativeType + " node_" + node.id + "_output_"+outputIndex+" = " + outputCode + ";");
+            if (!outputIndex) outputIndex = 0;
+            fields.push("private " + nativeType + " node_" + node.id + "_output_" + outputIndex + " = " + outputCode + ";");
         } else if (Array.isArray(nativeType) && Array.isArray(outputCode)) {
             if (nativeType.length !== outputCode.length) {
                 console.error("Array length mismatch for native node " + node.name);
                 return;
             }
             for (let i = 0; i < nativeType.length; i++) {
-                fields.push("private " + nativeType[i] + " node_" + node.id + "_output_" + (outputIndex[i]||0) + " = " + outputCode[i] + ";");
+                fields.push("private " + nativeType[i] + " node_" + node.id + "_output_" + (outputIndex[i] || 0) + " = " + outputCode[i] + ";");
             }
         } else {
             console.error("Either the type or the output of native node " + node.name + " is not an array while the other is");
         }
-    } else if ((!node.outputs||node.outputs.length === 0) && node.inputs.length > 0) {
-        nativeCalls.push("private void node_" + node.id + "_exec() {\n" +
+    } else if ((!node.outputs || node.outputs.length === 0) && node.inputs.length > 0) {
+        code += ("private void node_" + node.id + "_exec() {\n" +
             outputCode + "\n" +
-            "}\n");
-    } else if (node.outputs&&node.outputs.length > 0 && node.inputs&&node.inputs.length > 0) {
+            "");
+    } else if (node.outputs && node.outputs.length > 0 && node.inputs && node.inputs.length > 0) {
         if (!node.getNativeType) return;
 
         let nativeType = node.getNativeType();
-        let outputIndex=node.getOutputIndex();
+        let outputIndex = node.getOutputIndex();
+        console.log(outputIndex)
 
         if (!Array.isArray(nativeType) && !Array.isArray(outputCode)) {
-            if(!outputIndex)outputIndex=0;
-            fields.push("private " + nativeType + " node_" + node.id + "_output_"+outputIndex+";");
-            nativeCalls.push("private void node_" + node.id + "_exec() {\n" +
-                "node_" + node.id + "_output_"+outputIndex+" = " + outputCode + "\n" +
-                "}\n");
+            if (!outputIndex) outputIndex = 0;
+            fields.push("private " + nativeType + " node_" + node.id + "_output_" + outputIndex + ";");
+            code += ("private void node_" + node.id + "_exec() {\n" +
+                "node_" + node.id + "_output_" + outputIndex + " = " + outputCode + "\n" +
+                "");
         } else if (Array.isArray(nativeType) && Array.isArray(outputCode)) {
             if (nativeType.length !== outputCode.length) {
                 console.error("Array length mismatch for native node " + node.name);
                 return;
             }
             for (let i = 0; i < nativeType.length; i++) {
-                fields.push("private " + nativeType[i] + " node_" + node.id + "_output_" + (outputIndex[i]||0) + ";");
-                nativeCalls.push("private void node_" + node.id + "_exec() {\n" +
-                    "node_" + node.id + "_output_" + (outputIndex[i]||0) + " = " + outputCode[i] + "\n" +
-                    "}\n");
+                fields.push("private " + nativeType[i] + " node_" + node.id + "_output_" + (outputIndex[i] || 0) + ";");
+                code += ("private void node_" + node.id + "_exec() {\n" +
+                    "node_" + node.id + "_output_" + (outputIndex[i] || 0) + " = " + outputCode[i] + "\n" +
+                    "");
             }
         } else {
             console.error("Either the type or the output of native node " + node.name + " is not an array while the other is");
         }
+    }
+
+    if (code.length > 2) {
+        if(node.outputs) {
+            for (let o = 0; o < node.outputs.length; o++) {
+                let output = node.outputs[o];
+                if (!output) continue;
+                if (!output.links) continue;
+                if (output.links.length > 0) {
+                    if (output.type === "@EXEC") {
+                        for (let l = 0; l < output.links.length; l++) {
+                            let linkInfo = graph.links[output.links[l]];
+                            if (!linkInfo) continue;
+                            code += "  node_" + linkInfo.target_id + "_exec();\n";
+                        }
+                    }
+                }
+            }
+        }
+
+        code += "}";
+        nativeCalls.push(code);
     }
 }
 
