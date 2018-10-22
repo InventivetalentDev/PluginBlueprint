@@ -425,18 +425,18 @@ function addClassIO(node, className, isChildCall) {
                     node.addInput(method.name, LiteGraph.ACTION, {linkType: "trigger", methodData: method});
                 }
             } else if (method.parameters.length === 1) {
-                if (method.parameters[0].type === "boolean") {
-                    node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
-                } else if (method.parameters[0].type === "number" || method.parameters[0].type === "int" || method.parameters[0].type === "double" || method.parameters[0].type === "float" || method.parameters[0].type === "short"||method.parameters[0].type==="long"||method.parameters[0].type==="byte") {
-                    node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
-                } else if (method.parameters[0].type === "string" || method.parameters[0].type === "java.lang.String") {
-                    node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
-                } /*else if (objectClasses.indexOf(method.parameters[0].type) !== -1) {
-                    node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
-                }*/ else {
+                // if (method.parameters[0].type === "boolean") {
+                //     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+                // } else if (method.parameters[0].type === "number" || method.parameters[0].type === "int" || method.parameters[0].type === "double" || method.parameters[0].type === "float" || method.parameters[0].type === "short"||method.parameters[0].type==="long"||method.parameters[0].type==="byte") {
+                //     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+                // } else if (method.parameters[0].type === "string" || method.parameters[0].type === "java.lang.String") {
+                //     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+                // } /*else if (objectClasses.indexOf(method.parameters[0].type) !== -1) {
+                //     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+                // }*/ else {
                     // node.addInput(method.name, method.parameters[0].type);
                     node.addOutput( methodSignature, classData.name+"#"+methodSignature, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
-                }
+                // }
             } else {
                 node.addOutput(methodSignature, classData.name+"#"+methodSignature, {linkType: "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
             }
