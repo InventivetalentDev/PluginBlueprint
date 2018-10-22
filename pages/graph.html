@@ -235,6 +235,16 @@
                             }
                         }
                     ]
+                },
+                {
+                    label:"Run",
+                    submenu:[
+                        {
+                            label:"Start Server",click:()=>{
+                                ipcRenderer.send("startServer");
+                            }
+                        }
+                    ]
                 }
             ]))
 

@@ -3,6 +3,7 @@ const {LiteGraph} = require("litegraph.js");
 const NodeGenerator = require("./js/nodeGenerator");
 const CodeGenerator = require("./js/codeGenerator");
 const javaCompiler = require("./js/javaCompiler");
+const serverStarter = require("./js/serverStarter");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
@@ -156,7 +157,7 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
             dialog.showMessageBox({
                 title: "Select spigot.jar location",
                 message: "Please select the location of a valid spigot.jar executable"
-            },() => {
+            }, () => {
                 let libPath = dialog.showOpenDialog({
                     properties: ["openFile"],
                     filters: [
@@ -476,6 +477,15 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
     });
     child.loadFile('pages/infoEditor.html');
     child.show()
+});
+
+ipcMain.on("startServer", function (event, arg) {
+    if (!currentProject || !currentProjectPath) {
+        return;
+    }
+    serverStarter.copyPlugin(currentProjectPath, currentProject.name).then(() => {
+        serverStarter.startServer(currentProjectPath);
+    })
 });
 
 function showNotification(body, title) {
