@@ -126,21 +126,21 @@ ipcMain.on("openGraph", function (event, arg) {
 });
 
 ipcMain.on("showCreateNewProject", function (event, arg) {
-    let path = dialog.showOpenDialog({
+    let projectPath = dialog.showOpenDialog({
         properties: ["openDirectory"]
     })
-    console.log(path);
+    console.log(projectPath);
 
-    if (!path || path.length === 0) {
+    if (!projectPath || projectPath.length === 0) {
         return;
     }
-    if (Array.isArray(path)) {
-        path = path[0];
-        if (!path || path.length === 0) {
+    if (Array.isArray(projectPath)) {
+        projectPath = projectPath[0];
+        if (!projectPath || projectPath.length === 0) {
             return;
         }
     }
-    let pathSplit = path.split("\\");
+    let pathSplit = projectPath.split("\\");
 
     let name = pathSplit[pathSplit.length - 1];
     prompt({
@@ -153,15 +153,39 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
             name = r;
             console.log(name);
 
-            createNewProject({
-                path: path,
-                name: name
-            })
+            dialog.showMessageBox({
+                title: "Select spigot.jar location",
+                message: "Please select the location of a valid spigot.jar executable"
+            },() => {
+                let libPath = dialog.showOpenDialog({
+                    properties: ["openFile"],
+                    filters: [
+                        {name: 'Spigot JAR file', extensions: ['jar']}
+                    ]
+                });
+                console.log(libPath);
+                if (!libPath || libPath.length === 0) {
+                    return;
+                }
+                if (Array.isArray(libPath)) {
+                    libPath = libPath[0];
+                    if (!libPath || libPath.length === 0) {
+                        return;
+                    }
+                }
+
+                createNewProject({
+                    path: projectPath,
+                    name: name
+                }, libPath)
+            });
+
+
         }
     })
 });
 
-function createNewProject(arg) {
+function createNewProject(arg, lib) {
     let projectFilePath = path.join(arg.path, "project.pbp");
     if (fs.existsSync(projectFilePath)) {
         dialog.showErrorBox("Project exists", "There is already a PluginBlueprint project in that directory");
@@ -187,20 +211,28 @@ function createNewProject(arg) {
         fs.mkdirSync(path.join(arg.path, "src"));
         fs.mkdirSync(path.join(arg.path, "classes"));
         fs.mkdirSync(path.join(arg.path, "output"));
-        fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
-            if (err) {
-                console.error("Failed to create graph file");
-                console.error(err);
-                return;
-            }
+        fs.mkdirSync(path.join(arg.path, "lib"));
 
-            recentProjects.unshift(currentProjectPath);
-            writeRecentProjects();
+        let rs = fs.createReadStream(lib);
+        let ws = fs.createWriteStream(path.join(currentProjectPath, "lib", "spigot.jar"));
+        ws.on("close", function () {
+            fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
+                if (err) {
+                    console.error("Failed to create graph file");
+                    console.error(err);
+                    return;
+                }
 
-            if (win) {
-                win.loadFile('pages/graph.html');
-            }
-        })
+                recentProjects.unshift(currentProjectPath);
+                writeRecentProjects();
+
+                if (win) {
+                    win.loadFile('pages/graph.html');
+                }
+            })
+        });
+        rs.pipe(ws);
+
     });
 }
 
