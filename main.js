@@ -386,7 +386,7 @@ function compile() {
                     console.log("compiled: " + Date.now());
                     resolve();
                 })
-            });
+            }).catch(reject);
         });
     })
 }
@@ -398,7 +398,7 @@ function pack() {
             javaCompiler.package(currentProjectPath, currentProject).then(() => {
                 console.log("packaged: " + Date.now());
                 resolve();
-            });
+            }).catch(reject);
         });
     })
 }
@@ -407,6 +407,9 @@ ipcMain.on("codeGenerated", function (event, arg) {
     generateCompilePackage(arg).then(() => {
         console.log("Done!");
         showNotification("Done!");
+        event.sender.send("generateDone");
+    }).catch(()=>{
+        event.sender.send("generateError");
     })
 });
 

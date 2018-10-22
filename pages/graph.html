@@ -108,22 +108,26 @@
             }
 
             function generateCode() {
+                $("#overlay").fadeIn();
                 let code = CodeGenerator.generateClassCode(graph, projectInfo);
                 ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
             }
 
 
             function generateCodeCompilePackage() {
+                $("#overlay").fadeIn();
                 let code = CodeGenerator.generateClassCode(graph, projectInfo);
                 ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true});
             }
 
 
             function compile() {
+                $("#overlay").fadeIn();
                 ipcRenderer.send("codeGenerated", {code: null, compile: true, pack: false});
             }
 
             function pack() {
+                $("#overlay").fadeIn();
                 ipcRenderer.send("codeGenerated", {code: null, compile: false, pack: true});
             }
 
@@ -249,7 +253,12 @@
                 }
                 $("#overlay").fadeOut();
             })
-
+            ipcRenderer.on("generateDone",function (event,arg) {
+                $("#overlay").fadeOut();
+            })
+            ipcRenderer.on("generateError",function (event,arg) {
+                $("#overlay").fadeOut();
+            })
         </script>
     </body>
 </html>
