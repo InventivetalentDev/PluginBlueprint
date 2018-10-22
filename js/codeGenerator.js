@@ -325,7 +325,7 @@ function generateCodeForMethodNode(graph, n, node) {
                 for (let l = 0; l < output.links.length; l++) {
                     let linkInfo = graph.links[output.links[l]];
                     if (!linkInfo) continue;
-                    execCode += nodeExec(linkInfo.target_id) + "();\n";
+                    execCode += nodeExec(linkInfo.target_id) + ";\n";
                 }
             }
         }
