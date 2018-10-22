@@ -142,9 +142,9 @@ function createNewProject(arg) {
     let projectInfo = {
         name: arg.name,
         creationTime: Date.now(),
-        author:"inventivetalent",
-        package:"my.awesome.plugin",
-        version:"0.0.0"
+        author: "inventivetalent",
+        package: "my.awesome.plugin",
+        version: "0.0.0"
     };
     fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
         if (err) {
@@ -301,29 +301,31 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
 
 function saveCodeToFile(code) {
     return new Promise((resolve, reject) => {
-        console.log("saveCode: "+Date.now())
+        console.log("saveCode: " + Date.now())
         if (!currentProject || !currentProjectPath) {
             return reject();
         }
         if (!code) return reject();
 
-        fs.mkdirs(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\")), function (err) {
-            if (err) {
-                console.error("Failed to save code file");
-                console.error(err);
-                return;
-            }
-            fs.writeFile(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\"), "GeneratedPlugin.java"), code, "utf-8", function (err) {
+        fs.emptyDir(path.join(currentProjectPath, "src"), function (err) {
+            fs.mkdirs(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\")), function (err) {
                 if (err) {
                     console.error("Failed to save code file");
                     console.error(err);
                     return;
                 }
+                fs.writeFile(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\"), "GeneratedPlugin.java"), code, "utf-8", function (err) {
+                    if (err) {
+                        console.error("Failed to save code file");
+                        console.error(err);
+                        return;
+                    }
 
-                console.log("savedCode: "+Date.now());
-                resolve();
+                    console.log("savedCode: " + Date.now());
+                    resolve();
+                });
             });
-        });
+        })
     })
 
 }
@@ -337,25 +339,29 @@ function makePluginYml() {
 
 function compile() {
     return new Promise((resolve, reject) => {
-        console.log("compile: "+Date.now())
-        javaCompiler.compile(currentProjectPath, currentProject).then((result) => {
-            let pluginYml = makePluginYml();
-            fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), pluginYml, function (err) {
-                console.log("compiled: "+Date.now());
-                resolve();
-            })
+        console.log("compile: " + Date.now())
+        fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
+            javaCompiler.compile(currentProjectPath, currentProject).then((result) => {
+                let pluginYml = makePluginYml();
+                fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), pluginYml, function (err) {
+                    console.log("compiled: " + Date.now());
+                    resolve();
+                })
+            });
         });
     })
 }
 
 function pack() {
- return new Promise((resolve, reject) => {
-     console.log("package: "+Date.now())
-     javaCompiler.package(currentProjectPath, currentProject).then(()=>{
-         console.log("packaged: "+Date.now());
-         resolve();
-     });
- })
+    return new Promise((resolve, reject) => {
+        console.log("package: " + Date.now());
+        fs.emptyDir(path.join(currentProjectPath, "output"), function (err) {
+            javaCompiler.package(currentProjectPath, currentProject).then(() => {
+                console.log("packaged: " + Date.now());
+                resolve();
+            });
+        });
+    })
 }
 
 ipcMain.on("codeGenerated", function (event, arg) {
