@@ -16,8 +16,8 @@
             const {ipcRenderer} = require("electron");
             const {Menu,getCurrentWindow} = require("electron").remote;
             const {LiteGraph, LGraph, LGraphCanvas} = require("../node_modules/litegraph.js/build/litegraph");
-            const NodeGenerator = require("../nodeGenerator");
-            const CodeGenerator = require("../codeGenerator");
+            const NodeGenerator = require("../js/nodeGenerator");
+            const CodeGenerator = require("../js/codeGenerator");
             // LiteGraph.debug=true;
 
             var graph = new LGraph();

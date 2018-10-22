@@ -1,5 +1,5 @@
 const fs = require("fs");
-const {LiteGraph} = require("litegraph.js");
+const {LiteGraph} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 
 const classesByName = [];

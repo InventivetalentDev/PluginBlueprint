@@ -1,8 +1,8 @@
 const {app, BrowserWindow, ipcMain, dialog, Notification, shell} = require('electron');
 const {LiteGraph} = require("litegraph.js");
-const NodeGenerator = require("./nodeGenerator");
-const CodeGenerator = require("./codeGenerator");
-const javaCompiler = require("./javaCompiler");
+const NodeGenerator = require("./js/nodeGenerator");
+const CodeGenerator = require("./js/codeGenerator");
+const javaCompiler = require("./js/javaCompiler");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");

@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const {LiteGraph} = require("litegraph.js");
+const {LiteGraph} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const nativeNodes = require("./nativeNodes");
 
