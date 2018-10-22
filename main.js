@@ -15,6 +15,8 @@ let win;
 let currentProject;
 let currentProjectPath;
 
+let recentProjects = [];
+
 function createWindow() {
     // Create the browser window.
     win = new BrowserWindow({
@@ -54,6 +56,8 @@ function createWindow() {
         // when you should delete the corresponding element.
         win = null
     })
+
+    readRecentProjects();
 }
 
 
@@ -90,6 +94,29 @@ function checkFileAssociation() {
         }
     }
 }
+
+function readRecentProjects() {
+    fs.readFile(path.join(app.getPath("userData"), "recentProjects.pbd"), function (err, data) {
+        if (err) {
+            console.warn(err);
+            return;
+        }
+
+        recentProjects = JSON.parse(data) || [];
+    })
+}
+
+function writeRecentProjects() {
+    fs.writeFile(path.join(app.getPath("userData"), "recentProjects.pbd"), JSON.stringify(recentProjects), "utf-8", function (err) {
+        if (err) {
+            console.warn(err);
+        }
+    });
+}
+
+ipcMain.on("getRecentProjects", function (event, arg) {
+    event.sender.send("recentProjects", recentProjects || []);
+})
 
 ipcMain.on("openGraph", function (event, arg) {
     if (win) {
@@ -166,6 +193,9 @@ function createNewProject(arg) {
                 return;
             }
 
+            recentProjects.unshift(currentProjectPath);
+            writeRecentProjects();
+
             if (win) {
                 win.loadFile('graph.html');
             }
@@ -219,6 +249,14 @@ function openProject(arg) {
 
         currentProjectPath = arg;
         currentProject = JSON.parse(data);
+
+        let i = recentProjects.indexOf(currentProjectPath);
+        if (i !== -1) {
+            recentProjects.splice(i, 1);
+        }
+        recentProjects.unshift(currentProjectPath);
+        writeRecentProjects();
+
         if (win) {
             win.loadFile('graph.html');
         }

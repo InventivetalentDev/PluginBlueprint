@@ -4,14 +4,21 @@
         <link rel="stylesheet" href="assets/material-icons/material-icons.css">
     </head>
     <body>
-        <div>
-            <button class="btn" id="createNewProject"><i class="material-icons left">add</i> Create new Project</button>
-            <button class="btn" id="openProject"><i class="material-icons left">folder_open</i> Open Project</button>
+        <div class="container">
+            <div class="row">
+                <button class="btn" id="createNewProject"><i class="material-icons left">add</i> Create new Project</button>
+                <button class="btn" id="openProject"><i class="material-icons left">folder_open</i> Open Project</button>
+            </div>
+            <div class="row">
+                <ul class="collection" id="recentProjects">
+                    <!-- Dynamic -->
+                </ul>
+            </div>
         </div>
 
         <script>
             const {ipcRenderer} = require("electron");
-            const {dialog, Menu,getCurrentWindow} = require("electron").remote;
+            const {dialog, Menu, getCurrentWindow} = require("electron").remote;
             const prompt = require("electron-prompt");
             const $ = require("jquery");
 
@@ -38,7 +45,18 @@
                         },
                     ]
                 }
-            ]))
+            ]));
+
+            ipcRenderer.on("recentProjects", function (event, arg) {
+                for (let i = 0; i < arg.length; i++) {
+                    let item = $('<li class="collection-item">' + arg[i] + '</li>');
+                    item.click(() => {
+                        ipcRenderer.send("openProject", arg[i]);
+                    });
+                    item.appendTo($("#recentProjects"));
+                }
+            });
+            ipcRenderer.send("getRecentProjects");
 
             $("#createNewProject").click(() => {
                 ipcRenderer.send("showCreateNewProject");
