@@ -108,10 +108,11 @@ function generateCodeForEventClassNode(graph,n, node) {
                          generateMethod("event", output.methodData.name, node, output, targetNode, o, l);
 
                      } else*/
+                    fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
                     if (output.linkType === "object") {
-                        code += "  node_" + linkInfo.target_id+ " = event." + output.name.split("(")[0] + "();\n";
+                        code += "  node_" + linkInfo.target_id+ " = event." + output.name.split("(")[0] + "();\n";//TODO: probably redundant
+                        code += "  node_" + node.id + "_output_" + o + " = event." + output.name.split("(")[0] + "();\n";
                     } else if (output.linkType === "getter") {
-                        fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
                         code += "  node_" + node.id + "_output_" + o + " = event." + output.name.split("(")[0] + "();\n";
                     } else {
                         code += "  " + output.type + " output_" + o + "_" + l + " = event." + output.name.split("(")[0] + "();\n";
@@ -179,7 +180,9 @@ function generateCodeForObjectClassNode(graph,n, node) {
 
     let code = "// CLASS EXECUTION for " + node.title + "\n" +
         "private void node_" + node.id + "_exec() {\n";
+    let initCode = "";
     let execCode = "";
+    let otherCode = "";
     for (let o = 0; o < node.outputs.length; o++) {
         let output = node.outputs[o];
         if (!output) continue;
@@ -196,9 +199,9 @@ function generateCodeForObjectClassNode(graph,n, node) {
             } else {
                 fields.push("private " + output.type + " node_" + node.id + "_output_" + o + ";");
                 if(output.linkType==="this"){
-                    code += "  node_" + node.id + "_output_" + o + " = node_" + node.id +";\n";
+                    otherCode += "  node_" + node.id + "_output_" + o + " = node_" + node.id +";\n";
                 }else {
-                    code += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name.split("(")[0] + "();\n";
+                    otherCode += "  node_" + node.id + "_output_" + o + " = node_" + node.id + "." + output.name.split("(")[0] + "();\n";
                 }
             }
         }
@@ -219,14 +222,18 @@ function generateCodeForObjectClassNode(graph,n, node) {
 
         if (input.linkType === "trigger" || input.linkType === "setter") {
             let m = generateSetterMethodCall(input.name, node, input, i, "node_" + node.id, input.linkType === "setter" ? "node_" + linkInfo.origin_id + "_output_" + linkInfo.origin_slot : "");
-            code += "  " + m + "();\n";
+            execCode += "  " + m + "();\n";
+        }else if (input.linkType === "ref") {
+            initCode += "  node_" + node.id + " = node_" + linkInfo.origin_id + "_output_" + linkInfo.origin_slot + ";\n";
         }
     }
 
     if (node.classData.name === "org.bukkit.plugin.java.JavaPlugin") {
-        code += "  node_" + node.id + " = this;\n";
+        initCode += "  node_" + node.id + " = this;\n";
     }
 
+    code += initCode;
+    code += otherCode;
     code += execCode;
     code += "}\n";
 
