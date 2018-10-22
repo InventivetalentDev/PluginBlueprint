@@ -353,7 +353,7 @@ function addClassIO(node, className, isChildCall) {
     if (!isChildCall && objectClasses.indexOf(className) !== -1) {
         node.addInput("REF", className, {linkType: "ref", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
-    if (!isChildCall && !classData.isInterface) {
+    if (!isChildCall) {
         node.addOutput("THIS", className, {linkType: "this", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
 
