@@ -121,7 +121,7 @@ ipcMain.on("getRecentProjects", function (event, arg) {
 
 ipcMain.on("openGraph", function (event, arg) {
     if (win) {
-        win.loadFile('graph.html');
+        win.loadFile('pages/graph.html');
     }
 });
 
@@ -198,7 +198,7 @@ function createNewProject(arg) {
             writeRecentProjects();
 
             if (win) {
-                win.loadFile('graph.html');
+                win.loadFile('pages/graph.html');
             }
         })
     });
@@ -259,7 +259,7 @@ function openProject(arg) {
         writeRecentProjects();
 
         if (win) {
-            win.loadFile('graph.html');
+            win.loadFile('pages/graph.html');
         }
     })
 }
@@ -437,7 +437,7 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
         show: false,
         backgroundColor:"#373737"
     });
-    child.loadFile('infoEditor.html');
+    child.loadFile('pages/infoEditor.html');
     child.once('ready-to-show', () => {
         child.show()
     })

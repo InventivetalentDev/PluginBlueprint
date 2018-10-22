@@ -1,6 +1,6 @@
 <html>
     <head>
-        <link rel="stylesheet" href="node_modules/litegraph.js/css/litegraph.css">
+        <link rel="stylesheet" href="../node_modules/litegraph.js/css/litegraph.css">
         <style>
             html, body {
                 width: 100%;
@@ -15,9 +15,9 @@
         <script>
             const {ipcRenderer} = require("electron");
             const {Menu,getCurrentWindow} = require("electron").remote;
-            const {LiteGraph, LGraph, LGraphCanvas} = require("litegraph.js");
-            const NodeGenerator = require("./nodeGenerator");
-            const CodeGenerator = require("./codeGenerator");
+            const {LiteGraph, LGraph, LGraphCanvas} = require("../node_modules/litegraph.js/build/litegraph");
+            const NodeGenerator = require("../nodeGenerator");
+            const CodeGenerator = require("../codeGenerator");
             // LiteGraph.debug=true;
 
             var graph = new LGraph();
