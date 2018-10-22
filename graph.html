@@ -80,13 +80,13 @@
             }
 
             function generateCode() {
-                let code = CodeGenerator.generateClassCode(graph);
+                let code = CodeGenerator.generateClassCode(graph,projectInfo);
                 ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
             }
 
 
             function generateCodeCompilePackage() {
-                let code = CodeGenerator.generateClassCode(graph);
+                let code = CodeGenerator.generateClassCode(graph,projectInfo);
                 ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true});
             }
 

@@ -12,7 +12,7 @@ const generatedMethods = [];
 const methodCalls = [];
 const nativeCalls = [];
 
-function generateClassCode(graph) {
+function generateClassCode(graph,projectInfo) {
     console.log(graph)
     for (let i = 0; i < graph._nodes.length; i++) {
         if (graph._nodes[i].nodeType === "BukkitClassNode") {
@@ -36,7 +36,7 @@ function generateClassCode(graph) {
 
 
     let classCode = "" +
-        "package org.inventivetalent.pluginblueprint.generated;\n" +//TODO: custom package name
+        "package "+projectInfo.package+";\n" +
         "\n" +
         "public class GeneratedPlugin extends org.bukkit.plugin.java.JavaPlugin implements org.bukkit.event.Listener {\n" +
         "\n" +

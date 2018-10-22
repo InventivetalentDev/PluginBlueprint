@@ -141,7 +141,10 @@ function createNewProject(arg) {
     }
     let projectInfo = {
         name: arg.name,
-        creationTime: Date.now()
+        creationTime: Date.now(),
+        author:"inventivetalent",
+        package:"my.awesome.plugin",
+        version:"0.0.0"
     };
     fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
         if (err) {
@@ -298,24 +301,26 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
 
 function saveCodeToFile(code) {
     return new Promise((resolve, reject) => {
+        console.log("saveCode: "+Date.now())
         if (!currentProject || !currentProjectPath) {
             return reject();
         }
         if (!code) return reject();
 
-        fs.mkdirs(path.join(currentProjectPath, "src", "org", "inventivetalent", "pluginblueprint", "generated"), function (err) {
+        fs.mkdirs(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\")), function (err) {
             if (err) {
                 console.error("Failed to save code file");
                 console.error(err);
                 return;
             }
-            fs.writeFile(path.join(currentProjectPath, "src", "org", "inventivetalent", "pluginblueprint", "generated", "GeneratedPlugin.java"), code, "utf-8", function (err) {
+            fs.writeFile(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\"), "GeneratedPlugin.java"), code, "utf-8", function (err) {
                 if (err) {
                     console.error("Failed to save code file");
                     console.error(err);
                     return;
                 }
 
+                console.log("savedCode: "+Date.now());
                 resolve();
             });
         });
@@ -325,16 +330,18 @@ function saveCodeToFile(code) {
 
 function makePluginYml() {
     return "name: " + currentProject.name +
-        "\nversion: 0.0.0" +
-        "\nmain: org.inventivetalent.pluginblueprint.generated.GeneratedPlugin" +//TODO: custom package
-        "";
+        "\nversion: " + currentProject.version +
+        "\nmain: " + currentProject.package + ".GeneratedPlugin" +
+        "\nauthor: " + currentProject.author;
 }
 
 function compile() {
     return new Promise((resolve, reject) => {
-        javaCompiler.compile(currentProjectPath).then((result) => {
+        console.log("compile: "+Date.now())
+        javaCompiler.compile(currentProjectPath, currentProject).then((result) => {
             let pluginYml = makePluginYml();
             fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), pluginYml, function (err) {
+                console.log("compiled: "+Date.now());
                 resolve();
             })
         });
@@ -342,26 +349,34 @@ function compile() {
 }
 
 function pack() {
-    return javaCompiler.package(currentProjectPath, currentProject);
+ return new Promise((resolve, reject) => {
+     console.log("package: "+Date.now())
+     javaCompiler.package(currentProjectPath, currentProject).then(()=>{
+         console.log("packaged: "+Date.now());
+         resolve();
+     });
+ })
 }
 
 ipcMain.on("codeGenerated", function (event, arg) {
-    let actions = [];
-    if (arg.code) {
-        actions.push(saveCodeToFile(arg.code));
-    }
-    if (arg.compile) {
-        actions.push(compile());
-    }
-    if (arg.pack) {
-        actions.push(pack());
-    }
-
-    Promise.all(actions).then(() => {
+    generateCompilePackage(arg).then(() => {
         console.log("Done!");
         showNotification("Done!");
     })
 });
+
+// async/await to preserve execution order
+async function generateCompilePackage(arg) {
+    if (arg.code) {
+        await saveCodeToFile(arg.code);
+    }
+    if (arg.compile) {
+        await compile();
+    }
+    if (arg.pack) {
+        await pack();
+    }
+}
 
 ipcMain.on("openOutputDir", function (event, arg) {
     shell.openItem(path.join(currentProjectPath, "output"));

@@ -1,10 +1,10 @@
 const {exec} = require('child_process');
 const path = require("path");
 
-function compile(rootDir) {
+function compile(rootDir,projectInfo) {
   return new Promise((resolve, reject) => {
       //TODO: variable classpath
-      let cl = "javac -cp \"" + path.join(rootDir, "lib", "spigot.jar") + "\" -d \"" + path.join(rootDir, "classes") + "\" \"" + path.join(rootDir, "src", "org", "inventivetalent", "pluginblueprint", "generated", "GeneratedPlugin.java") + "\"";
+      let cl = "javac -cp \"" + path.join(rootDir, "lib", "spigot.jar") + "\" -d \"" + path.join(rootDir, "classes") + "\" \"" + path.join(rootDir, "src", projectInfo.package.split(".").join("\\"), "GeneratedPlugin.java") + "\"";
       console.log("Running \"" + cl + "\"...");
       exec(cl, (err, stdout, stderr) => {
           if (err) {
