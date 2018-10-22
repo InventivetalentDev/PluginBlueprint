@@ -28,7 +28,9 @@
     "files": [
       "**/*",
       "data/*",
-      "node_modules/litegraph.js/css/*"
+      "assets/*",
+      "node_modules/litegraph.js/css/*",
+      "node_modules/materialize-css/dist/css/*"
     ],
     "nsis": {
       "oneClick": false,
