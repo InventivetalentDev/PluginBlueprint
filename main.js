@@ -22,8 +22,8 @@ function createWindow() {
     // Create the browser window.
     win = new BrowserWindow({
         title: "PluginBlueprint Editor",
-        width: 800,
-        height: 600,
+        width: 1200,
+        height: 800,
         show: false,
         icon: path.join(__dirname, 'assets/icons/favicon.ico'),
         backgroundColor: "#373737",
