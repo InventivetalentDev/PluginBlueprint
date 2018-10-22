@@ -199,7 +199,7 @@ function init() {
         };
 
 
-        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": "red", "boolean": "green", "java.lang.String": "blue"})
+        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": Colors.EXEC_OFF, "boolean": Colors.BOOLEAN_OFF, "java.lang.String": Colors.STRING_OFF,"byte":Colors.NUMBER_OFF,"char":Colors.NUMBER_OFF,"short":Colors.NUMBER_OFF,"int":Colors.NUMBER_OFF,"long":Colors.NUMBER_OFF,"float":Colors.NUMBER_OFF,"double":Colors.NUMBER_OFF})
 
 
         fs.readFile(path.join(__dirname, "../data/bukkitClasses.json"), "utf-8", (err, data) => {
