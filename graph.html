@@ -156,6 +156,15 @@
                           label:"Edit Project Information",click:()=>{
                               ipcRenderer.send("openProjectInfoEditor");
                           }
+                      },
+                      {
+                          type: "separator"
+                      },
+                      {
+                          label: "Close",
+                          click: () => {
+                              saveGraphAndClose();
+                          }
                       }
                   ]
                 },
