@@ -31,11 +31,11 @@
             <br/>
             <br/>
             <div class="row">
-                <button class="btn" id="createNewProject"><i class="material-icons left">add</i> Create new Project</button>
+                <button class="btn createNewProject"><i class="material-icons left">add</i> Create new Project</button>
                 <button class="btn" id="openProject"><i class="material-icons left">folder_open</i> Open Project</button>
             </div>
             <div class="row" id="recentProjectRow">
-                <h5>Recent Projects</h5>
+                <h5>Recent Projects <a href="#" class="createNewProject right-align" style="color:#d2d2d2;"><i class="material-icons right">add</i></a></h5>
                 <ul class="collection" id="recentProjects">
                     <!-- Dynamic -->
                 </ul>
@@ -87,7 +87,7 @@
             });
             ipcRenderer.send("getRecentProjects");
 
-            $("#createNewProject").click(() => {
+            $(".createNewProject").click(() => {
                 ipcRenderer.send("showCreateNewProject");
             })
 
