@@ -1,6 +1,7 @@
 <html>
     <head>
         <link rel="stylesheet" href="../node_modules/litegraph.js/css/litegraph.css">
+        <link rel="stylesheet" href="../node_modules/materialize-css/dist/css/materialize.min.css">
         <style>
             html, body {
                 width: 100%;
@@ -8,16 +9,56 @@
                 margin: 0;
                 padding: 0;
             }
+
+            #overlay {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                background-color: black;
+                opacity: 0.5;
+                z-index: 20;
+            }
+
+            #overlay-loader {
+                top: 50%;
+                left: 50%;
+                position: absolute;
+                transform: translate(-50%, -50%);
+            }
+
+            #overlay-loader > .preloader-wrapper {
+                width: 128px;
+                height: 128px;
+                opacity: 1;
+            }
         </style>
     </head>
     <body>
+        <div id="overlay">
+            <div id="overlay-loader">
+                <div class="preloader-wrapper big active">
+                    <div class="spinner-layer spinner-blue-only">
+                        <div class="circle-clipper left">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="gap-patch">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="circle-clipper right">
+                            <div class="circle"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <canvas id='mycanvas' width='1920' height='1080'></canvas>
         <script>
             const {ipcRenderer} = require("electron");
-            const {Menu,getCurrentWindow} = require("electron").remote;
+            const {Menu, getCurrentWindow} = require("electron").remote;
             const {LiteGraph, LGraph, LGraphCanvas} = require("../node_modules/litegraph.js/build/litegraph");
             const NodeGenerator = require("../js/nodeGenerator");
             const CodeGenerator = require("../js/codeGenerator");
+            const $ = require("jquery");
             // LiteGraph.debug=true;
 
             var graph = new LGraph();
@@ -80,13 +121,13 @@
             }
 
             function generateCode() {
-                let code = CodeGenerator.generateClassCode(graph,projectInfo);
+                let code = CodeGenerator.generateClassCode(graph, projectInfo);
                 ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
             }
 
 
             function generateCodeCompilePackage() {
-                let code = CodeGenerator.generateClassCode(graph,projectInfo);
+                let code = CodeGenerator.generateClassCode(graph, projectInfo);
                 ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true});
             }
 
@@ -150,23 +191,23 @@
                     ]
                 },
                 {
-                  label:"Project",
-                  submenu:[
-                      {
-                          label:"Edit Project Information",click:()=>{
-                              ipcRenderer.send("openProjectInfoEditor");
-                          }
-                      },
-                      {
-                          type: "separator"
-                      },
-                      {
-                          label: "Close",
-                          click: () => {
-                              saveGraphAndClose();
-                          }
-                      }
-                  ]
+                    label: "Project",
+                    submenu: [
+                        {
+                            label: "Edit Project Information", click: () => {
+                                ipcRenderer.send("openProjectInfoEditor");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Close",
+                            click: () => {
+                                saveGraphAndClose();
+                            }
+                        }
+                    ]
                 },
                 {
                     label: "Compile",
@@ -212,13 +253,14 @@
                 console.log(arg);
             });
             ipcRenderer.on("graphData", function (event, arg) {
-                if (!arg || !arg.nodes) {
+                if (!arg) {
                     console.warn("Empty graph data")
                     return;
                 }
-                if (graph) {
+                if (graph && arg.nodes) {
                     graph.configure(arg);
                 }
+                $("#overlay").fadeOut();
             })
 
         </script>
