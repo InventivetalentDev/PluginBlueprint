@@ -29,7 +29,7 @@ function copyPlugin(projectPath, projectName) {
 }
 
 function startServer(projectPath) {
-    childProcess.exec("start cmd.exe /K \"cd /D \"" + path.join(projectPath, "lib") + "\" && java -DIReallyKnowWhatIAmDoingISwear -Dcom.mojang.eula.agree=true -jar spigot.jar\"");
+    childProcess.exec("start cmd.exe /K \"title PluginBlueprint Testing Server && cd /D \"" + path.join(projectPath, "lib") + "\" && java -DIReallyKnowWhatIAmDoingISwear -Dcom.mojang.eula.agree=true -jar spigot.jar\"");
 }
 
 module.exports = {
