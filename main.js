@@ -24,7 +24,8 @@ function createWindow() {
         width: 800,
         height: 600,
         show: false,
-        icon: path.join(__dirname, 'assets/icons/favicon.ico')
+        icon: path.join(__dirname, 'assets/icons/favicon.ico'),
+        backgroundColor:"#373737",
     })
 
 
@@ -433,7 +434,8 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
         width: 600,
         height: 800,
         modal: true,
-        show: false
+        show: false,
+        backgroundColor:"#373737"
     });
     child.loadFile('infoEditor.html');
     child.once('ready-to-show', () => {
