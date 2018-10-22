@@ -1,0 +1,91 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="node_modules/materialize-css/dist/css/materialize.min.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <form class="col s12">
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input value="MyPlugin" id="name" type="text">
+                            <label for="name">Name</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input value="0.0.0" id="version" type="text">
+                            <label for="version">Version</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input value="inventivetalent" id="author" type="text">
+                            <label for="author">Author</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input value="my.awesome.plugin" id="package" type="text">
+                            <label for="package">Package</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="node_modules/materialize-css/dist/js/materialize.min.js"></script>
+        <script>
+            const {ipcRenderer} = require("electron");
+            const {Menu,getCurrentWindow} = require("electron").remote;
+            const $ = require("jquery");
+
+            let projectInfo = {};
+
+            getCurrentWindow().setMenu(Menu.buildFromTemplate([
+                {
+                    label: "File",
+                    submenu: [
+                        {
+                            label: "Save", role: "new", accelerator: "CommandOrControl+S", click: () => {
+                                updateProjectInfo();
+                            }
+                        }
+                    ]
+                }
+            ]));
+
+            window.onbeforeunload = function (e) {
+                updateProjectInfo();
+            };
+
+            function updateProjectInfo() {
+                projectInfo.name = $("#name").val();
+                projectInfo.version = $("#version").val();
+                projectInfo.author = $("#author").val();
+                projectInfo.package = $("#package").val();
+
+                ipcRenderer.send("updateProjectInfo", projectInfo);
+            }
+
+            ipcRenderer.send("getProjectInfo");
+
+            ipcRenderer.on("projectInfo", function (event, arg) {
+                console.log("projectInfo");
+                console.log(arg);
+                projectInfo = arg;
+
+                if (arg.name)
+                    $("#name").val(arg.name);
+                if (arg.version)
+                    $("#version").val(arg.version);
+                if (arg.author)
+                    $("#author").val(arg.author);
+                if (arg.package)
+                    $("#package").val(arg.package);
+
+                M.updateTextFields();
+            })
+        </script>
+    </body>
+</html>

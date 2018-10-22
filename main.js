@@ -230,6 +230,19 @@ ipcMain.on("getProjectInfo", function (event, arg) {
     event.sender.send("projectInfo", currentProject || {});
 });
 
+ipcMain.on("updateProjectInfo", function (event, arg) {
+    if (!arg) return;
+    currentProject = arg;
+
+    fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
+        if (err) {
+            console.error("Failed to write project file");
+            console.error(err);
+            return;
+        }
+    })
+});
+
 ipcMain.on("getGraphData", function (event, arg) {
     if (!currentProject || !currentProjectPath) {
         return;
@@ -281,6 +294,7 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
         win.loadFile('index.html');
     });
 });
+
 
 function saveCodeToFile(code) {
     return new Promise((resolve, reject) => {
@@ -351,6 +365,21 @@ ipcMain.on("codeGenerated", function (event, arg) {
 
 ipcMain.on("openOutputDir", function (event, arg) {
     shell.openItem(path.join(currentProjectPath, "output"));
+});
+
+ipcMain.on("openProjectInfoEditor", function (event, arg) {
+    console.log("openProjectInfoEditor")
+    let child = new BrowserWindow({
+        parent: win,
+        width: 600,
+        height: 800,
+        modal: true,
+        show: false
+    });
+    child.loadFile('infoEditor.html');
+    child.once('ready-to-show', () => {
+        child.show()
+    })
 });
 
 function showNotification(body, title) {

@@ -14,7 +14,7 @@
         <canvas id='mycanvas' width='1920' height='1080'></canvas>
         <script>
             const {ipcRenderer} = require("electron");
-            const {Menu} = require("electron").remote;
+            const {Menu,getCurrentWindow} = require("electron").remote;
             const {LiteGraph, LGraph, LGraphCanvas} = require("litegraph.js");
             const NodeGenerator = require("./nodeGenerator");
             const CodeGenerator = require("./codeGenerator");
@@ -107,7 +107,7 @@
                 ipcRenderer.send("saveGraphDataAndClose", graph.serialize());
             }
 
-            Menu.setApplicationMenu(Menu.buildFromTemplate([
+            getCurrentWindow().setMenu(Menu.buildFromTemplate([
                 {
                     label: "File",
                     submenu: [
@@ -148,6 +148,16 @@
                             }
                         }
                     ]
+                },
+                {
+                  label:"Project",
+                  submenu:[
+                      {
+                          label:"Edit Project Information",click:()=>{
+                              ipcRenderer.send("openProjectInfoEditor");
+                          }
+                      }
+                  ]
                 },
                 {
                     label: "Compile",

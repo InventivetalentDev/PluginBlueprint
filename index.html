@@ -1,6 +1,6 @@
 <html>
     <head>
-
+        <link rel="stylesheet" href="node_modules/materialize-css/dist/css/materialize.min.css">
     </head>
     <body>
         <div>
@@ -10,11 +10,12 @@
 
         <script>
             const {ipcRenderer} = require("electron");
-            const {dialog, Menu} = require("electron").remote;
+            const {dialog, Menu,getCurrentWindow} = require("electron").remote;
             const prompt = require("electron-prompt");
             const $ = require("jquery");
 
-            Menu.setApplicationMenu(Menu.buildFromTemplate([
+            console.log(getCurrentWindow());
+            getCurrentWindow().setMenu(Menu.buildFromTemplate([
                 {
                     label: "File",
                     submenu: [
