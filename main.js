@@ -495,6 +495,8 @@ ipcMain.on("startServer", function (event, arg) {
         resizable: true,
         backgroundColor: "#373737"
     });
+    logWin.setMenu(null);
+    logWin.setTitle("PluginBlueprint Test Server")
     logWin.loadFile('pages/log.html');
     logWin.show();
     serverStarter.copyPlugin(currentProjectPath, currentProject.name).then(() => {
