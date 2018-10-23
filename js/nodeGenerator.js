@@ -14,6 +14,28 @@ const methods = [];
 
 const canvasMenuData = {};
 
+const inputOutputSorter=function(a, b) {
+    var nameA = a.name.toUpperCase(); // ignore upper and lowercase
+    var nameB = b.name.toUpperCase(); // ignore upper and lowercase
+
+
+    if (nameA === "EXEC" || nameA === "REF" || nameA === "THIS") {
+        return -1;
+    }
+    if (nameB === "EXEC" || nameB === "REF" || nameB === "THIS") {
+        return 1;
+    }
+
+    if (nameA < nameB) {
+        return -1;
+    }
+    if (nameA > nameB) {
+        return 1;
+    }
+
+    // names must be equal
+    return 0;
+}
 
 function onEventAdd(node, options, e, prevMenu) {
     let entries = [];
@@ -302,6 +324,11 @@ function getOrCreateBukkitClassNode(className) {
 
     function BukkitClassNode() {
         addClassIO(this, className);
+
+
+        this.inputs.sort(inputOutputSorter);
+        this.outputs.sort(inputOutputSorter);
+
         this.nodeType = "BukkitClassNode";
         if (eventClasses.indexOf(className) !== -1) {
             this.classType = "event";
@@ -398,6 +425,7 @@ function addClassIO(node, className, isChildCall) {
             }
         }
     }
+
 
     for (let m = 0; m < classData.methods.length; m++) {
         let method = classData.methods[m];
