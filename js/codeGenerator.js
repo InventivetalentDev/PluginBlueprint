@@ -144,12 +144,12 @@ function generateCodeForEventClassNode(graph, n, node) {
                      } else*/
                     fields.push("private " + output.type + nodeOutput(node.id, o) + ";");
                     if (output.linkType === "object") {
-                        code += nodeV(linkInfo.target_id) + " = event." + output.name.split("(")[0] + "();\n";//TODO: probably redundant
-                        code += nodeOutput(node.id, o) + " = event." + output.name.split("(")[0] + "();\n";
+                        code += nodeV(linkInfo.target_id) + " = event." + output.methodData.name.split("(")[0] + "();\n";//TODO: probably redundant
+                        code += nodeOutput(node.id, o) + " = event." + output.methodData.name.split("(")[0] + "();\n";
                     } else if (output.linkType === "getter") {
-                        code += nodeOutput(node.id, o) + " = event." + output.name.split("(")[0] + "();\n";
+                        code += nodeOutput(node.id, o) + " = event." + output.methodData.name.split("(")[0] + "();\n";
                     } else {
-                        code += "  " + output.type + " output_" + o + "_" + l + " = event." + output.name.split("(")[0] + "();\n";
+                        code += "  " + output.type + " output_" + o + "_" + l + " = event." + output.methodData.name.split("(")[0] + "();\n";
                     }
                 }
 
@@ -240,7 +240,7 @@ function generateCodeForObjectClassNode(graph, n, node) {
                 } else if (output.linkType === "abstractMethod") {
                     abstractMethods++;
                 } else {
-                    otherCode += nodeOutput(node.id, o) + " = " + nodeV(node.id) + "." + output.name.split("(")[0] + "();\n";
+                    otherCode += nodeOutput(node.id, o) + " = " + nodeV(node.id) + "." + output.methodData.name.split("(")[0] + "();\n";
                 }
             }
         }
@@ -352,7 +352,7 @@ function generateCodeForEnumClassNode(graph, n, node) {
         if (output.links.length > 0) {
             if (output.linkType === "method") continue;
 
-            fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + node.classData.name + "." + output.name.split("(")[0] + ";");
+            fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + node.classData.name + "." + output.methodData.name.split("(")[0] + ";");
         }
     }
 }
@@ -398,11 +398,11 @@ function generateCodeForMethodNode(graph, n, node) {
 
         if (i === 0) continue;// EXEC
         if (i === 1) {// param opening bracket
-            code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.name.split("(")[0]);
+            code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
             if (sourceNode.classType === "enum"||sourceOutput.methodData.isStatic) {
-                code += " " + sourceNode.classData.name + "." + sourceOutput.name.split("(")[0] + "(";
+                code += " " + sourceNode.classData.name + "." + sourceOutput.methodData.name.split("(")[0] + "(";
             } else if (!node.isAbstractMethod) {
-                code += nodeV(linkInfo.origin_id) + "." + sourceOutput.name.split("(")[0] + "(";
+                code += nodeV(linkInfo.origin_id) + "." + sourceOutput.methodData.name.split("(")[0] + "(";
             }
             continue;
         }
