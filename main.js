@@ -38,7 +38,7 @@ function createWindow() {
 
         // Open the DevTools.
         win.webContents.openDevTools({
-            mode:"detach"
+            mode: "detach"
         });
 
         checkFileAssociation();
@@ -411,7 +411,7 @@ function makePluginYml() {
     return "name: " + currentProject.name +
         "\nversion: " + currentProject.version +
         "\nmain: " + currentProject.package + ".GeneratedPlugin" +
-        "\nauthor: " + currentProject.author+
+        "\nauthor: " + currentProject.author +
         "\napi-version: 1.13";
 }
 
@@ -526,10 +526,14 @@ ipcMain.on("startServer", function (event, arg) {
     })
 });
 
+ipcMain.on("sendServerCommand", function (event, arg) {
+    serverStarter.sendCommandToInstance(arg);
+});
+
 ipcMain.on("stopServer", function (event, arg) {
     if (logWin) logWin.destroy();
     serverStarter.killInstance();
-})
+});
 
 function showNotification(body, title) {
 

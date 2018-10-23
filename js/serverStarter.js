@@ -58,6 +58,15 @@ function startServer(projectPath, outCb, errCb) {
     });
 }
 
+function sendCommandToInstance(cmd, cb) {
+    console.log(cmd);
+    console.log(instance.stdin);
+    if (!running) return;
+    if (!instance) return;
+    if (!instance.stdin) return;
+    instance.stdin.write(cmd + "\n"/* \n is required to flush the input */, "utf-8", cb);
+}
+
 function killInstance() {
     console.log(instance);
     console.log(running);
@@ -69,6 +78,7 @@ function killInstance() {
 module.exports = {
     copyPlugin: copyPlugin,
     startServer: startServer,
+    sendCommandToInstance: sendCommandToInstance,
     killInstance: killInstance,
     isRunning: () => {
         return running;

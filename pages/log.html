@@ -4,6 +4,7 @@
             #log {
                 font-family: Consolas, monospace;
                 color: white;
+                margin-bottom: 30px;
             }
 
             .entry.err {
@@ -13,12 +14,23 @@
             .entry.warn {
                 color: orange;
             }
+
+            #cmdInput {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                background: transparent;
+                font-family: Consolas, monospace;
+                color: white;
+            }
         </style>
     </head>
     <body>
         <div id="log">
 
         </div>
+        <input id="cmdInput" type="text" autofocus onblur="this.focus()">
         <script>
             const {ipcRenderer} = require("electron");
             const {Menu, getCurrentWindow} = require("electron").remote;
@@ -36,7 +48,7 @@
                     label: "Log",
                     submenu: [
                         {
-                            label: "Follow Log", type: "checkbox",checked:true,  click: (item) => {
+                            label: "Follow Log", type: "checkbox", checked: true, click: (item) => {
                                 console.log(item);
                                 // item.checked = !item.checked;
                                 followLog = item.checked;
@@ -56,10 +68,23 @@
                 }
             ]));
 
+            let cmdInput = $("#cmdInput");
+            cmdInput.on("keypress", function (e) {
+                let key = e.which || e.keyCode;
+                if (key === 13) { //  enter
+                    let val = cmdInput.val();
+                    if (val.startsWith("/")) val = val.substr(1);
+                    if (val.length > 0) {
+                        ipcRenderer.send("sendServerCommand", val);
+                        cmdInput.val("");
+                    }
+                }
+            });
+
             ipcRenderer.on("log", function (event, arg) {
                 let content = arg.content.replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
                 let entry = $("<div class='entry " + arg.type + "'>" + content + "</div>");
-                if(arg.type==="out") {
+                if (arg.type === "out") {
                     if (content.indexOf("ERROR") !== -1) entry.addClass("err");
                     if (content.indexOf("WARN") !== -1) entry.addClass("warn");
                 }
@@ -67,7 +92,7 @@
                 if (followLog) {
                     window.scrollTo(0, document.body.scrollHeight);
                 }
-            })
+            });
 
             window.onbeforeunload = function (e) {
                 ipcRenderer.send("stopServer");
