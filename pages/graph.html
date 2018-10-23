@@ -243,6 +243,11 @@
                             label:"Start Server",click:()=>{
                                 ipcRenderer.send("startServer");
                             }
+                        },
+                        {
+                            label:"Stop Server",click:()=>{
+                                ipcRenderer.send("stopServer");
+                            }
                         }
                     ]
                 }

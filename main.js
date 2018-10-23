@@ -48,6 +48,8 @@ function createWindow() {
         })
         if (c === 1) {
             e.preventDefault();
+        }else{
+            serverStarter.killInstance();
         }
     })
 
@@ -487,6 +489,10 @@ ipcMain.on("startServer", function (event, arg) {
         serverStarter.startServer(currentProjectPath);
     })
 });
+
+ipcMain.on("stopServer", function (event, arg) {
+    serverStarter.killInstance();
+})
 
 function showNotification(body, title) {
 

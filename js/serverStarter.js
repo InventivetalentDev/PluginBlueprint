@@ -1,6 +1,9 @@
 const path = require("path");
 const fs = require("fs-extra");
-const childProcess = require("child_process");
+const {exec, spawn} = require("child_process");
+
+let running = false;
+let instance = null;
 
 function copyPlugin(projectPath, projectName) {
     return new Promise((resolve, reject) => {
@@ -29,10 +32,45 @@ function copyPlugin(projectPath, projectName) {
 }
 
 function startServer(projectPath) {
-    childProcess.exec("start cmd.exe /K \"title PluginBlueprint Testing Server && cd /D \"" + path.join(projectPath, "lib") + "\" && java -DIReallyKnowWhatIAmDoingISwear -Dcom.mojang.eula.agree=true -jar spigot.jar\"");
+    let spawned = spawn("java", ["-DIReallyKnowWhatIAmDoingISwear", "-Dcom.mojang.eula.agree=true", "-jar", "spigot.jar"], {
+        cwd:path.join(projectPath, "lib"),
+        // shell: true
+    })
+    running = true;
+    instance = spawned;
+    spawned.on('error', (err) => {
+        console.log('Failed to start subprocess.');
+        console.warn(err);
+        running = false;
+        instance = null;
+    });
+    spawned.stdout.on('data', (data) => {
+        console.log(data.toString());
+    });
+
+    spawned.stderr.on('data', (data) => {
+        console.log(data.toString());
+    });
+    spawned.on("exit", (code) => {
+        console.log("Server process exited with code " + code);
+        running = false;
+        instance = null;
+    });
+}
+
+function killInstance() {
+    console.log(instance);
+    console.log(running);
+    if (instance) {
+        instance.kill();
+    }
 }
 
 module.exports = {
     copyPlugin: copyPlugin,
-    startServer: startServer
+    startServer: startServer,
+    killInstance: killInstance,
+    isRunning: () => {
+        return running;
+    }
 }
