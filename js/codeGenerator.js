@@ -352,7 +352,7 @@ function generateCodeForEnumClassNode(graph, n, node) {
         if (output.links.length > 0) {
             if (output.linkType === "method") continue;
 
-            fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + node.classData.name + "." + output.methodData.name.split("(")[0] + ";");
+            fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + node.classData.name + "." + output.enumData + ";");
         }
     }
 }
