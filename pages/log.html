@@ -1,0 +1,31 @@
+<html>
+    <head>
+        <style>
+            #log {
+                color: white;
+            }
+
+            .entry.err {
+                color: red;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="log">
+
+        </div>
+        <script>
+            const {ipcRenderer} = require("electron");
+            const $ = require("jquery");
+
+            ipcRenderer.on("log", function (event, arg) {
+                $("#log").append("<div class='entry " + arg.type + "'>" + arg.content + "</div>");
+                window.scrollTo(0, document.body.scrollHeight);
+            })
+
+            window.onbeforeunload = function (e) {
+                ipcRenderer.send("stopServer");
+            };
+        </script>
+    </body>
+</html>

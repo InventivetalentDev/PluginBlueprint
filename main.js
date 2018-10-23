@@ -12,6 +12,7 @@ const notifier = require("node-notifier");
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
+let logWin;
 
 let currentProject;
 let currentProjectPath;
@@ -48,7 +49,7 @@ function createWindow() {
         })
         if (c === 1) {
             e.preventDefault();
-        }else{
+        } else {
             serverStarter.killInstance();
         }
     })
@@ -485,12 +486,40 @@ ipcMain.on("startServer", function (event, arg) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
+    logWin = new BrowserWindow({
+        parent: win,
+        width: 800,
+        height: 1000,
+        modal: true,
+        show: false,
+        resizable: true,
+        backgroundColor: "#373737"
+    });
+    logWin.loadFile('pages/log.html');
+    logWin.show();
     serverStarter.copyPlugin(currentProjectPath, currentProject.name).then(() => {
-        serverStarter.startServer(currentProjectPath);
+        serverStarter.startServer(currentProjectPath,
+            (out) => {
+                if (logWin) {
+                    logWin.webContents.send("log", {
+                        type: "out",
+                        content: out
+                    })
+                }
+            },
+            (err) => {
+                if (logWin) {
+                    logWin.webContents.send("log", {
+                        type: "err",
+                        content: err
+                    })
+                }
+            });
     })
 });
 
 ipcMain.on("stopServer", function (event, arg) {
+    if (logWin) logWin.destroy();
     serverStarter.killInstance();
 })
 

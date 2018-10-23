@@ -31,11 +31,11 @@ function copyPlugin(projectPath, projectName) {
     })
 }
 
-function startServer(projectPath) {
+function startServer(projectPath, outCb, errCb) {
     let spawned = spawn("java", ["-DIReallyKnowWhatIAmDoingISwear", "-Dcom.mojang.eula.agree=true", "-jar", "spigot.jar"], {
-        cwd:path.join(projectPath, "lib"),
+        cwd: path.join(projectPath, "lib"),
         // shell: true
-    })
+    });
     running = true;
     instance = spawned;
     spawned.on('error', (err) => {
@@ -46,10 +46,12 @@ function startServer(projectPath) {
     });
     spawned.stdout.on('data', (data) => {
         console.log(data.toString());
+        if (outCb) outCb(data.toString())
     });
 
     spawned.stderr.on('data', (data) => {
         console.log(data.toString());
+        if (errCb) errCb(data.toString());
     });
     spawned.on("exit", (code) => {
         console.log("Server process exited with code " + code);
