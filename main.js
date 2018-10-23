@@ -37,7 +37,9 @@ function createWindow() {
         win.show()
 
         // Open the DevTools.
-        win.webContents.openDevTools();
+        win.webContents.openDevTools({
+            mode:"detach"
+        });
 
         checkFileAssociation();
     })
