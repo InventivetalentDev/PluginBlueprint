@@ -12,6 +12,13 @@ const generatedMethods = [];
 const methodCalls = [];
 const nativeCalls = [];
 
+const javaPluginMethods = [];
+const onLoadMethods = [];
+const onEnableMethods = [];
+const onDisableMethods = [];
+const onCommandMethods = [];
+const onTabCompleteMethods = [];
+
 function generateClassCode(graph, projectInfo) {
     console.log(graph)
     for (let i = 0; i < graph._nodes.length; i++) {
@@ -60,7 +67,14 @@ function generateClassCode(graph, projectInfo) {
         "@java.lang.Override\n" +
         "public void onEnable() {\n" +
         "getServer().getPluginManager().registerEvents(this, this);\n" +
-        "\n" +//TODO
+        "\n" +
+        javaPluginMethods.join("\n") +
+        onEnableMethods.join("\n") +
+        "}\n" +
+        "\n" +
+        "@java.lang.Override\n" +
+        "public void onDisable() {\n" +
+        onDisableMethods.join("\n") +
         "}\n" +
         "\n" +
         eventListenerMethods.join("\n") +
@@ -82,6 +96,11 @@ function generateClassCode(graph, projectInfo) {
     // Reset
     fields.splice(0, fields.length);
     eventListenerMethods.splice(0, eventListenerMethods.length);
+    onLoadMethods.splice(0, onLoadMethods.length);
+    onEnableMethods.splice(0, onEnableMethods.length);
+    onDisableMethods.splice(0, onDisableMethods.length);
+    onCommandMethods.splice(0, onCommandMethods.length);
+    onTabCompleteMethods.splice(0, onTabCompleteMethods.length);
     generatedMethods.splice(0, generatedMethods.length);
     objectMethods.splice(0, objectMethods.length);
     enumMethods.splice(0, objectMethods.length);
@@ -215,6 +234,7 @@ function generateCodeForObjectClassNode(graph, n, node) {
             } else {
                 if (output.linkType !== "abstractMethod")
                     fields.push("private " + output.type + nodeOutput(node.id, o) + ";");
+
                 if (output.linkType === "this") {
                     otherCode += nodeOutput(node.id, o) + " = " + nodeV(node.id) + ";\n";
                 } else if (output.linkType === "abstractMethod") {
@@ -227,25 +247,27 @@ function generateCodeForObjectClassNode(graph, n, node) {
     }
 
     let hasRef = false;
-    for (let i = 0; i < node.inputs.length; i++) {
-        let input = node.inputs[i];
-        if (!input) continue;
-        if (!input.link) continue;
-        let linkInfo = graph.links[input.link];
-        if (!linkInfo) continue;
-        // let sourceNode = node.getInputNode(i);
-        // if(!sourceNode)continue;
-        // let sourceOutput = sourceNode.outputs[input.link];
+    if(node.inputs) {
+        for (let i = 0; i < node.inputs.length; i++) {
+            let input = node.inputs[i];
+            if (!input) continue;
+            if (!input.link) continue;
+            let linkInfo = graph.links[input.link];
+            if (!linkInfo) continue;
+            // let sourceNode = node.getInputNode(i);
+            // if(!sourceNode)continue;
+            // let sourceOutput = sourceNode.outputs[input.link];
 
-        // let sourceNode = graph.getNodeById(input.link.origin_id);
-        // let sourceOutput = sourceNode.outputs[input.link.origin_slot];
+            // let sourceNode = graph.getNodeById(input.link.origin_id);
+            // let sourceOutput = sourceNode.outputs[input.link.origin_slot];
 
-        if (input.linkType === "trigger" || input.linkType === "setter") {
-            let m = generateSetterMethodCall(input.name, node, input, i, nodeV(node.id), input.linkType === "setter" ? nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) : "");
-            execCode += "  " + m + "();\n";
-        } else if (input.linkType === "ref") {
-            initCode += nodeV(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) + ";\n";
-            hasRef = true;
+            if (input.linkType === "trigger" || input.linkType === "setter") {
+                let m = generateSetterMethodCall(input.name, node, input, i, nodeV(node.id), input.linkType === "setter" ? nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) : "");
+                execCode += "  " + m + "();\n";
+            } else if (input.linkType === "ref") {
+                initCode += nodeV(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) + ";\n";
+                hasRef = true;
+            }
         }
     }
 
@@ -263,15 +285,20 @@ function generateCodeForObjectClassNode(graph, n, node) {
                 if (!output.links) continue;
                 if (output.links.length > 0) {
                     if (output.linkType === "abstractMethod") {
-                        if (output.methodData.parameters.length === 0) {
-                            initCode += "    public void " + output.name.split("(")[0] + "() {\n";
-                            for (let l = 0; l < output.links.length; l++) {
-                                let linkInfo = graph.links[output.links[l]];
-                                if (!linkInfo) continue;
-                                initCode += nodeExec(linkInfo.target_id) + ";\n"
-                            }
-                            initCode += "  }\n"
+                        let params = [];
+                        for (let p = 0; p < output.methodData.parameters.length; p++) {
+                            params.push(output.methodData.parameters[p].type + " " + output.methodData.parameters[p].name);
                         }
+                        initCode += "    public void " + output.methodData.name + "(" + params.join(",") + ") {\n";
+                        for (let l = 0; l < output.links.length; l++) {
+                            let linkInfo = graph.links[output.links[l]];
+                            if (!linkInfo) continue;
+                            for (let p = 0; p < output.methodData.parameters.length; p++) {
+                                initCode += nodeOutput(linkInfo.target_id, 1 + p) + " = " + output.methodData.parameters[p].name + ";\n"
+                            }
+                            initCode += nodeExec(linkInfo.target_id) + ";\n"
+                        }
+                        initCode += "  }\n"
                     }
                 }
             }
@@ -289,6 +316,9 @@ function generateCodeForObjectClassNode(graph, n, node) {
 
     objectMethods.push(code);
 
+    if (node.classData.name === "org.bukkit.plugin.java.JavaPlugin") {
+        javaPluginMethods.push(nodeExec(node.id) + ";\n");
+    }
 
     fields.push(field);
     return field;
@@ -351,12 +381,11 @@ function generateCodeForMethodNode(graph, n, node) {
             code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.name.split("(")[0]);
             if (sourceNode.classType === "enum") {
                 code += " " + sourceNode.classData.name + "." + sourceOutput.name.split("(")[0] + "(";
-            } else {
+            } else if (!node.isAbstractMethod) {
                 code += nodeV(linkInfo.origin_id) + "." + sourceOutput.name.split("(")[0] + "(";
             }
             continue;
         }
-
 
         if (!linkInfo || !sourceNode) {
             params.push("null");
@@ -365,14 +394,34 @@ function generateCodeForMethodNode(graph, n, node) {
         }
     }
 
-    code += params.join(",");
-    code += ");\n";
+    if (!node.isAbstractMethod) {
+        code += params.join(",");
+        code += ");\n";
+    } else if (node.classData.name === "org.bukkit.plugin.java.JavaPlugin") {
+        if (node.methodData.name === "onLoad") {
+            onLoadMethods.push(nodeExec(node.id) + ";\n")
+        }
+        if (node.methodData.name === "onEnable") {
+            onEnableMethods.push(nodeExec(node.id) + ";\n");
+        }
+        if (node.methodData.name === "onDisable") {
+            onDisableMethods.push(nodeExec(node.id) + ";\n")
+        }
+        if (node.methodData.name === "onCommand") {
+            onCommandMethods.push(nodeExec(node.id) + ";\n")
+        }
+        if (node.methodData.name === "onTabComplete") {
+            onTabCompleteMethods.push(nodeExec(node.id) + ";\n")
+        }
+    }
 
     code += execCode;
 
     code += "}\n";
 
     methodCalls.push(code);
+
+
 }
 
 function generateCodeForNativeNode(graph, n, node) {
