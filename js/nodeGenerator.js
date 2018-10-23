@@ -411,6 +411,8 @@ function addClassIO(node, className, isChildCall) {
         }
         if (found) continue;
 
+        let isLambda=classData.methods.length===1&&classData.isInterface&&method.isAbstract;
+
 
         /*if (method.name.startsWith("get")) {
             node.addOutput(method.name.substr(3), method.return_type);
@@ -419,13 +421,13 @@ function addClassIO(node, className, isChildCall) {
         } else*/
         if (method.return_type === "void") {
             if (method.parameters.length === 0) {
-                // if(method.isAbstract){
+                // if(isLambda){
                 //     node.addOutput(methodSignature, "@EXEC", {linkType: "abstractMethod", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.ABSTRACT_FUNCTION_OFF, colorOn: Colors.ABSTRACT_FUNCTION_OFF});
                 // }else if(classData.name==="org.bukkit.plugin.java.JavaPlugin"&&(method.name==="onEnable"||method.name==="onDisable"||method.name==="onCommand"||method.name==="onTabComplete")){
                 //     node.addOutput(methodSignature, "@EXEC", {linkType: "abstractMethod", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.ABSTRACT_FUNCTION_OFF, colorOn: Colors.ABSTRACT_FUNCTION_OFF});
                 // } else{
                 // node.addInput(method.name, LiteGraph.ACTION, {linkType: "trigger", methodData: method});
-                node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: method.isAbstract ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff:method.isAbstract ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:method.isAbstract ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
+                node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
                 // }
             } else if (method.parameters.length === 1) {
                 // if (method.parameters[0].type === "boolean") {
@@ -438,10 +440,10 @@ function addClassIO(node, className, isChildCall) {
                 //     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
                 // }*/ else {
                 // node.addInput(method.name, method.parameters[0].type);
-                node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: method.isAbstract ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:method.isAbstract ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:method.isAbstract ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
+                node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
                 // }
             } else {
-                node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: method.isAbstract ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:method.isAbstract ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:method.isAbstract ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
+                node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
             }
         } else if (method.parameters.length === 0) {
             if (method.return_type === "boolean") {
@@ -456,10 +458,10 @@ function addClassIO(node, className, isChildCall) {
                 node.addOutput(method.name, method.return_type + method.return_type_dimension, {linkType: "enum", methodData: method, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
             } else {
                 // node.addOutput(method.name, method.return_type);
-                node.addOutput(method.name, classData.name + "#" + methodSignature, {linkType: method.isAbstract ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:method.isAbstract ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:method.isAbstract ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
+                node.addOutput(method.name, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
             }
         } else {
-            node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: method.isAbstract ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:method.isAbstract ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:method.isAbstract ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
+            node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
         }
     }
 
