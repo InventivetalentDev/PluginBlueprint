@@ -45,12 +45,10 @@ function startServer(projectPath, outCb, errCb) {
         instance = null;
     });
     spawned.stdout.on('data', (data) => {
-        console.log(data.toString());
         if (outCb) outCb(data.toString())
     });
 
     spawned.stderr.on('data', (data) => {
-        console.log(data.toString());
         if (errCb) errCb(data.toString());
     });
     spawned.on("exit", (code) => {
