@@ -353,7 +353,7 @@ function addClassIO(node, className, isChildCall) {
     if (!isChildCall && objectClasses.indexOf(className) !== -1 && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
         addNodeInput(node, "REF", className, {linkType: "ref", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
-    if (!isChildCall) {
+    if (!isChildCall&&!classData.isEnum) {
         addNodeOutput(node, "THIS", className, {linkType: "this", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
 
@@ -376,10 +376,18 @@ function addClassIO(node, className, isChildCall) {
     //     //TODO: setters
     // }
 
-    for (let f = 0; f < classData.enumConstants.length; f++) {
-        let en = classData.enumConstants[f];
-        addNodeOutput(node, en, classData.name, {linkType: "enum", enumData: en, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+    if(classData.isEnum&&classData.enumConstants.length>0){
+       let i= addNodeOutput(node, classData.enumConstants[0], classData.name, {linkType: "enum", enumData: classData.enumConstants[0], colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+       node.addProperty("en",classData.enumConstants[0],"enum",{values: classData.enumConstants})
+        node.onDrawBackground = function () {
+            this.outputs[i].label = "[" + this.properties.en + "]";
+        };
     }
+
+    // for (let f = 0; f < classData.enumConstants.length; f++) {
+    //     let en = classData.enumConstants[f];
+    //     addNodeOutput(node, en, classData.name, {linkType: "enum", enumData: en, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+    // }
 
     if (!classData.isInterface && !classData.isAbstract) {
         for (let c = 0; c < classData.constructors.length; c++) {
@@ -624,6 +632,7 @@ function addNodeInput(node, name, type, options) {
         }
     }
     node.addInput(name, type, options);
+    return node.inputs.length - 1;
 }
 
 function addNodeOutput(node, name, type, options) {
@@ -642,6 +651,7 @@ function addNodeOutput(node, name, type, options) {
         }
     }
     node.addOutput(name, type, options);
+    return node.outputs.length - 1;
 }
 
 function getColorsForType(type) {
