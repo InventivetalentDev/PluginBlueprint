@@ -489,11 +489,14 @@ ipcMain.on("startServer", function (event, arg) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
+    if (logWin) logWin.destroy();
+    serverStarter.killInstance();
+
     logWin = new BrowserWindow({
         parent: win,
         width: 800,
         height: 1000,
-        modal: true,
+        modal: false,
         show: false,
         resizable: true,
         backgroundColor: "#373737"
