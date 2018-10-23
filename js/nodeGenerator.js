@@ -14,7 +14,7 @@ const methods = [];
 
 const canvasMenuData = {};
 
-const inputOutputSorter=function(a, b) {
+const inputOutputSorter = function (a, b) {
     var nameA = a.name.toUpperCase(); // ignore upper and lowercase
     var nameB = b.name.toUpperCase(); // ignore upper and lowercase
 
@@ -325,9 +325,10 @@ function getOrCreateBukkitClassNode(className) {
     function BukkitClassNode() {
         addClassIO(this, className);
 
-
-        this.inputs.sort(inputOutputSorter);
-        this.outputs.sort(inputOutputSorter);
+        if (this.inputs)
+            this.inputs.sort(inputOutputSorter);
+        if (this.outputs)
+            this.outputs.sort(inputOutputSorter);
 
         this.nodeType = "BukkitClassNode";
         if (eventClasses.indexOf(className) !== -1) {
@@ -380,7 +381,7 @@ function addClassIO(node, className, isChildCall) {
     if (!isChildCall && objectClasses.indexOf(className) !== -1 && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
         addNodeInput(node, "REF", className, {linkType: "ref", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
-    if (!isChildCall&&!classData.isEnum) {
+    if (!isChildCall && !classData.isEnum) {
         addNodeOutput(node, "THIS", className, {linkType: "this", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
 
@@ -403,9 +404,9 @@ function addClassIO(node, className, isChildCall) {
     //     //TODO: setters
     // }
 
-    if(classData.isEnum&&classData.enumConstants.length>0){
-       let i= addNodeOutput(node, classData.enumConstants[0], classData.name, {linkType: "enum", enumData: classData.enumConstants[0], colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
-       node.addProperty("en",classData.enumConstants[0],"enum",{values: classData.enumConstants})
+    if (classData.isEnum && classData.enumConstants.length > 0) {
+        let i = addNodeOutput(node, classData.enumConstants[0], classData.name, {linkType: "enum", enumData: classData.enumConstants[0], colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+        node.addProperty("en", classData.enumConstants[0], "enum", {values: classData.enumConstants})
         node.onDrawBackground = function () {
             this.outputs[i].label = "[" + this.properties.en + "]";
         };
@@ -550,8 +551,8 @@ function addMethodIO(node, classData, methodData) {
 
     let isLambda = classData.methods.length === 1 && classData.isInterface && methodData.isAbstract;
 
-    if(!isLambda)
-    addNodeInput(node,"EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    if (!isLambda)
+        addNodeInput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
     addNodeOutput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
 
     addNodeInput(node, "REF", classData.name + "#" + methodSignature, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
