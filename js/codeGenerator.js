@@ -136,7 +136,7 @@ function generateCodeForEventClassNode(graph, n, node) {
 
                 if (output.type === "@EXEC") {
                     execCode += nodeExec(linkInfo.target_id) + ";\n";
-                } else {
+                } else if(output.linkType!=="method") {
 
                     /* if (output.linkType === "method") {
                          generateMethod("event", output.methodData.name, node, output, targetNode, o, l);
@@ -144,12 +144,12 @@ function generateCodeForEventClassNode(graph, n, node) {
                      } else*/
                     fields.push("private " + output.type + nodeOutput(node.id, o) + ";");
                     if (output.linkType === "object") {
-                        code += nodeV(linkInfo.target_id) + " = event." + output.methodData.name.split("(")[0] + "();\n";//TODO: probably redundant
-                        code += nodeOutput(node.id, o) + " = event." + output.methodData.name.split("(")[0] + "();\n";
+                        code += nodeV(linkInfo.target_id) + " = event." + output.methodData.name + "();\n";//TODO: probably redundant
+                        code += nodeOutput(node.id, o) + " = event." + output.methodData.name+ "();\n";
                     } else if (output.linkType === "getter") {
-                        code += nodeOutput(node.id, o) + " = event." + output.methodData.name.split("(")[0] + "();\n";
+                        code += nodeOutput(node.id, o) + " = event." + output.methodData.name + "();\n";
                     } else {
-                        code += "  " + output.type + " output_" + o + "_" + l + " = event." + output.methodData.name.split("(")[0] + "();\n";
+                        code += "  " + output.type + " output_" + o + "_" + l + " = event." + output.methodData.name + "();\n";
                     }
                 }
 
