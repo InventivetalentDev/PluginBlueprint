@@ -342,43 +342,53 @@ function addClassIO(node, className, isChildCall) {
     let classData = classesByName[className];
 
     if (!isChildCall) {
-        if (eventClasses.indexOf(className) === -1 && enumClasses.indexOf(className) === -1&&classData.name!=="org.bukkit.plugin.java.JavaPlugin") {
-            node.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+        if (eventClasses.indexOf(className) === -1 && enumClasses.indexOf(className) === -1 && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
+            addNodeInput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
         }
-        if (enumClasses.indexOf(className) === -1&&classData.name!=="org.bukkit.plugin.java.JavaPlugin") {
-            node.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+        if (enumClasses.indexOf(className) === -1 && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
+            addNodeOutput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
         }
     }
 
-    if (!isChildCall && objectClasses.indexOf(className) !== -1&&classData.name!=="org.bukkit.plugin.java.JavaPlugin") {
-        node.addInput("REF", className, {linkType: "ref", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
+    if (!isChildCall && objectClasses.indexOf(className) !== -1 && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
+        addNodeInput(node, "REF", className, {linkType: "ref", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
     if (!isChildCall) {
-        node.addOutput("THIS", className, {linkType: "this", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
+        addNodeOutput(node, "THIS", className, {linkType: "this", shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON})
     }
 
     // for (let f = 0; f < classData.fields.length; f++) {
     //     let field = classData.fields[f];
     //     if (field.type === "boolean") {
-    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "getter", fieldData: field, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+    //         addNodeOutput(node,field.name, field.type+field.type_dimension, {linkType: "getter", fieldData: field, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
     //     } else if (field.type === "number" || field.type === "int" || field.type === "double" || field.type === "float" || field.type === "short"||field.type==="long"||field.type==="byte") {
-    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "getter", fieldData: field, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+    //         addNodeOutput(node,field.name, field.type+field.type_dimension, {linkType: "getter", fieldData: field, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
     //     } else if (field.type === "string" || field.type === "java.lang.String") {
-    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "getter", fieldData: field, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+    //         addNodeOutput(node,field.name, field.type+field.type_dimension, {linkType: "getter", fieldData: field, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
     //     } else if (objectClasses.indexOf(field.type) !== -1) {
-    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "object", fieldData: field, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+    //         addNodeOutput(node,field.name, field.type+field.type_dimension, {linkType: "object", fieldData: field, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
     //     }else if(enumClasses.indexOf(field.type)!==-1){
-    //         node.addOutput(field.name, field.type+field.type_dimension, {linkType: "enum", fieldData: field, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+    //         addNodeOutput(node,field.name, field.type+field.type_dimension, {linkType: "enum", fieldData: field, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
     //     } else {
-    //         // node.addOutput(field.name, field.type);
-    //         // node.addOutput(field.name, classData.name+"#"+methodSignature, {linkType: "method", fieldData: field, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
+    //         // addNodeOutput(node,field.name, field.type);
+    //         // addNodeOutput(node,field.name, classData.name+"#"+methodSignature, {linkType: "method", fieldData: field, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
     //     }
     //     //TODO: setters
     // }
 
     for (let f = 0; f < classData.enumConstants.length; f++) {
         let en = classData.enumConstants[f];
-        node.addOutput(en, classData.name, {linkType: "enum", enumData: en, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+        addNodeOutput(node, en, classData.name, {linkType: "enum", enumData: en, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+    }
+
+    if (!classData.isInterface && !classData.isAbstract) {
+        for (let c = 0; c < classData.constructors.length; c++) {
+            let constructor = classData.constructors[c];
+            for (let i = 0; i < constructor.parameters.length; i++) {
+                let param = constructor.parameters[i];
+                addNodeInput(node, param.name, param.type, {linkType: "constructorParam", constructorData: constructor})
+            }
+        }
     }
 
     for (let m = 0; m < classData.methods.length; m++) {
@@ -391,77 +401,33 @@ function addClassIO(node, className, isChildCall) {
         }
         let methodSignature = method.name + "(" + params.join(",") + ")";
 
-        let found = false;
-        if (node.inputs) {
-            for (let s = 0; s < node.inputs.length; s++) {
-                if (node.inputs[s].name === method.name || node.inputs[s].name === methodSignature) {
-                    found = true;
-                    break;
-                }
-            }
-        }
-        if (found) continue;
-        if (node.outputs) {
-            for (let s = 0; s < node.outputs.length; s++) {
-                if (node.outputs[s].name === method.name || node.outputs[s].name === methodSignature) {
-                    found = true;
-                    break;
-                }
-            }
-        }
-        if (found) continue;
 
-        let isLambda=classData.methods.length===1&&classData.isInterface&&method.isAbstract;
-
+        let isLambda = classData.methods.length === 1 && classData.isInterface && method.isAbstract;
 
         /*if (method.name.startsWith("get")) {
-            node.addOutput(method.name.substr(3), method.return_type);
+            addNodeOutput(node,method.name.substr(3), method.return_type);
         } else if (method.name.startsWith("set")) {
-            node.addInput(method.name.substr(3), method.return_type);
+            addNodeInput(node,method.name.substr(3), method.return_type);
         } else*/
         if (method.return_type === "void") {
-            if (method.parameters.length === 0) {
-                // if(isLambda){
-                //     node.addOutput(methodSignature, "@EXEC", {linkType: "abstractMethod", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.ABSTRACT_FUNCTION_OFF, colorOn: Colors.ABSTRACT_FUNCTION_OFF});
-                // }else if(classData.name==="org.bukkit.plugin.java.JavaPlugin"&&(method.name==="onEnable"||method.name==="onDisable"||method.name==="onCommand"||method.name==="onTabComplete")){
-                //     node.addOutput(methodSignature, "@EXEC", {linkType: "abstractMethod", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: Colors.ABSTRACT_FUNCTION_OFF, colorOn: Colors.ABSTRACT_FUNCTION_OFF});
-                // } else{
-                // node.addInput(method.name, LiteGraph.ACTION, {linkType: "trigger", methodData: method});
-                node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
-                // }
-            } else if (method.parameters.length === 1) {
-                // if (method.parameters[0].type === "boolean") {
-                //     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
-                // } else if (method.parameters[0].type === "number" || method.parameters[0].type === "int" || method.parameters[0].type === "double" || method.parameters[0].type === "float" || method.parameters[0].type === "short"||method.parameters[0].type==="long"||method.parameters[0].type==="byte") {
-                //     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
-                // } else if (method.parameters[0].type === "string" || method.parameters[0].type === "java.lang.String") {
-                //     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {linkType: "setter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
-                // } /*else if (objectClasses.indexOf(method.parameters[0].type) !== -1) {
-                //     node.addInput(method.name, method.parameters[0].type+method.parameters[0].type_dimension, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
-                // }*/ else {
-                // node.addInput(method.name, method.parameters[0].type);
-                node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
-                // }
-            } else {
-                node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
-            }
+            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF, colorOn: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON});
         } else if (method.parameters.length === 0) {
             if (method.return_type === "boolean") {
-                node.addOutput(method.name, method.return_type + method.return_type_dimension, {linkType: "getter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", methodData: method, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
             } else if (method.return_type === "number" || method.return_type === "int" || method.return_type === "double" || method.return_type === "float" || method.return_type === "short" || method.return_type === "long" || method.return_type === "byte") {
-                node.addOutput(method.name, method.return_type + method.return_type_dimension, {linkType: "getter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", methodData: method, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
             } else if (method.return_type === "string" || method.return_type === "java.lang.String") {
-                node.addOutput(method.name, method.return_type + method.return_type_dimension, {linkType: "getter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", methodData: method, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
             } else if (objectClasses.indexOf(method.return_type) !== -1) {
-                node.addOutput(method.name, method.return_type + method.return_type_dimension, {linkType: "object", methodData: method, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "object", methodData: method, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
             } else if (enumClasses.indexOf(method.return_type) !== -1) {
-                node.addOutput(method.name, method.return_type + method.return_type_dimension, {linkType: "enum", methodData: method, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "enum", methodData: method, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
             } else {
-                // node.addOutput(method.name, method.return_type);
-                node.addOutput(method.name, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
+                // addNodeOutput(node,method.name, method.return_type);
+                addNodeOutput(node, method.name, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF, colorOn: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON});
             }
         } else {
-            node.addOutput(methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE,  colorOff:isLambda ?Colors.ABSTRACT_FUNCTION_OFF: Colors.FUNCTION_OFF, colorOn:isLambda ?Colors.ABSTRACT_FUNCTION_ON: Colors.FUNCTION_ON});
+            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE, colorOff: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF, colorOn: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON});
         }
     }
 
@@ -517,7 +483,7 @@ function getOrCreateBukkitMethodNode(classMethodName) {
     function BukkitMethodNode() {
         addMethodIO(this, classData, methodData);
         this.nodeType = "BukkitMethodNode";
-        this.classData=classData;
+        this.classData = classData;
         this.methodData = methodData;
     }
 
@@ -546,95 +512,153 @@ function addMethodIO(node, classData, methodData) {
     }
     let methodSignature = methodData.name + "(" + params.join(",") + ")";
 
-    // node.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
-    node.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    let isLambda = classData.methods.length === 1 && classData.isInterface && methodData.isAbstract;
 
-    node.addInput("REF", classData.name + "#" + methodSignature, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
+    if(!isLambda)
+    addNodeInput(node,"EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    addNodeOutput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
 
-    if (classData.isInterface&&methodData.isAbstract&&methodData.return_type==="void"||(classData.name==="org.bukkit.plugin.java.JavaPlugin"&&(methodData.name==="onEnable"||methodData.name==="onDisable"||methodData.name==="onCommand"||methodData.name==="onTabComplete"))) {
-        node.isAbstractMethod=true;
+    addNodeInput(node, "REF", classData.name + "#" + methodSignature, {shape: LiteGraph.BOX_SHAPE, colorOff: Colors.FUNCTION_OFF, colorOn: Colors.FUNCTION_ON});
+
+
+    if (isLambda && methodData.return_type === "void" || (classData.name === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete"))) {
+        node.isAbstractMethod = true;
         node.color = Colors.ABSTRACT_FUNCTION_OFF;
         if (methodData.parameters.length === 0) {
-            // node.addInput(methodData.name, LiteGraph.ACTION);
+            // addNodeInput(node,methodData.name, LiteGraph.ACTION);
         } else {
             for (let p = 0; p < methodData.parameters.length; p++) {
                 let param = methodData.parameters[p];
 
                 if (param.type === "boolean") {
-                    node.addOutput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
                 } else if (param.type === "number" || param.type === "int" || param.type === "double" || param.type === "float" || param.type === "short" || param.type === "long") {
-                    node.addOutput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
                 } else if (param.type === "string" || param.type === "java.lang.String") {
-                    node.addOutput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
                 } else if (objectClasses.indexOf(param.type) !== -1) {
-                    node.addOutput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
                 } else if (enumClasses.indexOf(param.type) !== -1) {
-                    node.addOutput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
                 } else {
-                    node.addOutput(param.name, param.type + param.type_dimension, {paramData: param});
+                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param});
                 }
             }
         }
 
         if (methodData.return_type === "void") {
-            // node.addOutput("RETURN", LiteGraph.EVENT);
+            // addNodeOutput(node,"RETURN", LiteGraph.EVENT);
         } else {
             if (methodData.return_type === "boolean") {
-                node.addInput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+                addNodeInput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
             } else if (methodData.return_type === "number" || methodData.return_type === "int" || methodData.return_type === "double" || methodData.return_type === "float" || methodData.return_type === "short" || methodData.return_type === "long") {
-                node.addInput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+                addNodeInput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
             } else if (methodData.return_type === "string" || methodData.return_type === "java.lang.String") {
-                node.addInput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+                addNodeInput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
             } else if (objectClasses.indexOf(methodData.return_type) !== -1) {
-                node.addInput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+                addNodeInput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
             } else if (enumClasses.indexOf(methodData.return_type) !== -1) {
-                node.addInput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+                addNodeInput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
             } else {
-                node.addInput("RETURN", methodData.return_type + methodData.return_type_dimension);
+                addNodeInput(node, "RETURN", methodData.return_type + methodData.return_type_dimension);
             }
         }
     } else {
-        node.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+        // addNodeInput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
 
         if (methodData.parameters.length === 0) {
-            // node.addInput(methodData.name, LiteGraph.ACTION);
+            // addNodeInput(node,methodData.name, LiteGraph.ACTION);
         } else {
             for (let p = 0; p < methodData.parameters.length; p++) {
                 let param = methodData.parameters[p];
 
                 if (param.type === "boolean") {
-                    node.addInput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+                    addNodeInput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
                 } else if (param.type === "number" || param.type === "int" || param.type === "double" || param.type === "float" || param.type === "short" || param.type === "long") {
-                    node.addInput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+                    addNodeInput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
                 } else if (param.type === "string" || param.type === "java.lang.String") {
-                    node.addInput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+                    addNodeInput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
                 } else if (objectClasses.indexOf(param.type) !== -1) {
-                    node.addInput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+                    addNodeInput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
                 } else if (enumClasses.indexOf(param.type) !== -1) {
-                    node.addInput(param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+                    addNodeInput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
                 } else {
-                    node.addInput(param.name, param.type + param.type_dimension, {paramData: param});
+                    addNodeInput(node, param.name, param.type + param.type_dimension, {paramData: param});
                 }
             }
         }
 
         if (methodData.return_type === "void") {
-            // node.addOutput("RETURN", LiteGraph.EVENT);
+            // addNodeOutput(node,"RETURN", LiteGraph.EVENT);
         } else {
             if (methodData.return_type === "boolean") {
-                node.addOutput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+                addNodeOutput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
             } else if (methodData.return_type === "number" || methodData.return_type === "int" || methodData.return_type === "double" || methodData.return_type === "float" || methodData.return_type === "short" || methodData.return_type === "long") {
-                node.addOutput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+                addNodeOutput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
             } else if (methodData.return_type === "string" || methodData.return_type === "java.lang.String") {
-                node.addOutput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+                addNodeOutput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
             } else if (objectClasses.indexOf(methodData.return_type) !== -1) {
-                node.addOutput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+                addNodeOutput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
             } else if (enumClasses.indexOf(methodData.return_type) !== -1) {
-                node.addOutput("RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+                addNodeOutput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
             } else {
-                node.addOutput("RETURN", methodData.return_type + methodData.return_type_dimension);
+                addNodeOutput(node, "RETURN", methodData.return_type + methodData.return_type_dimension);
             }
         }
+    }
+}
+
+function addNodeInput(node, name, type, options) {
+    if (node.inputs) {
+        for (let s = 0; s < node.inputs.length; s++) {
+            if (node.inputs[s].name === name) {
+                return;
+            }
+        }
+    }
+    if (!options.colorOn && !options.colorOff) {
+        let colors = getColorsForType(type);
+        if (colors) {
+            options.colorOn = colors[0];
+            options.colorOff = colors[1];
+        }
+    }
+    node.addInput(name, type, options);
+}
+
+function addNodeOutput(node, name, type, options) {
+    if (node.outputs) {
+        for (let s = 0; s < node.outputs.length; s++) {
+            if (node.outputs[s].name === name) {
+                return;
+            }
+        }
+    }
+    if (!options.colorOn && !options.colorOff) {
+        let colors = getColorsForType(type);
+        if (colors) {
+            options.colorOn = colors[0];
+            options.colorOff = colors[1];
+        }
+    }
+    node.addOutput(name, type, options);
+}
+
+function getColorsForType(type) {
+    switch (type) {
+        case "boolean":
+            return [Colors.BOOLEAN_ON, Colors.BOOLEAN_OFF];
+        case "string":
+        case "java.lang.String":
+            return [Colors.STRING_ON, Colors.STRING_OFF];
+        case "byte":
+        case "char":
+        case "short":
+        case "int":
+        case "long":
+        case "float":
+        case "double":
+            return [Colors.NUMBER_ON, Colors.NUMBER_OFF];
     }
 }
 
