@@ -21,6 +21,7 @@
         </div>
         <script>
             const {ipcRenderer} = require("electron");
+            const {Menu, getCurrentWindow} = require("electron").remote;
             const $ = require("jquery");
 
             String.prototype.replaceAll = function (search, replacement) {
@@ -28,13 +29,44 @@
                 return target.replace(new RegExp(search, 'g'), replacement);
             };
 
+            let followLog = true;
+
+            getCurrentWindow().setMenu(Menu.buildFromTemplate([
+                {
+                    label: "Log",
+                    submenu: [
+                        {
+                            label: "Follow Log", type: "checkbox",checked:true,  click: (item) => {
+                                console.log(item);
+                                // item.checked = !item.checked;
+                                followLog = item.checked;
+                            }
+                        }
+                    ]
+                },
+                {
+                    label: "Server",
+                    submenu: [
+                        {
+                            label: "Stop Server", click: () => {
+                                ipcRenderer.send("stopServer");
+                            }
+                        }
+                    ]
+                }
+            ]));
+
             ipcRenderer.on("log", function (event, arg) {
                 let content = arg.content.replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
                 let entry = $("<div class='entry " + arg.type + "'>" + content + "</div>");
-                if (content.indexOf("ERROR") !== -1) entry.addClass("err");
-                if (content.indexOf("WARN") !== -1) entry.addClass("warn");
-                entry.appendTo($("#log"))
-                window.scrollTo(0, document.body.scrollHeight);
+                if(arg.type==="out") {
+                    if (content.indexOf("ERROR") !== -1) entry.addClass("err");
+                    if (content.indexOf("WARN") !== -1) entry.addClass("warn");
+                }
+                entry.appendTo($("#log"));
+                if (followLog) {
+                    window.scrollTo(0, document.body.scrollHeight);
+                }
             })
 
             window.onbeforeunload = function (e) {
