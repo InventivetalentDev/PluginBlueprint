@@ -132,10 +132,12 @@
             }
 
             function saveGraph() {
+                $("#overlay").fadeIn();
                 ipcRenderer.send("saveGraphData", graph.serialize());
             }
 
             function saveGraphAndClose() {
+                $("#overlay").fadeIn();
                 ipcRenderer.send("saveGraphDataAndClose", graph.serialize());
             }
 
@@ -274,6 +276,9 @@
             ipcRenderer.on("generateError",function (event,arg) {
                 $("#overlay").fadeOut();
                 console.error(arg);
+            });
+            ipcRenderer.on("graphDataSaved",function (event,arg) {
+                $("#overlay").fadeOut();
             })
         </script>
     </body>
