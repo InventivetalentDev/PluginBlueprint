@@ -399,7 +399,7 @@ function generateCodeForMethodNode(graph, n, node) {
         if (i === 0) continue;// EXEC
         if (i === 1) {// param opening bracket
             code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.name.split("(")[0]);
-            if (sourceNode.classType === "enum") {
+            if (sourceNode.classType === "enum"||sourceOutput.methodData.isStatic) {
                 code += " " + sourceNode.classData.name + "." + sourceOutput.name.split("(")[0] + "(";
             } else if (!node.isAbstractMethod) {
                 code += nodeV(linkInfo.origin_id) + "." + sourceOutput.name.split("(")[0] + "(";
