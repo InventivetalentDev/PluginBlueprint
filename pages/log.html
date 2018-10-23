@@ -19,8 +19,13 @@
             const {ipcRenderer} = require("electron");
             const $ = require("jquery");
 
+            String.prototype.replaceAll = function(search, replacement) {
+                var target = this;
+                return target.replace(new RegExp(search, 'g'), replacement);
+            };
+
             ipcRenderer.on("log", function (event, arg) {
-                $("#log").append("<div class='entry " + arg.type + "'>" + arg.content + "</div>");
+                $("#log").append("<div class='entry " + arg.type + "'>" + arg.content.replaceAll("\n", "<br/>").replaceAll("\t","&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ","&nbsp;") + "</div>");
                 window.scrollTo(0, document.body.scrollHeight);
             })
 
