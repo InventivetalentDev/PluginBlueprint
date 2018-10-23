@@ -411,7 +411,8 @@ function makePluginYml() {
     return "name: " + currentProject.name +
         "\nversion: " + currentProject.version +
         "\nmain: " + currentProject.package + ".GeneratedPlugin" +
-        "\nauthor: " + currentProject.author;
+        "\nauthor: " + currentProject.author+
+        "\napi-version: 1.13";
 }
 
 function compile() {
