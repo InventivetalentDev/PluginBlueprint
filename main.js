@@ -55,6 +55,7 @@ function createWindow() {
             e.preventDefault();
         } else {
             serverStarter.killInstance();
+            logWin = null;
         }
     })
 
@@ -493,6 +494,7 @@ ipcMain.on("startServer", function (event, arg) {
         return;
     }
     if (logWin) logWin.destroy();
+    logWin = null;
     serverStarter.killInstance();
 
     logWin = new BrowserWindow({
@@ -536,6 +538,7 @@ ipcMain.on("sendServerCommand", function (event, arg) {
 
 ipcMain.on("stopServer", function (event, arg) {
     if (logWin) logWin.destroy();
+    logWin = null;
     serverStarter.killInstance();
 });
 
