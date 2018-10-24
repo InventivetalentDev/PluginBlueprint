@@ -28,7 +28,7 @@ function createWindow() {
         width: 1200,
         height: 800,
         show: false,
-        icon: path.join(__dirname, 'assets/icons/favicon.ico'),
+        icon: path.join(__dirname, 'assets/images/favicon.ico'),
         backgroundColor: "#373737",
     })
 
@@ -50,7 +50,7 @@ function createWindow() {
         let c = dialog.showMessageBox({
             message: "Are you sure you want to exit?",
             buttons: ["Yes", "No"],
-            icon: path.join(__dirname, 'assets/icons/favicon.ico')
+            icon: path.join(__dirname, 'assets/images/favicon.ico')
         })
         if (c === 1) {
             e.preventDefault();
@@ -165,7 +165,8 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
 
             dialog.showMessageBox({
                 title: "Select spigot.jar location",
-                message: "Please select the location of a valid spigot.jar executable"
+                message: "Please select the location of a valid spigot.jar executable",
+                icon: path.join(__dirname, 'assets/images/favicon.ico')
             }, () => {
                 let libPath = dialog.showOpenDialog({
                     properties: ["openFile"],
@@ -506,7 +507,7 @@ ipcMain.on("startServer", function (event, arg) {
         show: false,
         resizable: true,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/icons/favicon.ico')
+        icon: path.join(__dirname, 'assets/images/favicon.ico')
     });
     logWin.setMenu(null);
     logWin.setTitle("PluginBlueprint Test Server")
