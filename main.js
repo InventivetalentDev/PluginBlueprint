@@ -166,6 +166,7 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
             dialog.showMessageBox({
                 title: "Select spigot.jar location",
                 message: "Please select the location of a valid spigot.jar executable",
+                buttons: ["Select"],
                 icon: path.join(__dirname, 'assets/images/logo-x64.png')
             }, () => {
                 let libPath = dialog.showOpenDialog({
