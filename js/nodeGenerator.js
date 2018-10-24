@@ -566,19 +566,20 @@ function addMethodIO(node, classData, methodData) {
         } else {
             for (let p = 0; p < methodData.parameters.length; p++) {
                 let param = methodData.parameters[p];
+                let paramType =methodData.parameters[p].typeParameter?"java.lang.Object": param.type;
 
-                if (param.type === "boolean") {
-                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
-                } else if (param.type === "number" || param.type === "int" || param.type === "double" || param.type === "float" || param.type === "short" || param.type === "long") {
-                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
-                } else if (param.type === "string" || param.type === "java.lang.String") {
-                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+                if (paramType=== "boolean") {
+                    addNodeOutput(node, param.name, paramType+ param.type_dimension, {paramData: param, colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+                } else if (paramType=== "number" || paramType=== "int" || paramType=== "double" || paramType=== "float" || paramType=== "short" || paramType=== "long") {
+                    addNodeOutput(node, param.name, paramType+ param.type_dimension, {paramData: param, colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+                } else if (paramType=== "string" || paramType=== "java.lang.String") {
+                    addNodeOutput(node, param.name, paramType+ param.type_dimension, {paramData: param, colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
                 } else if (objectClasses.indexOf(param.type) !== -1) {
-                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
+                    addNodeOutput(node, param.name, paramType+ param.type_dimension, {paramData: param, colorOff: Colors.OBJECT_OFF, colorOn: Colors.OBJECT_ON});
                 } else if (enumClasses.indexOf(param.type) !== -1) {
-                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
+                    addNodeOutput(node, param.name, paramType+ param.type_dimension, {paramData: param, colorOff: Colors.ENUM_OFF, colorOn: Colors.ENUM_ON});
                 } else {
-                    addNodeOutput(node, param.name, param.type + param.type_dimension, {paramData: param});
+                    addNodeOutput(node, param.name, paramType+ param.type_dimension, {paramData: param});
                 }
             }
         }

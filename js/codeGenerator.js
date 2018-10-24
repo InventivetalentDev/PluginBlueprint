@@ -136,7 +136,7 @@ function generateCodeForEventClassNode(graph, n, node) {
 
                 if (output.type === "@EXEC") {
                     execCode += nodeExec(linkInfo.target_id) + ";\n";
-                } else if(output.linkType!=="method") {
+                } else if (output.linkType !== "method") {
 
                     /* if (output.linkType === "method") {
                          generateMethod("event", output.methodData.name, node, output, targetNode, o, l);
@@ -145,7 +145,7 @@ function generateCodeForEventClassNode(graph, n, node) {
                     fields.push("private " + output.type + nodeOutput(node.id, o) + ";");
                     if (output.linkType === "object") {
                         code += nodeV(linkInfo.target_id) + " = event." + output.methodData.name + "();\n";//TODO: probably redundant
-                        code += nodeOutput(node.id, o) + " = event." + output.methodData.name+ "();\n";
+                        code += nodeOutput(node.id, o) + " = event." + output.methodData.name + "();\n";
                     } else if (output.linkType === "getter") {
                         code += nodeOutput(node.id, o) + " = event." + output.methodData.name + "();\n";
                     } else {
@@ -247,7 +247,7 @@ function generateCodeForObjectClassNode(graph, n, node) {
     }
 
     let hasRef = false;
-    if(node.inputs) {
+    if (node.inputs) {
         for (let i = 0; i < node.inputs.length; i++) {
             let input = node.inputs[i];
             if (!input) continue;
@@ -287,13 +287,18 @@ function generateCodeForObjectClassNode(graph, n, node) {
                     if (output.linkType === "abstractMethod") {
                         let params = [];
                         for (let p = 0; p < output.methodData.parameters.length; p++) {
-                            params.push(output.methodData.parameters[p].type + " " + output.methodData.parameters[p].name);
+                            let pType = output.methodData.parameters[p].typeParameter ? "java.lang.Object" : output.methodData.parameters[p].type;
+                            console.log(output.methodData.parameters[p]);
+                            console.log(pType)
+                            params.push(pType + " " + output.methodData.parameters[p].name);
                         }
                         initCode += "    public void " + output.methodData.name + "(" + params.join(",") + ") {\n";
                         for (let l = 0; l < output.links.length; l++) {
                             let linkInfo = graph.links[output.links[l]];
                             if (!linkInfo) continue;
                             for (let p = 0; p < output.methodData.parameters.length; p++) {
+                                let pType = output.methodData.parameters[p].typeParameter ? "java.lang.Object" : output.methodData.parameters[p].type;
+                                fields.push("private " + pType + nodeOutput(linkInfo.target_id,1 + p) + ";");
                                 initCode += nodeOutput(linkInfo.target_id, 1 + p) + " = " + output.methodData.parameters[p].name + ";\n"
                             }
                             initCode += nodeExec(linkInfo.target_id) + ";\n"
@@ -311,9 +316,9 @@ function generateCodeForObjectClassNode(graph, n, node) {
             for (let i = 0; i < node.inputs.length; i++) {
                 let input = node.inputs[i];
                 if (!input) continue;
-                if(input.type==="@EXEC")continue;
+                if (input.type === "@EXEC") continue;
                 let linkInfo = graph.links[input.link];
-                if (!input.link||!linkInfo) {
+                if (!input.link || !linkInfo) {
                     // params.push("null");
                     continue;
                 }
@@ -399,7 +404,7 @@ function generateCodeForMethodNode(graph, n, node) {
         if (i === 0) continue;// EXEC
         if (i === 1) {// param opening bracket
             code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
-            if (sourceNode.classType === "enum"||sourceOutput.methodData.isStatic) {
+            if (sourceNode.classType === "enum" || sourceOutput.methodData.isStatic) {
                 code += " " + sourceNode.classData.name + "." + sourceOutput.methodData.name.split("(")[0] + "(";
             } else if (!node.isAbstractMethod) {
                 code += nodeV(linkInfo.origin_id) + "." + sourceOutput.methodData.name.split("(")[0] + "(";
