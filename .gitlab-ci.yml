@@ -28,3 +28,4 @@ dist_linux:
     paths:
       - dist/out/*.snap
       - dist/out/*.AppImage
+      - dist/out/*.deb
