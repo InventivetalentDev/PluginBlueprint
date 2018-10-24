@@ -9,6 +9,11 @@
                 padding: 0;
             }
 
+            #mycanvas {
+                width: 100%;
+                height: 100%;
+            }
+
             #overlay {
                 position: absolute;
                 width: 100%;
@@ -63,15 +68,11 @@
                 console.log(node)
             }
 
-            function resizeCanvas() {
-                let width = window.innerWidth;
-                let height = window.innerHeight;
-
-                canvas.resize(width, height);
-            }
-
-            window.addEventListener("resize", resizeCanvas);
-            resizeCanvas();
+            window.addEventListener("resize", function () {
+                canvas.resize();
+            });
+            window.addEventListener("keydown", canvas.processKey.bind(canvas));
+            canvas.resize();
 
             console.log("Initializing Bukkit Node generator...")
             NodeGenerator.init().then(() => {
@@ -239,15 +240,15 @@
                     ]
                 },
                 {
-                    label:"Run",
-                    submenu:[
+                    label: "Run",
+                    submenu: [
                         {
-                            label:"Start Server",click:()=>{
+                            label: "Start Server", click: () => {
                                 ipcRenderer.send("startServer");
                             }
                         },
                         {
-                            label:"Stop Server",click:()=>{
+                            label: "Stop Server", click: () => {
                                 ipcRenderer.send("stopServer");
                             }
                         }
@@ -270,14 +271,14 @@
                 }
                 $("#overlay").fadeOut();
             })
-            ipcRenderer.on("generateDone",function (event,arg) {
+            ipcRenderer.on("generateDone", function (event, arg) {
                 $("#overlay").fadeOut();
             })
-            ipcRenderer.on("generateError",function (event,arg) {
+            ipcRenderer.on("generateError", function (event, arg) {
                 $("#overlay").fadeOut();
                 console.error(arg);
             });
-            ipcRenderer.on("graphDataSaved",function (event,arg) {
+            ipcRenderer.on("graphDataSaved", function (event, arg) {
                 $("#overlay").fadeOut();
             })
         </script>
