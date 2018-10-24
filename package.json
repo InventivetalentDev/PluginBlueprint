@@ -40,6 +40,9 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     },
+    "linux": {
+      "icon": "icon.png"
+    },
     "fileAssociations": [
       {
         "ext": "pbp",
