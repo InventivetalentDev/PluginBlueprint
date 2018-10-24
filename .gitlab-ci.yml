@@ -13,6 +13,7 @@ test:
   
 dist_win:
   stage: build
+  image: electronuserland/builder:wine
   script: npm run dist:win
   artifacts:
     paths:
@@ -20,6 +21,7 @@ dist_win:
   
 dist_linux:
   stage: build
+  image: electronuserland/builder:10
   script: npm run dist:linux
   artifacts:
     paths:
