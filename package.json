@@ -10,9 +10,9 @@
     "setup": "electron-installer-windows --config setupConfig.json",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "dist:win":"electron-builder --win",
-    "dist:linux":"electron-builder --linux",
-    "dist:all":"electron-builder -wl"
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux",
+    "dist:all": "electron-builder -wl"
   },
   "files": [
     "**/*",
