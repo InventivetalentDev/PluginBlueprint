@@ -20,6 +20,8 @@ let currentProjectPath;
 let recentProjects = [];
 
 function createWindow() {
+    console.log("Hai!")
+
     // Create the browser window.
     win = new BrowserWindow({
         title: "PluginBlueprint Editor",
@@ -479,7 +481,8 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
         modal: true,
         show: false,
         resizable: false,
-        backgroundColor: "#373737"
+        backgroundColor: "#373737",
+        icon: path.join(__dirname, 'assets/icons/favicon.ico')
     });
     child.loadFile('pages/infoEditor.html');
     child.show()
@@ -499,7 +502,8 @@ ipcMain.on("startServer", function (event, arg) {
         modal: false,
         show: false,
         resizable: true,
-        backgroundColor: "#373737"
+        backgroundColor: "#373737",
+        icon: path.join(__dirname, 'assets/icons/favicon.ico')
     });
     logWin.setMenu(null);
     logWin.setTitle("PluginBlueprint Test Server")
