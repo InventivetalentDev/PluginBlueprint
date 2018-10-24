@@ -49,7 +49,8 @@ function createWindow() {
     win.on("close", function (e) {
         let c = dialog.showMessageBox({
             message: "Are you sure you want to exit?",
-            buttons: ["Yes", "No"]
+            buttons: ["Yes", "No"],
+            icon: path.join(__dirname, 'assets/icons/favicon.ico')
         })
         if (c === 1) {
             e.preventDefault();
