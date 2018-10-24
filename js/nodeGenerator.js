@@ -439,7 +439,7 @@ function addClassIO(node, className, isChildCall) {
         let methodSignature = method.name + "(" + params.join(",") + ")";
 
 
-        let isLambda = classData.methods.length === 1 && classData.isInterface && method.isAbstract;
+        let isLambda = checkLambda(classData, method);
 
         /*if (method.name.startsWith("get")) {
             addNodeOutput(node,method.name.substr(3), method.return_type);
@@ -549,7 +549,7 @@ function addMethodIO(node, classData, methodData) {
     }
     let methodSignature = methodData.name + "(" + params.join(",") + ")";
 
-    let isLambda = classData.methods.length === 1 && classData.isInterface && methodData.isAbstract;
+    let isLambda = checkLambda(classData, methodData);
 
     if (!isLambda)
         addNodeInput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
@@ -645,6 +645,18 @@ function addMethodIO(node, classData, methodData) {
     }
 }
 
+function checkLambda(classData, methodData) {
+    return (classData.methods.length === 1 || countNonDefaultMethods(classData) === 1) && classData.isInterface && methodData.isAbstract
+}
+
+function countNonDefaultMethods(classData) {
+    let c = 0;
+    for (let m = 0; m < classData.methods.length; m++) {
+        if (!classData.methods[m].isDefault) c++;
+    }
+    return c;
+}
+
 function addNodeInput(node, name, type, options) {
     if (node.inputs) {
         for (let s = 0; s < node.inputs.length; s++) {
@@ -653,7 +665,7 @@ function addNodeInput(node, name, type, options) {
             }
         }
     }
-    if (!options||(!options.colorOn && !options.colorOff)) {
+    if (!options || (!options.colorOn && !options.colorOff)) {
         let colors = getColorsForType(type);
         if (colors) {
             options.colorOn = colors[0];
@@ -672,7 +684,7 @@ function addNodeOutput(node, name, type, options) {
             }
         }
     }
-    if (!options||(!options.colorOn && !options.colorOff)) {
+    if (!options || (!options.colorOn && !options.colorOff)) {
         let colors = getColorsForType(type);
         if (colors) {
             options.colorOn = colors[0];
