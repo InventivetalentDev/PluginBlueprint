@@ -653,7 +653,7 @@ function addNodeInput(node, name, type, options) {
             }
         }
     }
-    if (!options.colorOn && !options.colorOff) {
+    if (!options||(!options.colorOn && !options.colorOff)) {
         let colors = getColorsForType(type);
         if (colors) {
             options.colorOn = colors[0];
@@ -672,7 +672,7 @@ function addNodeOutput(node, name, type, options) {
             }
         }
     }
-    if (!options.colorOn && !options.colorOff) {
+    if (!options||(!options.colorOn && !options.colorOff)) {
         let colors = getColorsForType(type);
         if (colors) {
             options.colorOn = colors[0];
