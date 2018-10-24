@@ -31,7 +31,8 @@
     "files": [
       "**/*",
       "data/*",
-      "assets/*",
+      "assets/images/*",
+      "assets/material-icons/*",
       "node_modules/litegraph.js/css/*",
       "node_modules/materialize-css/dist/css/*"
     ],
