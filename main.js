@@ -50,7 +50,7 @@ function createWindow() {
         let c = dialog.showMessageBox({
             message: "Are you sure you want to exit?",
             buttons: ["Yes", "No"],
-            icon: path.join(__dirname, 'assets/images/favicon.ico')
+            icon: path.join(__dirname, 'assets/images/logo-x64.png')
         })
         if (c === 1) {
             e.preventDefault();
@@ -166,7 +166,7 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
             dialog.showMessageBox({
                 title: "Select spigot.jar location",
                 message: "Please select the location of a valid spigot.jar executable",
-                icon: path.join(__dirname, 'assets/images/favicon.ico')
+                icon: path.join(__dirname, 'assets/images/logo-x64.png')
             }, () => {
                 let libPath = dialog.showOpenDialog({
                     properties: ["openFile"],
