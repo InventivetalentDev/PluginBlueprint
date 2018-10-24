@@ -9,7 +9,10 @@
     "build": "electron-packager . --out=dist/win --platform=win32 --arch=x64 --icon=assets/images/favicon.ico --asar=true --overwrite",
     "setup": "electron-installer-windows --config setupConfig.json",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "dist:win":"electron-builder --win",
+    "dist:linux":"electron-builder --linux",
+    "dist:all":"electron-builder -wl"
   },
   "files": [
     "**/*",
