@@ -1,0 +1,23 @@
+image: node:latest
+
+stages:
+  - test
+  - build
+
+test:
+  stage: test
+  script: npm run test
+  
+dist_win:
+  stage: build
+  script: npm run dist:win
+  artifacts:
+    paths:
+      - dist/out
+  
+dist_linux:
+  stage: build
+  script: npm run dist:linux
+  artifacts:
+    paths:
+      - dist/out
