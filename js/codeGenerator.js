@@ -70,7 +70,9 @@ function generateClassCode(graph, projectInfo) {
         "/******************************************************************/\n" +
         "public class GeneratedPlugin extends org.bukkit.plugin.java.JavaPlugin implements org.bukkit.event.Listener {\n" +
         "\n" +
+        "\n/*** Start Fields ***/\n" +
         fields.join("\n") +
+        "\n/*** End Fields ***/\n" +
         "\n\n" +
         "@java.lang.Override\n" +
         "public void onEnable() {\n" +
@@ -84,18 +86,29 @@ function generateClassCode(graph, projectInfo) {
         "public void onDisable() {\n" +
         onDisableMethods.join("\n") +
         "}\n" +
-        "\n" +
+        "\n/*** Start Event Listeners ***/\n" +
         eventListenerMethods.join("\n") +
-        "\n\n" +
+        "\n/*** End Event Listeners ***/\n" +
+        "\n" +
+        "\n/*** Start Object Methods ***/\n" +
         objectMethods.join("\n") +
-        "\n\n" +
+        "\n/*** End Object Methods ***/\n" +
+        "\n" +
+        "\n/*** Start Enum Methods ***/\n" +
         enumMethods.join("\n") +
-        "\n\n" +
+        "\n/*** End Enum Methods ***/\n" +
+        "\n" +
+        "\n/*** Start Generated Methods ***/\n" +
         generatedMethods.join("\n") +
-        "\n\n" +
+        "\n/*** End Generated Methods ***/\n" +
+        "\n" +
+        "\n/*** Start Method Calls ***/\n" +
         methodCalls.join("\n") +
-        "\n\n" +
+        "\n/*** End Method Calls ***/\n" +
+        "\n" +
+        "\n/*** Start Native Calls ***/\n" +
         nativeCalls.join("\n") +
+        "\n/*** End Native Calls ***/\n" +
         "\n" +
         "}\n";
 
@@ -105,6 +118,7 @@ function generateClassCode(graph, projectInfo) {
     fields.splice(0, fields.length);
     eventListenerMethods.splice(0, eventListenerMethods.length);
     onLoadMethods.splice(0, onLoadMethods.length);
+    javaPluginMethods.splice(0, javaPluginMethods.length);
     onEnableMethods.splice(0, onEnableMethods.length);
     onDisableMethods.splice(0, onDisableMethods.length);
     onCommandMethods.splice(0, onCommandMethods.length);
@@ -118,7 +132,7 @@ function generateClassCode(graph, projectInfo) {
     return classCode;
 }
 
-function generateCodeForEventClassNode(graph, n, node,classData) {
+function generateCodeForEventClassNode(graph, n, node, classData) {
     let code = "" +
         "@org.bukkit.event.EventHandler\n" +
         "public void on(" + node.type + " event) {\n";
@@ -217,7 +231,7 @@ function generateSetterMethodCall(methodName, targetNode, targetInput, inputInde
     return "node_" + targetNode.id + "_in_" + inputIndex;
 }
 
-function generateCodeForObjectClassNode(graph, n, node,classData) {
+function generateCodeForObjectClassNode(graph, n, node, classData) {
     let field = "private " + node.type + nodeV(node.id) + ";";
 
     let code = "// CLASS EXECUTION for " + node.title + "\n" +
@@ -358,7 +372,7 @@ function generateCodeForObjectClassNode(graph, n, node,classData) {
     return field;
 }
 
-function generateCodeForEnumClassNode(graph, n, node,classData) {
+function generateCodeForEnumClassNode(graph, n, node, classData) {
     for (let o = 0; o < node.outputs.length; o++) {
         let output = node.outputs[o];
         if (!output) continue;
@@ -371,8 +385,8 @@ function generateCodeForEnumClassNode(graph, n, node,classData) {
     }
 }
 
-function generateCodeForMethodNode(graph, n, node,classData,methodData) {
-    let code = "// METHOD EXECUTION for "+classData.name+"#"+methodData.name+"\n" +
+function generateCodeForMethodNode(graph, n, node, classData, methodData) {
+    let code = "// METHOD EXECUTION for " + classData.name + "#" + methodData.name + "\n" +
         "private void node_" + node.id + "_exec() {\n";
 
     let execCode = "";
