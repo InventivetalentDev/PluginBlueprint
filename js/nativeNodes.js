@@ -13,15 +13,9 @@ StringConstant.prototype.color = Colors.STRING_OFF;
 StringConstant.prototype.onDrawBackground = function () {
     this.outputs[0].label = this.properties.string;
 };
-StringConstant.prototype.getNativeType = function () {
-    return "java.lang.String";
-};
-StringConstant.prototype.getOutputIndex = function () {
-    return 0;
-};
-StringConstant.prototype.getOutputCode = function () {
-    return "\"" + this.properties.string + "\"";
-};
+StringConstant.prototype.getFields = function (output) {
+    return ["java.lang.String " + output[0]+ " = \"" + this.properties.string + "\""];
+}
 
 // Number Constant
 
@@ -38,15 +32,9 @@ NumberConstant.prototype.onDrawBackground = function () {
     this.outputs[0].label = this.properties.type + " " + this.properties.number;
     this.outputs[0].type = this.properties.type;
 };
-NumberConstant.prototype.getNativeType = function () {
-    return this.properties.type;
-};
-NumberConstant.prototype.getOutputIndex = function () {
-    return 0;
-};
-NumberConstant.prototype.getOutputCode = function () {
-    return this.properties.number;
-};
+NumberConstant.prototype.getFields = function (output) {
+    return [this.type+" " + output[0]+ " = " + this.properties.number];
+}
 
 // Boolean Constant
 
@@ -61,15 +49,9 @@ BooleanConstant.prototype.color = Colors.BOOLEAN_OFF;
 BooleanConstant.prototype.onDrawBackground = function () {
     this.outputs[0].label = this.properties.value;
 };
-BooleanConstant.prototype.getNativeType = function () {
-    return "boolean";
-};
-BooleanConstant.prototype.getOutputIndex = function () {
-    return 0;
-};
-BooleanConstant.prototype.getOutputCode = function () {
-    return this.properties.value;
-};
+BooleanConstant.prototype.getFields = function (output) {
+    return ["boolean " + output[0]+ "= " + this.properties.value];
+}
 
 // Cast
 
@@ -86,14 +68,14 @@ Cast.title = "Cast";
 Cast.prototype.onDrawBackground = function () {
     this.outputs[1].label = "(" + this.properties.castTo + ")";
 };
-Cast.prototype.getNativeType = function () {
-    return this.properties.castTo;
+Cast.prototype.getFields = function (output) {
+    return [this.properties.castTo+" " + output[1]];
+}
+Cast.prototype.getMethodBody = function (input, output) {
+    return output[1] + " = ("+this.properties.castTo+") " + input[1]+";";
 };
-Cast.prototype.getOutputIndex = function () {
-    return 1;
-};
-Cast.prototype.getOutputCode = function (input) {
-    return "(" + this.properties.castTo + ") " + input + ";";
+Cast.prototype.getExecAfter=function (exec,i) {
+    return exec[0][i];
 };
 
 // Console Log
@@ -105,14 +87,11 @@ function ConsoleLog() {
 }
 
 ConsoleLog.title = "ConsoleLog";
-ConsoleLog.prototype.getNativeType = function () {
-    return "";
-};
-ConsoleLog.prototype.getOutputIndex = function () {
-    return -1;
-};
-ConsoleLog.prototype.getOutputCode = function (input) {
-    return "System.out.println(" + input + ");";
+ConsoleLog.prototype.getFields = function (output) {
+    return [];
+}
+ConsoleLog.prototype.getMethodBody = function (input, output) {
+    return "java.lang.System.out.println("+input[1]+");";
 };
 
 

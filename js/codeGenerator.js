@@ -162,16 +162,16 @@ function generateCodeForEventClassNode(graph, n, node, classData) {
                     execCode += nodeExec(linkInfo.target_id) + ";\n";
                 } else if (output.linkType === "this") {
                     fields.push("private " + node.type + " " + nodeOutput(node.id, o) + ";");
-                    code +=nodeOutput(node.id, o) + " = event;\n";
+                    code += nodeOutput(node.id, o) + " = event;\n";
                 } else if (output.linkType !== "method") {
-                    let methodData = classStore.getMethod(classData.name, output.methodSignature);
+                    let methodData = classStore.getMethod(output.className, output.methodSignature);
                     /* if (output.linkType === "method") {
                          generateMethod("event", output.methodData.name, node, output, targetNode, o, l);
 
                      } else*/
                     fields.push("private " + output.type + nodeOutput(node.id, o) + ";");
                     if (output.linkType === "object") {
-                        code += nodeV(linkInfo.target_id) + " = event." + methodData.name + "();\n";//TODO: probably redundant
+                        // code += nodeV(linkInfo.target_id) + " = event." + methodData.name + "();\n";//TODO: probably redundant
                         code += nodeOutput(node.id, o) + " = event." + methodData.name + "();\n";
                     } else if (output.linkType === "getter") {
                         code += nodeOutput(node.id, o) + " = event." + methodData.name + "();\n";
@@ -478,101 +478,167 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
 }
 
 function generateCodeForNativeNode(graph, n, node) {
-    console.log(node)
-    if (!node.getOutputCode) return;
 
     let inputVars = [];
     if (node.inputs) {
         for (let i = 0; i < node.inputs.length; i++) {
             let input = node.inputs[i];
             if (!input) continue;
-            if (!input.link) continue;
-            let linkInfo = graph.links[input.link];
-            if (!linkInfo) continue;
-            if (input.type === "@EXEC") continue;
+            let linkInfo = input.link ? graph.links[input.link] : null;
 
-            inputVars.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
+            inputVars.push(linkInfo ? nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) : null);
         }
     }
 
-    let outputCode = node.getOutputCode(inputVars);
+    let outputVars = [];
+    let outputExecs = [];
+    if (node.outputs) {
+        for (let i = 0; i < node.outputs.length; i++) {
+            let output = node.outputs[i];
+            if (!output) continue;
+
+            outputVars.push(nodeOutput(node.id, i));
+
+            if (output.type === "@EXEC") {
+                let links = [];
+                if (output.links) {
+                    for (let l = 0; l < output.links.length; l++) {
+                        links.push("node_" + graph.links[output.links[l]].target_id + "_exec();")
+                    }
+                }
+                outputExecs.push(links);
+            }
+        }
+    }
+
+    console.log(outputVars);
+    console.log(outputExecs);
+
+    let fields1 = node.getFields ? node.getFields(outputVars) : null;
+    let body = node.getMethodBody ? node.getMethodBody(inputVars, outputVars) : null;
+
 
     let code = "";
-    if ((!node.inputs || node.inputs.length === 0) && node.outputs && node.outputs.length > 0) {
-        if (!node.getNativeType) return;
 
-        let nativeType = node.getNativeType();
-        let outputIndex = node.getOutputIndex();
-
-
-        if (!Array.isArray(nativeType) && !Array.isArray(outputCode)) {
-            if (!outputIndex) outputIndex = 0;
-            fields.push("private " + nativeType + nodeOutput(node.id, outputIndex) + " = " + outputCode + ";");
-        } else if (Array.isArray(nativeType) && Array.isArray(outputCode)) {
-            if (nativeType.length !== outputCode.length) {
-                console.error("Array length mismatch for native node " + node.name);
-                return;
-            }
-            for (let i = 0; i < nativeType.length; i++) {
-                fields.push("private " + nativeType[i] + nodeOutput(node.id, outputIndex[i] || 0) + " = " + outputCode[i] + ";");
-            }
-        } else {
-            console.error("Either the type or the output of native node " + node.name + " is not an array while the other is");
+    if (fields1) {
+        for (let f = 0; f < fields1.length; f++) {
+            fields.push("private " + fields1[f] + ";");
         }
-    } else if ((!node.outputs || node.outputs.length === 0) && node.inputs.length > 0) {
-        code += ("private void node_" + node.id + "_exec() {\n" +
-            outputCode + "\n" +
-            "");
-    } else if (node.outputs && node.outputs.length > 0 && node.inputs && node.inputs.length > 0) {
-        if (!node.getNativeType) return;
+    }
 
-        let nativeType = node.getNativeType();
-        let outputIndex = node.getOutputIndex();
-        console.log(outputIndex)
+    if (body || node.getExecBefore || node.getExecAfter) {
+        code += "private void node_" + node.id + "_exec() {\n";
+    }
+    if (node.getExecBefore) {
+        for (let i = 0; i < node.outputs.length; i++) {
+            let output = node.outputs[i];
+            if (!output) continue;
 
-        if (!Array.isArray(nativeType) && !Array.isArray(outputCode)) {
-            if (!outputIndex) outputIndex = 0;
-            fields.push("private " + nativeType + nodeOutput(node.id, outputIndex) + ";");
-            code += ("private void node_" + node.id + "_exec() {\n" +
-                nodeOutput(node.id, outputIndex) + " = " + outputCode + "\n" +
-                "");
-        } else if (Array.isArray(nativeType) && Array.isArray(outputCode)) {
-            if (nativeType.length !== outputCode.length) {
-                console.error("Array length mismatch for native node " + node.name);
-                return;
-            }
-            for (let i = 0; i < nativeType.length; i++) {
-                fields.push("private " + nativeType[i] + nodeOutput(node.id, outputIndex || 0) + ";");
-                code += ("private void node_" + node.id + "_exec() {\n" +
-                     nodeOutput(node.id, outputIndex[i] || 0) + " = " + outputCode[i] + "\n" +
-                    "");
-            }
-        } else {
-            console.error("Either the type or the output of native node " + node.name + " is not an array while the other is");
+            let exec = node.getExecBefore(outputExecs, i);
+            if (exec)
+                code += exec + "\n";
         }
+    }
+    if (body) {
+        code += body + "\n";
+    }
+    if (node.getExecAfter) {
+        for (let i = 0; i < node.outputs.length; i++) {
+            let output = node.outputs[i];
+            if (!output) continue;
+
+            let exec = node.getExecAfter(outputExecs, i);
+            if (exec)
+                code += exec + "\n";
+        }
+    }
+
+    if (body || node.getExecBefore || node.getExecAfter) {
+        code += "}\n";
     }
 
     if (code.length > 2) {
-        if (node.outputs) {
-            for (let o = 0; o < node.outputs.length; o++) {
-                let output = node.outputs[o];
-                if (!output) continue;
-                if (!output.links) continue;
-                if (output.links.length > 0) {
-                    if (output.type === "@EXEC") {
-                        for (let l = 0; l < output.links.length; l++) {
-                            let linkInfo = graph.links[output.links[l]];
-                            if (!linkInfo) continue;
-                            code += nodeExec(linkInfo.target_id) + ";\n";
-                        }
-                    }
-                }
-            }
-        }
-
-        code += "}";
         nativeCalls.push(code);
     }
+
+    // let outputCode = node.getOutputCode(inputVars);
+    //
+    // let code = "";
+    // if ((!node.inputs || node.inputs.length === 0) && node.outputs && node.outputs.length > 0) {
+    //     if (!node.getNativeType) return;
+    //
+    //     let nativeType = node.getNativeType();
+    //     let outputIndex = node.getOutputIndex();
+    //
+    //
+    //     if (!Array.isArray(nativeType) && !Array.isArray(outputCode)) {
+    //         if (!outputIndex) outputIndex = 0;
+    //         fields.push("private " + nativeType + nodeOutput(node.id, outputIndex) + " = " + outputCode + ";");
+    //     } else if (Array.isArray(nativeType) && Array.isArray(outputCode)) {
+    //         if (nativeType.length !== outputCode.length) {
+    //             console.error("Array length mismatch for native node " + node.name);
+    //             return;
+    //         }
+    //         for (let i = 0; i < nativeType.length; i++) {
+    //             fields.push("private " + nativeType[i] + nodeOutput(node.id, outputIndex[i] || 0) + " = " + outputCode[i] + ";");
+    //         }
+    //     } else {
+    //         console.error("Either the type or the output of native node " + node.name + " is not an array while the other is");
+    //     }
+    // } else if ((!node.outputs || node.outputs.length === 0) && node.inputs.length > 0) {
+    //     code += ("private void node_" + node.id + "_exec() {\n" +
+    //         outputCode + "\n" +
+    //         "");
+    // } else if (node.outputs && node.outputs.length > 0 && node.inputs && node.inputs.length > 0) {
+    //     if (!node.getNativeType) return;
+    //
+    //     let nativeType = node.getNativeType();
+    //     let outputIndex = node.getOutputIndex();
+    //     console.log(outputIndex)
+    //
+    //     if (!Array.isArray(nativeType) && !Array.isArray(outputCode)) {
+    //         if (!outputIndex) outputIndex = 0;
+    //         fields.push("private " + nativeType + nodeOutput(node.id, outputIndex) + ";");
+    //         code += ("private void node_" + node.id + "_exec() {\n" +
+    //             nodeOutput(node.id, outputIndex) + " = " + outputCode + "\n" +
+    //             "");
+    //     } else if (Array.isArray(nativeType) && Array.isArray(outputCode)) {
+    //         if (nativeType.length !== outputCode.length) {
+    //             console.error("Array length mismatch for native node " + node.name);
+    //             return;
+    //         }
+    //         for (let i = 0; i < nativeType.length; i++) {
+    //             fields.push("private " + nativeType[i] + nodeOutput(node.id, outputIndex || 0) + ";");
+    //             code += ("private void node_" + node.id + "_exec() {\n" +
+    //                 nodeOutput(node.id, outputIndex[i] || 0) + " = " + outputCode[i] + "\n" +
+    //                 "");
+    //         }
+    //     } else {
+    //         console.error("Either the type or the output of native node " + node.name + " is not an array while the other is");
+    //     }
+    // }
+    //
+    // if (code.length > 2) {
+    //     if (node.outputs) {
+    //         for (let o = 0; o < node.outputs.length; o++) {
+    //             let output = node.outputs[o];
+    //             if (!output) continue;
+    //             if (!output.links) continue;
+    //             if (output.links.length > 0) {
+    //                 if (output.type === "@EXEC") {
+    //                     for (let l = 0; l < output.links.length; l++) {
+    //                         let linkInfo = graph.links[output.links[l]];
+    //                         if (!linkInfo) continue;
+    //                         code += nodeExec(linkInfo.target_id) + ";\n";
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    //
+    //     code += "}";
+    //     nativeCalls.push(code);
+    // }
 }
 
 
