@@ -405,7 +405,17 @@ function saveCodeToFile(code) {
                     }
 
                     console.log("savedCode: " + Date.now());
-                    resolve();
+
+                    let manifest = "Generated-By: PluginBlueprint " + app.getVersion()+"\n";
+                    fs.writeFile(path.join(currentProjectPath, "src", "manifest"), manifest, "utf-8", function (err) {
+                        if (err) {
+                            console.error("Failed to save manifest file");
+                            console.error(err);
+                            return;
+                        }
+
+                        resolve();
+                    });
                 });
             });
         })
