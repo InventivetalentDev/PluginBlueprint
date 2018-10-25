@@ -3,16 +3,19 @@ const path = require("path");
 const {LiteGraph} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const nativeNodes = require("./nativeNodes");
+const ClassDataStore = require("./classDataStore");
 
-const classesByName = {};
+const classStore = new ClassDataStore();
 
-const eventClasses = [];
-const objectClasses = [];
-const enumClasses = [];
-
-const methods = [];
-
-const canvasMenuData = {};
+// const classesByName = {};
+//
+// const eventClasses = [];
+// const objectClasses = [];
+// const enumClasses = [];
+//
+// const methods = [];
+//
+// const canvasMenuData = {};
 
 const inputOutputSorter = function (a, b) {
     var nameA = a.name.toUpperCase(); // ignore upper and lowercase
@@ -198,114 +201,52 @@ function onMethodAdd(node, options, e, prevMenu) {
 }
 
 function init() {
-    return new Promise(((resolve, reject) => {
 
-        // Clear default node types
-        // LiteGraph.registered_node_types = {};
-        // LiteGraph.Nodes = {};
+    // Clear default node types
+    LiteGraph.registered_node_types = {};
+    LiteGraph.Nodes = {};
 
-        console.log("Registering " + nativeNodes.length + " native nodes...");
-        for (let n = 0; n < nativeNodes.length; n++) {
-            let nativeNode = nativeNodes[n];
-            LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
+    console.log("Registering " + nativeNodes.length + " native nodes...");
+    for (let n = 0; n < nativeNodes.length; n++) {
+        let nativeNode = nativeNodes[n];
+        LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
+    }
+
+    console.log("Generating & Registering Java nodes...");
+    classStore.init();
+    let classesByName = classStore.getClassesByName();
+    for (let n in classesByName) {
+        let clazz = classesByName[n];
+        getOrCreateBukkitClassNode(clazz.name);
+        for (let m in clazz.methodsBySignature) {
+            let method = clazz.methodsBySignature[m];
+            getOrCreateBukkitMethodNode(clazz.name, method.signature);
         }
+    }
 
-        LGraphCanvas.prototype.getMenuOptions = function () {
-            return [
-                {content: "Add Node", has_submenu: true, callback: LGraphCanvas.onMenuAdd},
-                {content: "Add Bukkit Event", has_submenu: true, callback: onEventAdd},
-                {content: "Add Bukkit Object", has_submenu: true, callback: onObjectAdd},
-                {content: "Add Bukkit Method", has_submenu: true, callback: onMethodAdd},
-                {content: "Add Group", callback: LGraphCanvas.onGroupAdd}
-            ]
-        };
-
-
-        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": Colors.EXEC_OFF, "boolean": Colors.BOOLEAN_OFF, "java.lang.String": Colors.STRING_OFF, "byte": Colors.NUMBER_OFF, "char": Colors.NUMBER_OFF, "short": Colors.NUMBER_OFF, "int": Colors.NUMBER_OFF, "long": Colors.NUMBER_OFF, "float": Colors.NUMBER_OFF, "double": Colors.NUMBER_OFF})
+    LGraphCanvas.prototype.getMenuOptions = function () {
+        return [
+            {content: "Add Node", has_submenu: true, callback: LGraphCanvas.onMenuAdd},
+            {content: "Add Bukkit Event", has_submenu: true, callback: onEventAdd},
+            {content: "Add Bukkit Object", has_submenu: true, callback: onObjectAdd},
+            {content: "Add Bukkit Method", has_submenu: true, callback: onMethodAdd},
+            {content: "Add Group", callback: LGraphCanvas.onGroupAdd}
+        ]
+    };
 
 
-        fs.readFile(path.join(__dirname, "../data/bukkitClasses.json"), "utf-8", (err, data) => {
-            if (err) {
-                console.error("Failed to read bukkit classes data file!")
-                reject();
-                return;
-            }
-            data = JSON.parse(data);
-
-            for (let i = 0; i < data.classes.length; i++) {
-                classesByName[data.classes[i].name] = data.classes[i];
-
-                let cl = data.classes[i];
-
-                if (/*(!cl.isAbstract || cl.isInterface) &&*/ !cl.isEnum) {
-                    if (cl.name.indexOf("Event") !== -1) {
-                        eventClasses.push(cl.name);
-                    } else {
-                        objectClasses.push(cl.name);
-                    }
-                } else if (cl.isEnum) {
-                    enumClasses.push(cl.name);
-                }
-
-                for (let j = 0; j < data.classes[i].methods.length; j++) {
-                    let methodName = data.classes[i].name + "#" + data.classes[i].methods[j].name;
-                    let params = [];
-                    for (let k = 0; k < data.classes[i].methods[j].parameters.length; k++) {
-                        params.push(data.classes[i].methods[j].parameters[k].name);
-                    }
-                    methods.push(methodName + "(" + params.join(",") + ")");
-                }
-            }
+    LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": Colors.EXEC_OFF, "boolean": Colors.BOOLEAN_OFF, "java.lang.String": Colors.STRING_OFF, "byte": Colors.NUMBER_OFF, "char": Colors.NUMBER_OFF, "short": Colors.NUMBER_OFF, "int": Colors.NUMBER_OFF, "long": Colors.NUMBER_OFF, "float": Colors.NUMBER_OFF, "double": Colors.NUMBER_OFF})
 
 
-            console.log("Loaded " + data.classes.length + " Bukkit classes");
-
-            fs.readFile(path.join(__dirname, "../data/javaClasses.json"), "utf-8", (err, data) => {
-                if (err) {
-                    console.error("Failed to read java classes data file!")
-                    reject();
-                    return;
-                }
-                data = JSON.parse(data);
-
-                for (let i = 0; i < data.classes.length; i++) {
-                    classesByName[data.classes[i].name] = data.classes[i];
-
-                    let cl = data.classes[i];
-
-                    if (/*(!cl.isAbstract || cl.isInterface) &&*/ !cl.isEnum) {
-                        objectClasses.push(cl.name);
-                    } else if (cl.isEnum) {
-                        enumClasses.push(cl.name);
-                    }
-                    //
-                    for (let j = 0; j < data.classes[i].methods.length; j++) {
-                        let methodName = data.classes[i].name + "#" + data.classes[i].methods[j].name;
-                        let params = [];
-                        for (let k = 0; k < data.classes[i].methods[j].parameters.length; k++) {
-                            params.push(data.classes[i].methods[j].parameters[k].name);
-                        }
-                        methods.push(methodName + "(" + params.join(",") + ")");
-                    }
-                }
-
-
-                console.log("Loaded " + data.classes.length + " Java classes");
-
-                resolve();
-            });
-        });
-
-    }))
 }
 
 function getOrCreateBukkitClassNode(className) {
-
-    if (!classesByName.hasOwnProperty(className)) {
+    let classData = classStore.getClass(className);
+    if (!classData) {
         console.warn("Class " + className + " does not exist or isn't loaded");
         return null;
     }
-    let classData = classesByName[className];
+
     let classNameSplit = classData.name.split(".");
     let simpleClassName = classNameSplit[classNameSplit.length - 1];
     // let packageSplit = className.substr("org.".length).split(".");
@@ -323,7 +264,7 @@ function getOrCreateBukkitClassNode(className) {
     }
 
     function BukkitClassNode() {
-        addClassIO(this, className);
+        addClassIO(this, classData);
 
         if (this.inputs)
             this.inputs.sort(inputOutputSorter);
@@ -331,27 +272,22 @@ function getOrCreateBukkitClassNode(className) {
             this.outputs.sort(inputOutputSorter);
 
         this.nodeType = "BukkitClassNode";
-        if (eventClasses.indexOf(className) !== -1) {
+
+        if (classData.isEvent) {
             this.classType = "event";
-        }
-        if (objectClasses.indexOf(className) !== -1) {
-            this.classType = "object";
-        }
-        if (enumClasses.indexOf(className) !== -1) {
+            BukkitClassNode.prototype.color = Colors.EVENT;
+        } else if (classData.isEnum) {
             this.classType = "enum";
+            BukkitClassNode.prototype.color = Colors.ENUM_OFF;//TODO: separate variable
+        } else {
+            this.classType = "object";
+            BukkitClassNode.prototype.color = Colors.OBJECT;
         }
 
-        this.classData = classData;
+        this.className = classData.name;
     }
 
     BukkitClassNode.title = simpleClassName;
-
-    if (eventClasses.indexOf(className) !== -1) {
-        BukkitClassNode.prototype.color = Colors.EVENT;
-    }
-    if (objectClasses.indexOf(className) !== -1) {
-        BukkitClassNode.prototype.color = Colors.OBJECT;
-    }
 
 
     BukkitClassNode.prototype.onOutputDblClick = function (i, e) {
@@ -366,27 +302,26 @@ function getOrCreateBukkitClassNode(className) {
     return categoryName;
 }
 
-function addClassIO(node, className, isChildCall) {
-    let classData = classesByName[className];
-
+function addClassIO(node, classData, isChildCall) {
     if (!isChildCall) {
-        if (eventClasses.indexOf(className) === -1 && enumClasses.indexOf(className) === -1 && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
+        if (!classData.isEvent && !classData.isEnum && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
             addNodeInput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
         }
-        if (enumClasses.indexOf(className) === -1 && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
+        if (!classData.isEnum && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
             addNodeOutput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
         }
     }
 
-    if (!isChildCall && objectClasses.indexOf(className) !== -1 && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
-        addNodeInput(node, "REF", className, {linkType: "ref", shape: LiteGraph.BOX_SHAPE, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON})
+    if (!isChildCall && classData.isObject && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
+        addNodeInput(node, "REF", classData.name, {linkType: "ref", shape: LiteGraph.BOX_SHAPE, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON})
     }
     if (!isChildCall && !classData.isEnum) {
-        addNodeOutput(node, "THIS", className, {linkType: "this", shape: LiteGraph.BOX_SHAPE, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON})
+        addNodeOutput(node, "THIS", classData.name, {linkType: "this", shape: LiteGraph.BOX_SHAPE, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON})
     }
 
+
     if (classData.isEnum && classData.enumConstants.length > 0) {
-        let i = addNodeOutput(node, classData.enumConstants[0], classData.name, {linkType: "enum", enumData: classData.enumConstants[0], color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON});
+        let i = addNodeOutput(node, classData.enumConstants[0], classData.name, {linkType: "enum", className: classData.name, enumName: classData.enumConstants[0], color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON});
         node.addProperty("en", classData.enumConstants[0], "enum", {values: classData.enumConstants})
         node.onDrawBackground = function () {
             this.outputs[i].label = "[" + this.properties.en + "]";
@@ -399,25 +334,21 @@ function addClassIO(node, className, isChildCall) {
     // }
 
     if (!classData.isInterface && !classData.isAbstract) {
-        for (let c = 0; c < classData.constructors.length; c++) {
-            let constructor = classData.constructors[c];
+        for (let c in classData.constructorsByName) {
+            let constructor = classData.constructorsByName[c];
             for (let i = 0; i < constructor.parameters.length; i++) {
                 let param = constructor.parameters[i];
-                addNodeInput(node, param.name, param.type, {linkType: "constructorParam", constructorData: constructor})
+                addNodeInput(node, param.name, param.type, {linkType: "constructorParam", constructorName: constructor.name, paramName: param.name})
             }
         }
     }
 
 
-    for (let m = 0; m < classData.methods.length; m++) {
-        let method = classData.methods[m];
+    for (let m in classData.methodsBySignature) {
+        let method = classData.methodsBySignature[m];
 
 
-        let params = [];
-        for (let i = 0; i < method.parameters.length; i++) {
-            params.push(method.parameters[i].name);
-        }
-        let methodSignature = method.name + "(" + params.join(",") + ")";
+        let methodSignature = method.signature;
 
 
         let isLambda = checkLambda(classData, method);
@@ -428,71 +359,84 @@ function addClassIO(node, className, isChildCall) {
             addNodeInput(node,method.name.substr(3), method.return_type);
         } else*/
         if (method.return_type === "void") {
-            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE, color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF, color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON});
+            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {
+                linkType: isLambda ? "abstractMethod" : "method",
+                className: classData.name,
+                methodName: method.name,
+                methodSignature: method.signature,
+                shape: LiteGraph.BOX_SHAPE,
+                color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
+                color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
+            });
         } else if (method.parameters.length === 0) {
+            let returnData = classStore.getClass(method.return_type);
             if (method.return_type === "boolean") {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", methodData: method, color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON});
             } else if (method.return_type === "number" || method.return_type === "int" || method.return_type === "double" || method.return_type === "float" || method.return_type === "short" || method.return_type === "long" || method.return_type === "byte") {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", methodData: method, color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
             } else if (method.return_type === "string" || method.return_type === "java.lang.String") {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", methodData: method, color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON});
-            } else if (objectClasses.indexOf(method.return_type) !== -1) {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "object", methodData: method, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON});
-            } else if (enumClasses.indexOf(method.return_type) !== -1) {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "enum", methodData: method, color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON});
+            } else if (returnData&&returnData.isObject) {
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "object", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON});
+            } else if (returnData&&returnData.isEnum) {
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "enum", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON});
             } else {
                 // addNodeOutput(node,method.name, method.return_type);
-                addNodeOutput(node, method.name, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE, color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF, color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON});
+                addNodeOutput(node, method.name, classData.name + "#" + methodSignature, {
+                    linkType: isLambda ? "abstractMethod" : "method",
+                    className: classData.name,
+                    methodName: method.name,
+                    methodSignature: method.signature,
+                    shape: LiteGraph.BOX_SHAPE,
+                    color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
+                    color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
+                });
             }
         } else {
-            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {linkType: isLambda ? "abstractMethod" : "method", methodData: method, shape: LiteGraph.BOX_SHAPE, color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF, color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON});
+            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {
+                linkType: isLambda ? "abstractMethod" : "method",
+                className: classData.name,
+                methodName: method.name,
+                methodSignature: method.signature,
+                shape: LiteGraph.BOX_SHAPE,
+                color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
+                color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
+            });
         }
     }
 
-    for (let i = 0; i < classData.interfaces.length; i++) {
-        addClassIO(node, classData.interfaces[i], true);
+    // Interfaces
+    if (classData.interfaces) {
+        for (let i = 0; i < classData.interfaces.length; i++) {
+            let interfaceData = classStore.getClass(classData.interfaces[i])
+            addClassIO(node, interfaceData, true);
+        }
     }
+    // Superclass
     if (classData.superclass && classData.superclass.length > 0 && classData.superclass !== "java.lang.Object" && classData.superclass !== "java.lang.Enum") {
-        console.log(classData.superclass)
-        addClassIO(node, classData.superclass, true);
+        console.log(classData.superclass);
+        let superData = classStore.getClass(classData.superclass)
+        addClassIO(node, superData, true);
     }
 }
 
-function getOrCreateBukkitMethodNode(classMethodName) {
-    let split = classMethodName.split("#");
-    let className = split[0];
-    let methodNameSplit = split[1].split("(");
-    let methodName = methodNameSplit[0];
-    // let methodParamString = methodNameSplit[1].substring(0, methodNameSplit[1].length - 1);
+function getOrCreateBukkitMethodNode(className, methodSignature) {
 
-    if (!classesByName.hasOwnProperty(className)) {
+    let classData = classStore.getClass(className);
+    if (!classData) {
         console.warn("Class " + className + " does not exist or isn't loaded");
         return null;
     }
-    let classData = classesByName[className];
     let classNameSplit = classData.name.split(".");
     let simpleClassName = classNameSplit[classNameSplit.length - 1];
 
-    let methodData;
-    for (let i = 0; i < classData.methods.length; i++) {
-        if (classData.methods[i].name === methodName) {
-            let params = [];
-            for (let j = 0; j < classData.methods[i].parameters.length; j++) {
-                params.push(classData.methods[i].parameters[j].name);
-            }
-            let methodSignature = classData.methods[i].name + "(" + params.join(",") + ")";
-            if (methodSignature === split[1]) {
-                methodData = classData.methods[i];
-                break;
-            }
-        }
-    }
+    let methodData = classStore.getMethod(className, methodSignature);
     if (!methodData) {
-        console.warn("Missing method data for " + classMethodName + " (" + methodName + " in " + className + ")");
+        console.warn("Missing method data for " + methodSignature + " in " + className);
         return null;
     }
 
-    let categoryName = className + "#" + split[1];
+    let categoryName = className + "#" + methodSignature;
 
     if (LiteGraph.registered_node_types.hasOwnProperty(categoryName)) {
         return categoryName;
@@ -501,11 +445,12 @@ function getOrCreateBukkitMethodNode(classMethodName) {
     function BukkitMethodNode() {
         addMethodIO(this, classData, methodData);
         this.nodeType = "BukkitMethodNode";
-        this.classData = classData;
-        this.methodData = methodData;
+        this.className = classData.name;
+        this.methodName = methodData.name;
+        this.methodSignature = methodData.signature;
     }
 
-    BukkitMethodNode.title = simpleClassName + "#" + methodName;
+    BukkitMethodNode.title = simpleClassName + "#" + methodSignature;
 
     BukkitMethodNode.prototype.color = Colors.FUNCTION;
 
@@ -524,11 +469,7 @@ function getOrCreateBukkitMethodNode(classMethodName) {
 
 function addMethodIO(node, classData, methodData) {
 
-    let params = [];
-    for (let i = 0; i < methodData.parameters.length; i++) {
-        params.push(methodData.parameters[i].name);
-    }
-    let methodSignature = methodData.name + "(" + params.join(",") + ")";
+    let methodSignature = methodData.signature;
 
     let isLambda = checkLambda(classData, methodData);
 
@@ -546,20 +487,20 @@ function addMethodIO(node, classData, methodData) {
             let param = methodData.parameters[p];
             let paramType = methodData.parameters[p].typeParameter ? "java.lang.Object" : param.type;
 
-            addNodeOutput(node, param.name, paramType + param.type_dimension, {paramData: param});
+            addNodeOutput(node, param.name, paramType + param.type_dimension, {paramName: param.name});
         }
 
         if (methodData.return_type !== "void") {
-            addNodeInput(node, "RETURN", methodData.return_type + methodData.return_type_dimension);
+            addNodeInput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {returnType: methodData.return_type});
         }
     } else {
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
-            addNodeInput(node, param.name, param.type + param.type_dimension, {paramData: param});
+            addNodeInput(node, param.name, param.type + param.type_dimension, {paramName: param.name});
         }
 
         if (methodData.return_type !== "void") {
-            addNodeOutput(node, "RETURN", methodData.return_type + methodData.return_type_dimension);
+            addNodeOutput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {returnType: methodData.return_type});
         }
     }
 }
@@ -584,7 +525,7 @@ function addNodeInput(node, name, type, options) {
             }
         }
     }
-    if(!options) options = {};
+    if (!options) options = {};
     if (!options.color_on && !options.color_off) {
         let colors = getColorsForType(type);
         if (colors) {
@@ -604,7 +545,7 @@ function addNodeOutput(node, name, type, options) {
             }
         }
     }
-    if(!options) options = {};
+    if (!options) options = {};
     if (!options.color_on && !options.color_off) {
         let colors = getColorsForType(type);
         if (colors) {
@@ -633,11 +574,14 @@ function getColorsForType(type) {
             return [Colors.NUMBER_ON, Colors.NUMBER_OFF];
     }
 
-    if (objectClasses.indexOf(type) !== -1) {
-        return [Colors.OBJECT_ON, Colors.OBJECT_OFF];
-    }
-    if (enumClasses.indexOf(type) !== -1) {
-        return [Colors.ENUM_ON, Colors.ENUM_OFF];
+    let classInfo = classStore.getClass(type);
+    if (classInfo) {
+        if (classInfo.isEnum) {
+            return [Colors.ENUM_ON, Colors.ENUM_OFF];
+        }
+        if (classInfo.isObject) {
+            return [Colors.OBJECT_ON, Colors.OBJECT_OFF];
+        }
     }
 }
 
@@ -647,10 +591,12 @@ function handleSlotDoubleClick(node, i, e) {
     console.log(slot);
 
     let nodeName;
-    if (slot.type.indexOf("#") !== -1) {
-        nodeName = getOrCreateBukkitMethodNode(slot.type);
-    } else if (slot.type.startsWith("org.bukkit") && classesByName.hasOwnProperty(slot.type)) {
-        nodeName = getOrCreateBukkitClassNode(slot.type);
+    if (slot.name === "RETURN"||slot.hasOwnProperty("returnType")) {
+        nodeName = getOrCreateBukkitClassNode(slot.returnType);
+    } else if (slot.type.indexOf("#") !== -1) {
+        nodeName = getOrCreateBukkitMethodNode(slot.className, slot.methodSignature);//TODO: update params
+    } else /*if (slot.type.startsWith("org.bukkit") && classesByName.hasOwnProperty(slot.type))*/ {
+        nodeName = getOrCreateBukkitClassNode(slot.className);
     }
     if (nodeName) {
         console.log(nodeName)

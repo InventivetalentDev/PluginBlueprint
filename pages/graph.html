@@ -75,20 +75,20 @@
             canvas.resize();
 
             console.log("Initializing Bukkit Node generator...")
-            NodeGenerator.init().then(() => {
+            NodeGenerator.init()
 
                 // graph.addGlobalInput("Plugin", "org.bukkit.plugin.JavaPlugin");
 
-                for (let n in NodeGenerator.getClassesByName()) {
-                    NodeGenerator.getOrCreateBukkitClassNode(n)
-                }
+                // for (let n in NodeGenerator.getClassesByName()) {
+                //     NodeGenerator.getOrCreateBukkitClassNode(n)
+                // }
 
-                let methods = NodeGenerator.getMethods();
-                for (let i = 0; i < methods.length; i++) {
-                    NodeGenerator.getOrCreateBukkitMethodNode(methods[i])
-                }
+                // let methods = NodeGenerator.getMethods();
+                // for (let i = 0; i < methods.length; i++) {
+                //     NodeGenerator.getOrCreateBukkitMethodNode(methods[i])
+                // }
 
-                console.log(NodeGenerator.getClassesByName())
+                // console.log(NodeGenerator.getClassesByName())
 
 
                 // addBukkitNode("org.bukkit.event.player.PlayerJoinEvent","event")
@@ -96,7 +96,7 @@
 
                 ipcRenderer.send("getGraphData");
 
-            })
+
 
             function addBukkitNode(className, classType) {
                 let nodeName = NodeGenerator.getOrCreateBukkitClassNode(className, classType);
