@@ -208,7 +208,8 @@ function createNewProject(arg, lib) {
         creationTime: Date.now(),
         author: "inventivetalent",
         package: "my.awesome.plugin",
-        version: "0.0.0"
+        version: "0.0.0",
+        editorVersion: app.getVersion()
     };
     fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
         if (err) {
@@ -406,7 +407,7 @@ function saveCodeToFile(code) {
 
                     console.log("savedCode: " + Date.now());
 
-                    let manifest = "Generated-By: PluginBlueprint " + app.getVersion()+"\n";
+                    let manifest = "Generated-By: PluginBlueprint " + app.getVersion() + "\n";
                     fs.writeFile(path.join(currentProjectPath, "src", "manifest"), manifest, "utf-8", function (err) {
                         if (err) {
                             console.error("Failed to save manifest file");
