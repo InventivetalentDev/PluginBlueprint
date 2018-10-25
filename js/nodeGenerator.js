@@ -201,43 +201,44 @@ function onMethodAdd(node, options, e, prevMenu) {
 }
 
 function init() {
+    return new Promise((resolve => {
+        // Clear default node types
+        LiteGraph.registered_node_types = {};
+        LiteGraph.Nodes = {};
 
-    // Clear default node types
-    LiteGraph.registered_node_types = {};
-    LiteGraph.Nodes = {};
+        LGraphCanvas.prototype.getMenuOptions = function () {
+            return [
+                {content: "Add Node", has_submenu: true, callback: LGraphCanvas.onMenuAdd},
+                {content: "Add Bukkit Event", has_submenu: true, callback: onEventAdd},
+                {content: "Add Bukkit Object", has_submenu: true, callback: onObjectAdd},
+                {content: "Add Bukkit Method", has_submenu: true, callback: onMethodAdd},
+                {content: "Add Group", callback: LGraphCanvas.onGroupAdd}
+            ]
+        };
 
-    console.log("Registering " + nativeNodes.length + " native nodes...");
-    for (let n = 0; n < nativeNodes.length; n++) {
-        let nativeNode = nativeNodes[n];
-        LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
-    }
 
-    console.log("Generating & Registering Java nodes...");
-    classStore.init();
-    let classesByName = classStore.getClassesByName();
-    for (let n in classesByName) {
-        let clazz = classesByName[n];
-        getOrCreateBukkitClassNode(clazz.name);
-        for (let m in clazz.methodsBySignature) {
-            let method = clazz.methodsBySignature[m];
-            getOrCreateBukkitMethodNode(clazz.name, method.signature);
+        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": Colors.EXEC_OFF, "boolean": Colors.BOOLEAN_OFF, "java.lang.String": Colors.STRING_OFF, "byte": Colors.NUMBER_OFF, "char": Colors.NUMBER_OFF, "short": Colors.NUMBER_OFF, "int": Colors.NUMBER_OFF, "long": Colors.NUMBER_OFF, "float": Colors.NUMBER_OFF, "double": Colors.NUMBER_OFF})
+
+        console.log("Registering " + nativeNodes.length + " native nodes...");
+        for (let n = 0; n < nativeNodes.length; n++) {
+            let nativeNode = nativeNodes[n];
+            LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
         }
-    }
 
-    LGraphCanvas.prototype.getMenuOptions = function () {
-        return [
-            {content: "Add Node", has_submenu: true, callback: LGraphCanvas.onMenuAdd},
-            {content: "Add Bukkit Event", has_submenu: true, callback: onEventAdd},
-            {content: "Add Bukkit Object", has_submenu: true, callback: onObjectAdd},
-            {content: "Add Bukkit Method", has_submenu: true, callback: onMethodAdd},
-            {content: "Add Group", callback: LGraphCanvas.onGroupAdd}
-        ]
-    };
-
-
-    LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": Colors.EXEC_OFF, "boolean": Colors.BOOLEAN_OFF, "java.lang.String": Colors.STRING_OFF, "byte": Colors.NUMBER_OFF, "char": Colors.NUMBER_OFF, "short": Colors.NUMBER_OFF, "int": Colors.NUMBER_OFF, "long": Colors.NUMBER_OFF, "float": Colors.NUMBER_OFF, "double": Colors.NUMBER_OFF})
-
-
+        classStore.init().then(() => {
+            console.log("Generating & Registering Java nodes...");
+            let classesByName = classStore.getClassesByName();
+            for (let n in classesByName) {
+                let clazz = classesByName[n];
+                getOrCreateBukkitClassNode(clazz.name);
+                for (let m in clazz.methodsBySignature) {
+                    let method = clazz.methodsBySignature[m];
+                    getOrCreateBukkitMethodNode(clazz.name, method.signature);
+                }
+            }
+            resolve();
+        });
+    }))
 }
 
 function getOrCreateBukkitClassNode(className) {
@@ -376,9 +377,9 @@ function addClassIO(node, classData, isChildCall) {
                 addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
             } else if (method.return_type === "string" || method.return_type === "java.lang.String") {
                 addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON});
-            } else if (returnData&&returnData.isObject) {
+            } else if (returnData && returnData.isObject) {
                 addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "object", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON});
-            } else if (returnData&&returnData.isEnum) {
+            } else if (returnData && returnData.isEnum) {
                 addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "enum", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON});
             } else {
                 // addNodeOutput(node,method.name, method.return_type);
@@ -591,7 +592,7 @@ function handleSlotDoubleClick(node, i, e) {
     console.log(slot);
 
     let nodeName;
-    if (slot.name === "RETURN"||slot.hasOwnProperty("returnType")) {
+    if (slot.name === "RETURN" || slot.hasOwnProperty("returnType")) {
         nodeName = getOrCreateBukkitClassNode(slot.returnType);
     } else if (slot.type.indexOf("#") !== -1) {
         nodeName = getOrCreateBukkitMethodNode(slot.className, slot.methodSignature);//TODO: update params

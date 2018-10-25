@@ -4,39 +4,49 @@ let path = require("path");
 
 
 const ClassDataStore = require("../js/classDataStore");
-let classStore = new ClassDataStore();
+const classStore = new ClassDataStore();
 
-classStore.init();
 describe("ClassStore", function () {
+    before(function (done) {
+        classStore.init().then(() => {
+            done();
+        });
+    })
+
     describe("#getClassesByName", function () {
         let classesByName = classStore.getClassesByName();
 
         it("should return an object", function () {
             assert(typeof classesByName === "object")
         })
+        it("should not be empty", function () {
+            assert(classStore.size() > 0)
+            assert(Object.keys(classStore.classStore).length > 0);
+        })
 
-    })
+        it("should have a 'java.lang.string' property", function () {
+            assert(classesByName.hasOwnProperty("java.lang.string"))
+        })
+    });
     describe("#getClass", function () {
         describe("(null)", function () {
             it("should return null", function () {
                 assert.equal(classStore.getClass(null), null);
             })
         })
-        describe("(java.lang.Object)", function () {
-            let obj = classStore.getClass("java.lang.Object");
-            console.log(obj)
+        describe("(java.lang.String)", function () {
             it("should not be null", function () {
-                assert(obj !== null);
+                assert(classStore.getClass("java.lang.String") !== null);
             });
             it("should not be undefined", function () {
-                assert(obj !== undefined)
+                assert(classStore.getClass("java.lang.String") !== undefined)
             })
             it("should have a 'name' property", function () {
-                assert.equal(obj.hasOwnProperty("name"), true);
+                assert.equal(classStore.getClass("java.lang.String").hasOwnProperty("name"), true);
             });
             describe(".name", function () {
-                it("should equal java.lang.Object", function () {
-                    assert.equal(obj.name, "java.lang.Object");
+                it("should equal java.lang.String", function () {
+                    assert.equal(classStore.getClass("java.lang.String").name, "java.lang.String");
                 })
             })
         })

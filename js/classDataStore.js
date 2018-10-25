@@ -5,58 +5,76 @@ function ClassDataStore() {
     this.classStore = {};
 
     this.loadClassFile = function (fileName) {
-        console.log("[ClassStore] Load " + fileName);
-        let data = fs.readFileSync(path.join(__dirname, "../data/" + fileName + ".json"), "utf-8");
-        data = JSON.parse(data);
-
-        for (let c = 0; c < data.classes.length; c++) {
-            let clazz = Object.assign({}, data.classes[c]);
-            clazz.fieldsByName = {};
-            clazz.methodsBySignature = {};
-            clazz.constructorsByName = {};
-            clazz.isEvent = clazz.name.indexOf("Event") !== -1;
-            clazz.isObject = !clazz.isEvent && !clazz.isEnum;
-
-            for (let f = 0; f < clazz.fields.length; f++) {
-                let field = Object.assign({}, clazz.fields[f]);
-                clazz.fieldsByName[field.name.toLowerCase()] = field;
-            }
-            for (let m = 0; m < clazz.methods.length; m++) {
-                let method = Object.assign({}, clazz.methods[m]);
-                method.paramsByName = {};
-
-                for (let p = 0; p < method.parameters.length; p++) {
-                    let param = Object.assign({}, method.parameters[p]);
-                    method.paramsByName[param.name.toLowerCase()] = param;
+        return new Promise(((resolve, reject) => {
+            console.log("[ClassStore] Load " + fileName);
+            fs.readFile(path.join(__dirname, "../data/" + fileName + ".json"), "utf-8", (err, data) => {
+                if (err) {
+                    reject();
+                    return;
                 }
 
-                method.signature = this.getMethodSignatureFromData(method);
-                clazz.methodsBySignature[method.signature] = method;
-            }
-            for (let m = 0; m < clazz.constructors.length; m++) {
-                let constr = Object.assign({}, clazz.constructors[m]);
-                constr.paramsByName = {};
+                data = JSON.parse(data);
 
-                for (let p = 0; p < constr.parameters.length; p++) {
-                    let param = Object.assign({}, constr.parameters[p]);
-                    constr.paramsByName[param.name.toLowerCase()] = param;
+                for (let c = 0; c < data.classes.length; c++) {
+                    let clazz = Object.assign({}, data.classes[c]);
+                    clazz.fieldsByName = {};
+                    clazz.methodsBySignature = {};
+                    clazz.constructorsByName = {};
+                    clazz.isEvent = clazz.name.indexOf("Event") !== -1;
+                    clazz.isObject = !clazz.isEvent && !clazz.isEnum;
+
+                    for (let f = 0; f < clazz.fields.length; f++) {
+                        let field = Object.assign({}, clazz.fields[f]);
+                        clazz.fieldsByName[field.name.toLowerCase()] = field;
+                    }
+                    for (let m = 0; m < clazz.methods.length; m++) {
+                        let method = Object.assign({}, clazz.methods[m]);
+                        method.paramsByName = {};
+
+                        for (let p = 0; p < method.parameters.length; p++) {
+                            let param = Object.assign({}, method.parameters[p]);
+                            method.paramsByName[param.name.toLowerCase()] = param;
+                        }
+
+                        method.signature = this.getMethodSignatureFromData(method);
+                        clazz.methodsBySignature[method.signature] = method;
+                    }
+                    for (let m = 0; m < clazz.constructors.length; m++) {
+                        let constr = Object.assign({}, clazz.constructors[m]);
+                        constr.paramsByName = {};
+
+                        for (let p = 0; p < constr.parameters.length; p++) {
+                            let param = Object.assign({}, constr.parameters[p]);
+                            constr.paramsByName[param.name.toLowerCase()] = param;
+                        }
+
+                        clazz.constructorsByName[constr.name.toLowerCase()] = constr;
+                    }
+
+                    this.classStore[clazz.name.toLowerCase()] = clazz;
                 }
 
-                clazz.constructorsByName[constr.name.toLowerCase()] = constr;
-            }
-
-            this.classStore[clazz.name.toLowerCase()] = clazz;
-        }
+                console.log("[ClassStore] Loaded " + fileName);
+                resolve(this.classStore);
+            });
+        }))
     }
 }
 
 
 ClassDataStore.prototype.init = function () {
-    this.loadClassFile("javaClasses");
-    this.loadClassFile("bukkitClasses")
+    return Promise.all([
+        this.loadClassFile("javaClasses"),
+        this.loadClassFile("bukkitClasses")
+    ]);
+};
+
+ClassDataStore.prototype.size = function () {
+    return Object.keys(this.classStore).length;
 };
 
 ClassDataStore.prototype.getClassesByName = function () {
+    console.log(this)
     return this.classStore;
 };
 
@@ -112,7 +130,7 @@ ClassDataStore.prototype.getMethodSignatureFromMethodAndParamTypes = function (m
 ClassDataStore.prototype.getMethodSignatureFromData = function (methodData) {
     let params = [];
     for (let i = 0; i < methodData.parameters.length; i++) {
-        params.push(methodData.parameters[i].type+methodData.parameters[i].type_dimension);
+        params.push(methodData.parameters[i].type + methodData.parameters[i].type_dimension);
     }
     return this.getMethodSignatureFromMethodAndParamTypes(methodData.name, params);
 };
