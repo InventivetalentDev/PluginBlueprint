@@ -14,13 +14,23 @@ const notifier = require("node-notifier");
 let win;
 let logWin;
 
+let debug = false;
+
 let currentProject;
 let currentProjectPath;
 
 let recentProjects = [];
 
 function createWindow() {
-    console.log("Hai!")
+    console.log("Hai!");
+
+    console.log( process.argv)
+    process.argv.forEach((val, index) => {
+        if (val === "--debug") {
+            debug = true;
+            console.log("Debugging enabled");
+        }
+    });
 
     // Create the browser window.
     win = new BrowserWindow({
@@ -39,9 +49,11 @@ function createWindow() {
         win.show()
 
         // Open the DevTools.
-        win.webContents.openDevTools({
-            mode: "detach"
-        });
+        if(debug) {
+            win.webContents.openDevTools({
+                mode: "detach"
+            });
+        }
 
         checkFileAssociation();
     })
@@ -500,7 +512,7 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
         icon: path.join(__dirname, 'assets/icons/favicon.ico')
     });
     child.loadFile('pages/infoEditor.html');
-    child.show()
+    child.show();
 });
 
 ipcMain.on("startServer", function (event, arg) {
