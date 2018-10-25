@@ -525,14 +525,22 @@ ipcMain.on("startServer", function (event, arg) {
     logWin.setTitle("PluginBlueprint Test Server")
     logWin.loadFile('pages/log.html');
     logWin.show();
+    let port = "";
     serverStarter.copyPlugin(currentProjectPath, currentProject.name).then(() => {
         serverStarter.startServer(currentProjectPath,
             (out) => {
                 if (logWin) {
+                    if (out.indexOf("Starting Minecraft server on") !== -1) {
+                        port = out.substr(24/* strip timestamp & start of string */).split(":")[1];
+                    }
+                    if (out.indexOf("Done (") !== -1 && out.indexOf("For help, type") !== -1) {
+                        showNotification("Test Server running on port " + port);
+                    }
+
                     logWin.webContents.send("log", {
                         type: "out",
                         content: out
-                    })
+                    });
                 }
             },
             (err) => {
