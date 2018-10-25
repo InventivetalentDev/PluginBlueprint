@@ -41,7 +41,8 @@
       "allowToChangeInstallationDirectory": true
     },
     "linux": {
-      "icon": "icon.png"
+      "icon": "icon.png",
+      "category": "Development"
     },
     "fileAssociations": [
       {
