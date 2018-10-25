@@ -47,7 +47,6 @@
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
 
-            Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
 
             String.prototype.replaceAll = function (search, replacement) {
                 var target = this;
@@ -56,60 +55,64 @@
 
             let followLog = true;
 
-            getCurrentWindow().setMenu(Menu.buildFromTemplate([
-                {
-                    label: "Log",
-                    submenu: [
-                        {
-                            label: "Follow Log", type: "checkbox", checked: true, click: (item) => {
-                                console.log(item);
-                                // item.checked = !item.checked;
-                                followLog = item.checked;
-                            }
-                        }
-                    ]
-                },
-                {
-                    label: "Server",
-                    submenu: [
-                        {
-                            label: "Stop Server", click: () => {
-                                ipcRenderer.send("stopServer");
-                            }
-                        }
-                    ]
-                }
-            ]));
+            $(document).ready(function () {
+                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
 
-            let cmdInput = $("#cmdInput");
-            cmdInput.on("keypress", function (e) {
-                let key = e.which || e.keyCode;
-                if (key === 13) { //  enter
-                    let val = cmdInput.val();
-                    if (val.startsWith("/")) val = val.substr(1);
-                    if (val.length > 0) {
-                        ipcRenderer.send("sendServerCommand", val);
-                        cmdInput.val("");
+                getCurrentWindow().setMenu(Menu.buildFromTemplate([
+                    {
+                        label: "Log",
+                        submenu: [
+                            {
+                                label: "Follow Log", type: "checkbox", checked: true, click: (item) => {
+                                    console.log(item);
+                                    // item.checked = !item.checked;
+                                    followLog = item.checked;
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        label: "Server",
+                        submenu: [
+                            {
+                                label: "Stop Server", click: () => {
+                                    ipcRenderer.send("stopServer");
+                                }
+                            }
+                        ]
                     }
-                }
-            });
+                ]));
 
-            ipcRenderer.on("log", function (event, arg) {
-                let content = arg.content.replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
-                let entry = $("<div class='entry " + arg.type + "'>" + content + "</div>");
-                if (arg.type === "out") {
-                    if (content.indexOf("ERROR") !== -1) entry.addClass("err");
-                    if (content.indexOf("WARN") !== -1) entry.addClass("warn");
-                }
-                entry.appendTo($("#log"));
-                if (followLog) {
-                    window.scrollTo(0, document.body.scrollHeight);
-                }
-            });
+                let cmdInput = $("#cmdInput");
+                cmdInput.on("keypress", function (e) {
+                    let key = e.which || e.keyCode;
+                    if (key === 13) { //  enter
+                        let val = cmdInput.val();
+                        if (val.startsWith("/")) val = val.substr(1);
+                        if (val.length > 0) {
+                            ipcRenderer.send("sendServerCommand", val);
+                            cmdInput.val("");
+                        }
+                    }
+                });
 
-            window.onbeforeunload = function (e) {
-                ipcRenderer.send("stopServer");
-            };
+                ipcRenderer.on("log", function (event, arg) {
+                    let content = arg.content.replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
+                    let entry = $("<div class='entry " + arg.type + "'>" + content + "</div>");
+                    if (arg.type === "out") {
+                        if (content.indexOf("ERROR") !== -1) entry.addClass("err");
+                        if (content.indexOf("WARN") !== -1) entry.addClass("warn");
+                    }
+                    entry.appendTo($("#log"));
+                    if (followLog) {
+                        window.scrollTo(0, document.body.scrollHeight);
+                    }
+                });
+
+                window.onbeforeunload = function (e) {
+                    ipcRenderer.send("stopServer");
+                };
+            })
         </script>
     </body>
 </html>

@@ -49,9 +49,7 @@
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
 
-            Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
 
-            console.log(getCurrentWindow());
             getCurrentWindow().setMenu(Menu.buildFromTemplate([
                 {
                     label: "File",
@@ -76,6 +74,20 @@
                 }
             ]));
 
+            $(document).ready(function () {
+                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+
+                ipcRenderer.send("getRecentProjects");
+
+                $(".createNewProject").click(() => {
+                    ipcRenderer.send("showCreateNewProject");
+                })
+
+                $("#openProject").click(() => {
+                    ipcRenderer.send("showOpenProject");
+                })
+            })
+
             ipcRenderer.on("recentProjects", function (event, arg) {
                 for (let i = 0; i < arg.length; i++) {
                     let item = $('<li class="collection-item">' + arg[i] + '</li>');
@@ -88,15 +100,6 @@
                     $("#recentProjectRow").hide();
                 }
             });
-            ipcRenderer.send("getRecentProjects");
-
-            $(".createNewProject").click(() => {
-                ipcRenderer.send("showCreateNewProject");
-            })
-
-            $("#openProject").click(() => {
-                ipcRenderer.send("showOpenProject");
-            })
         </script>
     </body>
 </html>

@@ -85,7 +85,6 @@
                 });
 
 
-
                 function addBukkitNode(className, classType) {
                     let nodeName = NodeGenerator.getOrCreateBukkitClassNode(className, classType);
                     console.log(nodeName);
@@ -98,15 +97,17 @@
 
                 function generateCode() {
                     $("#overlay").fadeIn();
-                    let code = CodeGenerator.generateClassCode(graph, projectInfo);
-                    ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
+                    CodeGenerator.generateClassCode(graph, projectInfo).then((code) => {
+                        ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
+                    });
                 }
 
 
                 function generateCodeCompilePackage() {
                     $("#overlay").fadeIn();
-                    let code = CodeGenerator.generateClassCode(graph, projectInfo);
-                    ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true});
+                    CodeGenerator.generateClassCode(graph, projectInfo).then((code) => {
+                        ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true});
+                    });
                 }
 
 

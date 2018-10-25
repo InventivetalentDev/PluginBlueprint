@@ -82,8 +82,6 @@
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
 
-            Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
-
             let projectInfo = {};
 
             getCurrentWindow().setMenu(Menu.buildFromTemplate([
@@ -99,38 +97,42 @@
                 }
             ]));
 
-            window.onbeforeunload = function (e) {
-                updateProjectInfo();
-            };
+            $(document).ready(function () {
+                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
 
-            function updateProjectInfo() {
-                projectInfo.name = $("#name").val();
-                projectInfo.version = $("#version").val();
-                projectInfo.author = $("#author").val();
-                projectInfo.package = $("#package").val();
+                window.onbeforeunload = function (e) {
+                    updateProjectInfo();
+                };
 
-                ipcRenderer.send("updateProjectInfo", projectInfo);
-            }
+                function updateProjectInfo() {
+                    projectInfo.name = $("#name").val();
+                    projectInfo.version = $("#version").val();
+                    projectInfo.author = $("#author").val();
+                    projectInfo.package = $("#package").val();
 
-            ipcRenderer.send("getProjectInfo");
+                    ipcRenderer.send("updateProjectInfo", projectInfo);
+                }
 
-            ipcRenderer.on("projectInfo", function (event, arg) {
-                console.log("projectInfo");
-                console.log(arg);
-                projectInfo = arg;
+                ipcRenderer.send("getProjectInfo");
 
-                if (arg.name)
-                    $("#name").val(arg.name);
-                if (arg.version)
-                    $("#version").val(arg.version);
-                if (arg.author)
-                    $("#author").val(arg.author);
-                if (arg.package)
-                    $("#package").val(arg.package);
+                ipcRenderer.on("projectInfo", function (event, arg) {
+                    console.log("projectInfo");
+                    console.log(arg);
+                    projectInfo = arg;
 
-                M.updateTextFields();
+                    if (arg.name)
+                        $("#name").val(arg.name);
+                    if (arg.version)
+                        $("#version").val(arg.version);
+                    if (arg.author)
+                        $("#author").val(arg.author);
+                    if (arg.package)
+                        $("#package").val(arg.package);
 
-                $("#overlay").fadeOut();
+                    M.updateTextFields();
+
+                    $("#overlay").fadeOut();
+                })
             })
         </script>
     </body>
