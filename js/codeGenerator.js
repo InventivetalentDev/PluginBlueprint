@@ -544,7 +544,7 @@ function generateCodeForNativeNode(graph, n, node) {
             for (let i = 0; i < nativeType.length; i++) {
                 fields.push("private " + nativeType[i] + nodeOutput(node.id, outputIndex || 0) + ";");
                 code += ("private void node_" + node.id + "_exec() {\n" +
-                    "node_" + nodeOutput(node.id, outputIndex[i] || 0) + " = " + outputCode[i] + "\n" +
+                     nodeOutput(node.id, outputIndex[i] || 0) + " = " + outputCode[i] + "\n" +
                     "");
             }
         } else {
