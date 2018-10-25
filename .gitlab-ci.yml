@@ -16,6 +16,7 @@ dist_win:
   image: electronuserland/builder:wine
   script: npm run dist:win
   artifacts:
+    name: "$CI_PROJECT_NAME-CI_COMMIT_SHA-win"
     paths:
       - dist/out/*.exe
       - dist/out/*.blockmap
@@ -25,6 +26,7 @@ dist_linux:
   image: electronuserland/builder:10
   script: npm run dist:linux
   artifacts:
+    name: "$CI_PROJECT_NAME-CI_COMMIT_SHA-linux"
     paths:
       - dist/out/*.snap
       - dist/out/*.AppImage
