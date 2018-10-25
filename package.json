@@ -73,6 +73,7 @@
     "mocha": "^5.2.0"
   },
   "dependencies": {
+    "@sentry/electron": "^0.12.1",
     "electron-prompt": "^1.2.0",
     "fs-extra": "^7.0.0",
     "jquery": "^3.3.1",

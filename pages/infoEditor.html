@@ -80,6 +80,9 @@
             const {ipcRenderer} = require("electron");
             const {Menu,getCurrentWindow} = require("electron").remote;
             const $ = require("jquery");
+            const Sentry = require("@sentry/electron");
+
+            Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
 
             let projectInfo = {};
 

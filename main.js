@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain, dialog, Notification, shell} = require('electron');
+const {app, BrowserWindow, ipcMain, dialog, Notification, shell, crashReporter} = require('electron');
 const {LiteGraph} = require("litegraph.js");
 const NodeGenerator = require("./js/nodeGenerator");
 const CodeGenerator = require("./js/codeGenerator");
@@ -8,6 +8,7 @@ const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
 const notifier = require("node-notifier");
+const Sentry = require("@sentry/electron");
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -24,7 +25,15 @@ let recentProjects = [];
 function createWindow() {
     console.log("Hai!");
 
-    console.log( process.argv)
+    crashReporter.start({
+        productName: "PluginBlueprint",
+        companyName: "inventivetalent",
+        submitURL: "https://submit.backtrace.io/inventivetalent/194573923afb55a5b91ad7cda2868bbefaf0df605ae377a7067af7bd44f88e27/minidump",
+        uploadToServer: true
+    });
+    Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+
+    console.log(process.argv)
     process.argv.forEach((val, index) => {
         if (val === "--debug") {
             debug = true;
@@ -49,7 +58,7 @@ function createWindow() {
         win.show()
 
         // Open the DevTools.
-        if(debug) {
+        if (debug) {
             win.webContents.openDevTools({
                 mode: "detach"
             });
@@ -104,7 +113,12 @@ app.on('activate', () => {
     if (win === null) {
         createWindow()
     }
-})
+});
+
+process.on('uncaughtException', function (error) {
+    console.error(error);
+    process.crash();
+});
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.

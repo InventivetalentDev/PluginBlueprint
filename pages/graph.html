@@ -51,7 +51,9 @@
             const NodeGenerator = require("../js/nodeGenerator");
             const CodeGenerator = require("../js/codeGenerator");
             const $ = require("jquery");
-            // LiteGraph.debug=true;
+            const Sentry = require("@sentry/electron");
+            Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+
 
             var graph = new LGraph();
 
@@ -77,25 +79,24 @@
             console.log("Initializing Bukkit Node generator...")
             NodeGenerator.init()
 
-                // graph.addGlobalInput("Plugin", "org.bukkit.plugin.JavaPlugin");
+            // graph.addGlobalInput("Plugin", "org.bukkit.plugin.JavaPlugin");
 
-                // for (let n in NodeGenerator.getClassesByName()) {
-                //     NodeGenerator.getOrCreateBukkitClassNode(n)
-                // }
+            // for (let n in NodeGenerator.getClassesByName()) {
+            //     NodeGenerator.getOrCreateBukkitClassNode(n)
+            // }
 
-                // let methods = NodeGenerator.getMethods();
-                // for (let i = 0; i < methods.length; i++) {
-                //     NodeGenerator.getOrCreateBukkitMethodNode(methods[i])
-                // }
+            // let methods = NodeGenerator.getMethods();
+            // for (let i = 0; i < methods.length; i++) {
+            //     NodeGenerator.getOrCreateBukkitMethodNode(methods[i])
+            // }
 
-                // console.log(NodeGenerator.getClassesByName())
-
-
-                // addBukkitNode("org.bukkit.event.player.PlayerJoinEvent","event")
+            // console.log(NodeGenerator.getClassesByName())
 
 
-                ipcRenderer.send("getGraphData");
+            // addBukkitNode("org.bukkit.event.player.PlayerJoinEvent","event")
 
+
+            ipcRenderer.send("getGraphData");
 
 
             function addBukkitNode(className, classType) {
