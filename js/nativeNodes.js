@@ -14,7 +14,7 @@ StringConstant.prototype.onDrawBackground = function () {
     this.outputs[0].label = this.properties.string;
 };
 StringConstant.prototype.getFields = function (output) {
-    return ["java.lang.String " + output[0]+ " = \"" + this.properties.string + "\""];
+    return ["java.lang.String " + output[0] + " = \"" + this.properties.string + "\""];
 }
 
 // Number Constant
@@ -33,7 +33,7 @@ NumberConstant.prototype.onDrawBackground = function () {
     this.outputs[0].type = this.properties.type;
 };
 NumberConstant.prototype.getFields = function (output) {
-    return [this.type+" " + output[0]+ " = " + this.properties.number];
+    return [this.type + " " + output[0] + " = " + this.properties.number];
 }
 
 // Boolean Constant
@@ -50,7 +50,7 @@ BooleanConstant.prototype.onDrawBackground = function () {
     this.outputs[0].label = this.properties.value;
 };
 BooleanConstant.prototype.getFields = function (output) {
-    return ["boolean " + output[0]+ "= " + this.properties.value];
+    return ["boolean " + output[0] + "= " + this.properties.value];
 }
 
 // Cast
@@ -69,13 +69,35 @@ Cast.prototype.onDrawBackground = function () {
     this.outputs[1].label = "(" + this.properties.castTo + ")";
 };
 Cast.prototype.getFields = function (output) {
-    return [this.properties.castTo+" " + output[1]];
+    return [this.properties.castTo + " " + output[1]];
 }
 Cast.prototype.getMethodBody = function (input, output) {
-    return output[1] + " = ("+this.properties.castTo+") " + input[1]+";";
+    return output[1] + " = (" + this.properties.castTo + ") " + input[1] + ";";
 };
-Cast.prototype.getExecAfter=function (exec,i) {
-    return exec[0][i];
+Cast.prototype.getExecAfter = function (exec) {
+    return exec[0].join("\n");
+};
+
+// Switch
+
+function Switch() {
+    this.classType = "native";
+    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addOutput("True", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addOutput("False", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addInput("boolean", "boolean");
+}
+
+Switch.title = "Switch";
+Switch.prototype.getMethodBody = function (input, output) {
+    return "boolean val = " + input[1] + ";";
+};
+Switch.prototype.getExecAfter = function (exec) {
+    return  "if(val) {\n" +
+        exec[0].join("\n") + "//True\n" +
+        "} else {\n" +
+        exec[1].join("\n") + "//False\n" +
+        "}";
 };
 
 // Console Log
@@ -91,7 +113,7 @@ ConsoleLog.prototype.getFields = function (output) {
     return [];
 }
 ConsoleLog.prototype.getMethodBody = function (input, output) {
-    return "java.lang.System.out.println("+input[1]+");";
+    return "java.lang.System.out.println(" + input[1] + ");";
 };
 
 
@@ -101,6 +123,7 @@ module.exports = [
     BooleanConstant,
 
     Cast,
+    Switch,
 
     ConsoleLog
 ];

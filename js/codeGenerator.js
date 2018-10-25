@@ -530,27 +530,17 @@ function generateCodeForNativeNode(graph, n, node) {
         code += "private void node_" + node.id + "_exec() {\n";
     }
     if (node.getExecBefore) {
-        for (let i = 0; i < node.outputs.length; i++) {
-            let output = node.outputs[i];
-            if (!output) continue;
-
-            let exec = node.getExecBefore(outputExecs, i);
-            if (exec)
-                code += exec + "\n";
-        }
+        let exec = node.getExecBefore(outputExecs);
+        if (exec)
+            code += exec + "\n";
     }
     if (body) {
         code += body + "\n";
     }
     if (node.getExecAfter) {
-        for (let i = 0; i < node.outputs.length; i++) {
-            let output = node.outputs[i];
-            if (!output) continue;
-
-            let exec = node.getExecAfter(outputExecs, i);
-            if (exec)
-                code += exec + "\n";
-        }
+        let exec = node.getExecAfter(outputExecs);
+        if (exec)
+            code += exec + "\n";
     }
 
     if (body || node.getExecBefore || node.getExecAfter) {
