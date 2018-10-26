@@ -360,8 +360,10 @@ ipcMain.on("updateProjectInfo", function (event, arg) {
     if (!arg) return;
     currentProject = arg;
 
-    if (win)
+    if (win) {
         win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+        win.webContents.send("projectInfo", currentProject);
+    }
 
     fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
         if (err) {
