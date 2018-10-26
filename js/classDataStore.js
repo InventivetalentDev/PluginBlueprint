@@ -130,9 +130,15 @@ ClassDataStore.prototype.getMethodSignatureFromMethodAndParamTypes = function (m
 ClassDataStore.prototype.getMethodSignatureFromData = function (methodData) {
     let params = [];
     for (let i = 0; i < methodData.parameters.length; i++) {
-        params.push(methodData.parameters[i].type + methodData.parameters[i].type_dimension);
+        params.push(this.typeToSimple(methodData.parameters[i].type) + methodData.parameters[i].type_dimension);
     }
     return this.getMethodSignatureFromMethodAndParamTypes(methodData.name, params);
+};
+
+ClassDataStore.prototype.typeToSimple = function (type) {
+    if (!type) return null;
+    let split = type.split(".");
+    return split[split.length - 1];
 };
 
 module.exports = ClassDataStore;
