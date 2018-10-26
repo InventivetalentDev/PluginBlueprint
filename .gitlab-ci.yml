@@ -19,7 +19,6 @@ dist_win:
     name: "$CI_PROJECT_NAME-$CI_COMMIT_SHA-win"
     paths:
       - dist/out/*.exe
-      - dist/out/*.blockmap
   
 dist_linux:
   stage: build
