@@ -25,7 +25,10 @@ let currentProjectPath;
 let recentProjects = [];
 
 function createWindow() {
-    console.log("Hai!");
+    console.log("" +
+        "PluginBlueprint\n" +
+        "Copyright (c) 2018, Haylee Schäfer\n" +
+        "All rights reserved.\n");
 
     crashReporter.start({
         productName: "PluginBlueprint",

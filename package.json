@@ -65,7 +65,7 @@
     "url": "https://inventivetalent.org"
   },
   "homepage": "https://inventivetalent.org",
-  "license": "LGPL-3.0",
+  "license": "BSD-3-Clause",
   "devDependencies": {
     "electron": "^3.0.4",
     "electron-builder": "^20.28.4",
