@@ -137,7 +137,7 @@ function generateClassCode(graph, projectInfo) {
 function generateCodeForEventClassNode(graph, n, node, classData) {
     let code = "" +
         "@org.bukkit.event.EventHandler\n" +
-        "public void on(" + node.type + " event) {\n";
+        "public void on" + node.id + "(" + node.type + " event) {\n";
 
     fields.push("private " + node.type + " " + nodeV(node.id) + ";");
     code += nodeV(node.id) + " = event;\n";
