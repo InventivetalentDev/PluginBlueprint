@@ -539,6 +539,7 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
     console.log("openProjectInfoEditor")
     let child = new BrowserWindow({
         parent: win,
+        title:DEFAULT_TITLE,
         width: 600,
         height: 800,
         modal: true,
