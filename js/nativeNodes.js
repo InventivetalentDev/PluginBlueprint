@@ -5,7 +5,7 @@ const Colors = require("./colors");
 function StringConstant() {
     this.classType = "native";
     this.addOutput("", "java.lang.String", {colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
-    this.addProperty("string", "");
+    this.addProperty("string", "", "string");
 }
 
 StringConstant.title = "String Constant";
@@ -23,7 +23,7 @@ function NumberConstant() {
     this.classType = "native";
     this.addOutput("", "int", {colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
     this.addProperty("type", "int", "enum", {values: ["byte", "char", "short", "int", "long", "float", "double"]});
-    this.addProperty("number", 0);
+    this.addProperty("number", 0, "number");
 }
 
 NumberConstant.title = "Number Constant";
@@ -41,13 +41,13 @@ NumberConstant.prototype.getFields = function (output) {
 function BooleanConstant() {
     this.classType = "native";
     this.addOutput("", "boolean", {colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
-    this.addProperty("value", false);
+    this.addProperty("value", false, "boolean");
 }
 
 BooleanConstant.title = "BooleanConstant";
 BooleanConstant.prototype.color = Colors.BOOLEAN_OFF;
 BooleanConstant.prototype.onDrawBackground = function () {
-    this.outputs[0].label = this.properties.value;
+    this.outputs[0].label = "" + this.properties.value;
 };
 BooleanConstant.prototype.getFields = function (output) {
     return ["boolean " + output[0] + "= " + this.properties.value];
@@ -61,7 +61,7 @@ function Cast() {
     this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
     this.addInput("", null);
     this.addOutput("", null);
-    this.addProperty("castTo", "java.lang.Object");
+    this.addProperty("castTo", "java.lang.Object", "string");
 }
 
 Cast.title = "Cast";
@@ -93,7 +93,7 @@ Switch.prototype.getMethodBody = function (input, output) {
     return "boolean val = " + input[1] + ";";
 };
 Switch.prototype.getExecAfter = function (exec) {
-    return  "if(val) {\n" +
+    return "if(val) {\n" +
         exec[0].join("\n") + "//True\n" +
         "} else {\n" +
         exec[1].join("\n") + "//False\n" +
