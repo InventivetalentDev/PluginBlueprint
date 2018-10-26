@@ -66,9 +66,12 @@ const optionalInputOutputSorter = function (a, b) {
 function onEventAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
-    for (let i = 0; i < eventClasses.length; i++) {
-        if (!eventClasses[i].startsWith("org.bukkit")) continue;
-        let v = eventClasses[i].substr("org.".length).split(".");
+    let classesByName=classStore.getClassesByName();
+    for(let c in classesByName){
+        if(!c.startsWith("org.bukkit"))continue;
+        let clazz = classesByName[c];
+        if(!clazz.isEvent)continue;
+        let v = clazz.name.substr("org.".length).split(".");
         v.pop();
         let v1 = v.join(".");
         if (existingCategories.indexOf(v1) === -1) {
@@ -81,14 +84,16 @@ function onEventAdd(node, options, e, prevMenu) {
 
     function inner_clicked(v, option, e) {
         var values = [];
-        for (let i = 0; i < eventClasses.length; i++) {
-            if (!eventClasses[i].startsWith("org.bukkit")) continue;
-            let v0 = eventClasses[i].substr("org.".length).split(".");
+        for(let c in classesByName){
+            if(!c.startsWith("org.bukkit"))continue;
+            let clazz = classesByName[c];
+            if(!clazz.isEvent)continue;
+            let v0 =clazz.name.substr("org.".length).split(".");
             v0.pop();
             let v1 = v0.join(".");
             if (v.value === v1) {
-                let v2 = eventClasses[i].substr("org.".length).split(".");
-                values.push({content: v2[v2.length - 1], value: eventClasses[i]});
+                let v2 = clazz.name.substr("org.".length).split(".");
+                values.push({content: v2[v2.length - 1], value: clazz.name});
             }
         }
 
@@ -98,7 +103,7 @@ function onEventAdd(node, options, e, prevMenu) {
 
     function inner_create(v, e) {
         var first_event = prevMenu.getFirstEvent();
-        let nodeName = getOrCreateBukkitClassNode(v.value, "event");
+        let nodeName = getOrCreateBukkitClassNode(v.value);
         var node = LiteGraph.createNode(nodeName);
         if (node) {
             node.pos = canvas.convertEventToCanvas(first_event);
@@ -110,9 +115,12 @@ function onEventAdd(node, options, e, prevMenu) {
 function onObjectAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
-    for (let i = 0; i < objectClasses.length; i++) {
-        if (!objectClasses[i].startsWith("org.bukkit")) continue;
-        let v = objectClasses[i].substr("org.".length).split(".");
+    let classesByName=classStore.getClassesByName();
+    for(let c in classesByName) {
+        if (!c.startsWith("org.bukkit")) continue;
+        let clazz = classesByName[c];
+        if (!clazz.isObject) continue;
+        let v = clazz.name.substr("org.".length).split(".");
         v.pop();
         let v1 = v.join(".");
         if (existingCategories.indexOf(v1) === -1) {
@@ -125,14 +133,16 @@ function onObjectAdd(node, options, e, prevMenu) {
 
     function inner_clicked(v, option, e) {
         var values = [];
-        for (let i = 0; i < objectClasses.length; i++) {
-            if (!objectClasses[i].startsWith("org.bukkit")) continue;
-            let v0 = objectClasses[i].substr("org.".length).split(".");
+        for(let c in classesByName) {
+            if (!c.startsWith("org.bukkit")) continue;
+            let clazz = classesByName[c];
+            if (!clazz.isObject) continue;
+            let v0 = clazz.name.substr("org.".length).split(".");
             v0.pop();
             let v1 = v0.join(".");
             if (v.value === v1) {
-                let v2 = objectClasses[i].substr("org.".length).split(".");
-                values.push({content: v2[v2.length - 1], value: objectClasses[i]});
+                let v2 = clazz.name.substr("org.".length).split(".");
+                values.push({content: v2[v2.length - 1], value: clazz.name});
             }
         }
 
@@ -142,7 +152,7 @@ function onObjectAdd(node, options, e, prevMenu) {
 
     function inner_create(v, e) {
         var first_event = prevMenu.getFirstEvent();
-        let nodeName = getOrCreateBukkitClassNode(v.value, "object");
+        let nodeName = getOrCreateBukkitClassNode(v.value);
         var node = LiteGraph.createNode(nodeName);
         if (node) {
             node.pos = canvas.convertEventToCanvas(first_event);
@@ -154,14 +164,18 @@ function onObjectAdd(node, options, e, prevMenu) {
 function onMethodAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
-    for (let i = 0; i < methods.length; i++) {
-        if (!methods[i].startsWith("org.bukkit")) continue;
-        let v = methods[i].substr("org.".length).split(".");
-        v.pop();
-        let v1 = v.join(".");
-        if (existingCategories.indexOf(v1) === -1) {
-            entries.push({value: v1, content: v1, has_submenu: true})
-            existingCategories.push(v1);
+    let classesByName=classStore.getClassesByName();
+    for(let c in classesByName) {
+        if (!c.startsWith("org.bukkit")) continue;
+        let clazz = classesByName[c];
+        for(let m in clazz.methodsBySignature){
+            let v = clazz.methodsBySignature[m].substr("org.".length).split(".");
+            v.pop();
+            let v1 = v.join(".");
+            if (existingCategories.indexOf(v1) === -1) {
+                entries.push({value: v1, content: v1, has_submenu: true})
+                existingCategories.push(v1);
+            }
         }
     }
 
@@ -171,16 +185,19 @@ function onMethodAdd(node, options, e, prevMenu) {
     function inner_clicked(v, option, e) {
         var values = [];
         let existingCategories = [];
-        for (let i = 0; i < methods.length; i++) {
-            if (!methods[i].startsWith("org.bukkit")) continue;
-            let split = methods[i].substr("org.".length).split(".");
-            let classAndMethod = split[split.length - 1];
-            split.pop();
-            if (v.value === split.join(".")) {
-                let simpleName = classAndMethod.split("#")[0];
-                if (existingCategories.indexOf(simpleName) === -1) {
-                    values.push({content: simpleName, value: simpleName, has_submenu: true});
-                    existingCategories.push(simpleName)
+        for(let c in classesByName) {
+            if (!c.startsWith("org.bukkit")) continue;
+            let clazz = classesByName[c];
+            for (let m in clazz.methodsBySignature) {
+                let split = clazz.methodsBySignature[m].substr("org.".length).split(".");
+                let classAndMethod = split[split.length - 1];
+                split.pop();
+                if (v.value === split.join(".")) {
+                    let simpleName = classAndMethod.split("#")[0];
+                    if (existingCategories.indexOf(simpleName) === -1) {
+                        values.push({content: simpleName, value: simpleName, has_submenu: true});
+                        existingCategories.push(simpleName)
+                    }
                 }
             }
         }
@@ -192,16 +209,19 @@ function onMethodAdd(node, options, e, prevMenu) {
     function inner2_clicked(v, option, e) {
         var values = [];
         let existingCategories = [];
-        for (let i = 0; i < methods.length; i++) {
-            if (!methods[i].startsWith("org.bukkit")) continue;
-            let split0 = methods[i].substr("org.".length).split(".");
-            let split1 = split0[split0.length - 1].split("#");
-            let clazz = split1[0];
-            let method = split1[1];
-            if (v.value === clazz) {
-                if (existingCategories.indexOf(method) === -1) {
-                    values.push({content: method, value: methods[i], has_submenu: false});
-                    existingCategories.push(method);
+        for(let c in classesByName) {
+            if (!c.startsWith("org.bukkit")) continue;
+            let clazz = classesByName[c];
+            for(let m in clazz.methodsBySignature) {
+                let split0 = clazz.methodsBySignature[m].substr("org.".length).split(".");
+                let split1 = split0[split0.length - 1].split("#");
+                let clazz = split1[0];
+                let method = split1[1];
+                if (v.value === clazz) {
+                    if (existingCategories.indexOf(method) === -1) {
+                        values.push({content: method, value: {class:clazz.name,method:m}, has_submenu: false});
+                        existingCategories.push(method);
+                    }
                 }
             }
         }
@@ -212,7 +232,7 @@ function onMethodAdd(node, options, e, prevMenu) {
 
     function inner_create(v, e) {
         var first_event = prevMenu.getFirstEvent();
-        let nodeName = getOrCreateBukkitMethodNode(v.value, "method");
+        let nodeName = getOrCreateBukkitMethodNode(v.value.class, v.value.method);
         console.log(nodeName)
         var node = LiteGraph.createNode(nodeName);
         console.log(node)
