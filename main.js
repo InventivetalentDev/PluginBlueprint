@@ -556,17 +556,32 @@ ipcMain.on("startServer", function (event, arg) {
         serverStarter.startServer(currentProjectPath,
             (out) => {
                 if (logWin) {
-                    if (out.indexOf("Starting Minecraft server on") !== -1) {
-                        port = out.substr(24/* strip timestamp & start of string */).split(":")[1];
-                    }
-                    if (out.indexOf("Done (") !== -1 && out.indexOf("For help, type") !== -1) {
-                        showNotification("Test Server running on port " + port);
-                    }
+                    // sometimes multiple lines are combined into one output, so split it here
+                    let split = out.split("\n");
+                    for (let i = 0; i < split.length; i++) {
+                        let log = split[i];
 
-                    logWin.webContents.send("log", {
-                        type: "out",
-                        content: out
-                    });
+                        if (log.indexOf("Starting Minecraft server on") !== -1) {
+                            port = log.substr(24/* strip timestamp & start of string */).split(":")[1];
+                        }
+                        if (log.indexOf("Done (") !== -1 && log.indexOf("For help, type") !== -1) {
+                            showNotification("Test Server running on port " + port);
+                        }
+
+
+                        if (log.indexOf("pb_debug_exec") !== -1) {
+                            if (win) win.webContents.send("debugCall", {
+                                type: "exec",
+                                node: parseInt(log.split("pb_debug_exec=")[1])
+                            });
+                            continue;// don't log
+                        }
+
+                        logWin.webContents.send("log", {
+                            type: "log",
+                            content: log
+                        });
+                    }
                 }
             },
             (err) => {

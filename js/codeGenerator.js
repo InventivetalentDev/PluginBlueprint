@@ -137,7 +137,7 @@ function generateClassCode(graph, projectInfo) {
 function generateCodeForEventClassNode(graph, n, node, classData) {
     let code = "" +
         "@org.bukkit.event.EventHandler\n" +
-        "public void on" + node.id + "(" + node.type + " event) {\n";
+        "public void on" + node.id + "(" + node.type + " event) {\n" + debugCall(node.id);
 
     fields.push("private " + node.type + " " + nodeV(node.id) + ";");
     code += nodeV(node.id) + " = event;\n";
@@ -240,7 +240,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
     let field = "private " + node.type + nodeV(node.id) + ";";
 
     let code = "// CLASS EXECUTION for " + node.title + "\n" +
-        "private void node_" + node.id + "_exec() {\n";
+        "private void node_" + node.id + "_exec() {\n" + debugCall(node.id);
     let initCode = "";
     let execCode = "";
     let otherCode = "";
@@ -392,7 +392,7 @@ function generateCodeForEnumClassNode(graph, n, node, classData) {
 
 function generateCodeForMethodNode(graph, n, node, classData, methodData) {
     let code = "// METHOD EXECUTION for " + classData.name + "#" + methodData.name + "\n" +
-        "private void node_" + node.id + "_exec() {\n";
+        "private void node_" + node.id + "_exec() {\n" + debugCall(node.id);
 
     let execCode = "";
     for (let o = 0; o < node.outputs.length; o++) {
@@ -535,6 +535,7 @@ function generateCodeForNativeNode(graph, n, node) {
             code += exec + "\n";
     }
     if (body) {
+        code += debugCall(node.id);
         code += body + "\n";
     }
     if (node.getExecAfter) {
@@ -647,6 +648,9 @@ function nodeExec(nodeId) {
     return " node_" + nodeId + "_exec()"
 }
 
+function debugCall(nodeId) {//TODO: enable/disable debug in project settings
+    return "java.lang.System.out.println(\"pb_debug_exec=" + nodeId + "\");/** Debug call **/\n"
+}
 
 module.exports = {
     generateClassCode: generateClassCode

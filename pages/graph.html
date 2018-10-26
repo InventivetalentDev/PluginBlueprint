@@ -82,6 +82,8 @@
             console.log("Initializing Bukkit Node generator...")
             NodeGenerator.init().then(() => {
                 ipcRenderer.send("getGraphData");
+
+                graph.start(100);
             });
 
 
@@ -271,6 +273,40 @@
                 $("#overlay").fadeOut();
             })
 
+            ipcRenderer.on("debugCall", function (event, arg) {
+                console.log("debugCall", arg);
+                let node = graph.getNodeById(arg.node);
+                if (node) {
+                    console.log(node);
+                    if (arg.type === "exec") {
+                        if (node.inputs) {
+                            // Trace back the inputs, since the node calls the debug on itself, but litegraph wants the trigger on the originating node
+                            for (let i = 0; i < node.inputs.length; i++) {
+                                let input = node.inputs[i];
+                                console.log(input)
+                                if (!input) continue;
+                                if (input.type === "@EXEC") {
+                                    let linkInfo = input.link ? graph.links[input.link] : null;
+                                    if (linkInfo) {
+                                        let originNode = graph.getNodeById(linkInfo.origin_id);
+                                        if (originNode) {
+                                            console.log("Trigger slot", linkInfo.origin_slot, "in node", linkInfo.origin_id," - triggered by",node.id);
+                                            originNode.triggerSlot(linkInfo.origin_slot);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        // if (node.outputs) {
+                        //     for (let o = 0; o < node.outputs.length; o++) {
+                        //         if (node.outputs[o].type === "@EXEC") {
+                        //             node.triggerSlot(o)
+                        //         }
+                        //     }
+                        // }
+                    }
+                }
+            })
         </script>
     </body>
 </html>
