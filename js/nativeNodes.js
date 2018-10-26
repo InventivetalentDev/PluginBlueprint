@@ -4,7 +4,7 @@ const Colors = require("./colors");
 
 function StringConstant() {
     this.classType = "native";
-    this.addOutput("", "java.lang.String", {colorOff: Colors.STRING_OFF, colorOn: Colors.STRING_ON});
+    this.addOutput("", "java.lang.String", {color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON});
     this.addProperty("string", "", "string");
 }
 
@@ -21,7 +21,7 @@ StringConstant.prototype.getFields = function (output) {
 
 function NumberConstant() {
     this.classType = "native";
-    this.addOutput("", "int", {colorOff: Colors.NUMBER_OFF, colorOn: Colors.NUMBER_ON});
+    this.addOutput("", "int", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
     this.addProperty("type", "int", "enum", {values: ["byte", "char", "short", "int", "long", "float", "double"]});
     this.addProperty("number", 0, "number");
 }
@@ -40,7 +40,7 @@ NumberConstant.prototype.getFields = function (output) {
 
 function BooleanConstant() {
     this.classType = "native";
-    this.addOutput("", "boolean", {colorOff: Colors.BOOLEAN_OFF, colorOn: Colors.BOOLEAN_ON});
+    this.addOutput("", "boolean", {color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON});
     this.addProperty("value", false, "boolean");
 }
 
@@ -57,8 +57,8 @@ BooleanConstant.prototype.getFields = function (output) {
 
 function Cast() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
-    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
     this.addInput("", null);
     this.addOutput("", null);
     this.addProperty("castTo", "java.lang.Object", "string");
@@ -82,9 +82,9 @@ Cast.prototype.getExecAfter = function (exec) {
 
 function Switch() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
-    this.addOutput("True", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
-    this.addOutput("False", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addOutput("True", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addOutput("False", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
     this.addInput("boolean", "boolean");
 }
 
@@ -104,7 +104,7 @@ Switch.prototype.getExecAfter = function (exec) {
 
 function ConsoleLog() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, colorOff: Colors.EXEC_OFF, colorOn: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
     this.addInput("", null);
 }
 
