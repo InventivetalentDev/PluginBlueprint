@@ -62,215 +62,215 @@
 
             $(document).ready(function () {
                 Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
-
-
-                ipcRenderer.send("getProjectInfo");
-
-                graph.onNodeAdded = function (node) {
-                    console.log(node);
-                };
-                canvas.onNodeSelected = function (node) {
-                    console.log(node)
-                }
-
-                window.addEventListener("resize", function () {
-                    canvas.resize();
-                });
-                window.addEventListener("keydown", canvas.processKey.bind(canvas));
-                canvas.resize();
-
-                console.log("Initializing Bukkit Node generator...")
-                NodeGenerator.init().then(() => {
-                    ipcRenderer.send("getGraphData");
-                });
-
-
-                function addBukkitNode(className, classType) {
-                    let nodeName = NodeGenerator.getOrCreateBukkitClassNode(className, classType);
-                    console.log(nodeName);
-                    if (!nodeName) return;
-                    let node = LiteGraph.createNode(nodeName);
-                    if (!node) return;
-                    console.log(node)
-                    graph.add(node);
-                }
-
-                function generateCode() {
-                    $("#overlay").fadeIn();
-                    CodeGenerator.generateClassCode(graph, projectInfo).then((code) => {
-                        ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
-                    });
-                }
-
-
-                function generateCodeCompilePackage() {
-                    $("#overlay").fadeIn();
-                    CodeGenerator.generateClassCode(graph, projectInfo).then((code) => {
-                        ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true});
-                    });
-                }
-
-
-                function compile() {
-                    $("#overlay").fadeIn();
-                    ipcRenderer.send("codeGenerated", {code: null, compile: true, pack: false});
-                }
-
-                function pack() {
-                    $("#overlay").fadeIn();
-                    ipcRenderer.send("codeGenerated", {code: null, compile: false, pack: true});
-                }
-
-                function saveGraph() {
-                    $("#overlay").fadeIn();
-                    ipcRenderer.send("saveGraphData", graph.serialize());
-                }
-
-                function saveGraphAndClose() {
-                    $("#overlay").fadeIn();
-                    ipcRenderer.send("saveGraphDataAndClose", graph.serialize());
-                }
-
-                getCurrentWindow().setMenu(Menu.buildFromTemplate([
-                    {
-                        label: "File",
-                        submenu: [
-                            {
-                                label: "New", role: "new", click: () => {
-                                    ipcRenderer.send("showCreateNewProject");
-                                }
-                            },
-                            {
-                                label: "Open", role: "open", click: () => {
-                                    ipcRenderer.send("showOpenProject");
-                                }
-                            },
-                            {
-                                type: "separator"
-                            },
-                            {
-                                label: "Save",
-                                role: "save",
-                                accelerator: "CommandOrControl+S",
-                                click: () => {
-                                    saveGraph()
-                                }
-                            },
-                            {
-                                type: "separator"
-                            },
-                            {
-                                role: "toggledevtools"
-                            },
-                            {
-                                type: "separator"
-                            },
-                            {
-                                label: "Close Project",
-                                click: () => {
-                                    saveGraphAndClose();
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        label: "Project",
-                        submenu: [
-                            {
-                                label: "Edit Project Information", click: () => {
-                                    ipcRenderer.send("openProjectInfoEditor");
-                                }
-                            },
-                            {
-                                type: "separator"
-                            },
-                            {
-                                label: "Close",
-                                click: () => {
-                                    saveGraphAndClose();
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        label: "Compile",
-                        submenu: [
-                            {
-                                label: "Generate Code, Compile, Package", click: () => {
-                                    generateCodeCompilePackage();
-                                }
-                            },
-                            {
-                                type: "separator"
-                            },
-                            {
-                                label: "Open output directory", click: () => {
-                                    ipcRenderer.send("openOutputDir");
-                                }
-                            },
-                            {
-                                type: "separator"
-                            },
-                            {
-                                label: "Generate Code", click: () => {
-                                    generateCode();
-                                }
-                            },
-                            {
-                                label: "Compile", click: () => {
-                                    compile();
-                                }
-                            },
-                            {
-                                label: "Package", click: () => {
-                                    pack();
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        label: "Run",
-                        submenu: [
-                            {
-                                label: "Start Server", click: () => {
-                                    ipcRenderer.send("startServer");
-                                }
-                            },
-                            {
-                                label: "Stop Server", click: () => {
-                                    ipcRenderer.send("stopServer");
-                                }
-                            }
-                        ]
-                    }
-                ]))
-
-                ipcRenderer.on("projectInfo", function (event, arg) {
-                    projectInfo = arg;
-                    console.log("Project:")
-                    console.log(arg);
-                });
-                ipcRenderer.on("graphData", function (event, arg) {
-                    if (!arg) {
-                        console.warn("Empty graph data")
-                        return;
-                    }
-                    if (graph && arg.nodes) {
-                        graph.configure(arg);
-                    }
-                    $("#overlay").fadeOut();
-                })
-                ipcRenderer.on("generateDone", function (event, arg) {
-                    $("#overlay").fadeOut();
-                })
-                ipcRenderer.on("generateError", function (event, arg) {
-                    $("#overlay").fadeOut();
-                    console.error(arg);
-                });
-                ipcRenderer.on("graphDataSaved", function (event, arg) {
-                    $("#overlay").fadeOut();
-                })
             })
+
+            ipcRenderer.send("getProjectInfo");
+
+            graph.onNodeAdded = function (node) {
+                console.log(node);
+            };
+            canvas.onNodeSelected = function (node) {
+                console.log(node)
+            }
+
+            window.addEventListener("resize", function () {
+                canvas.resize();
+            });
+            window.addEventListener("keydown", canvas.processKey.bind(canvas));
+            canvas.resize();
+
+            console.log("Initializing Bukkit Node generator...")
+            NodeGenerator.init().then(() => {
+                ipcRenderer.send("getGraphData");
+            });
+
+
+            function addBukkitNode(className, classType) {
+                let nodeName = NodeGenerator.getOrCreateBukkitClassNode(className, classType);
+                console.log(nodeName);
+                if (!nodeName) return;
+                let node = LiteGraph.createNode(nodeName);
+                if (!node) return;
+                console.log(node)
+                graph.add(node);
+            }
+
+            function generateCode() {
+                $("#overlay").fadeIn();
+                CodeGenerator.generateClassCode(graph, projectInfo).then((code) => {
+                    ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
+                });
+            }
+
+
+            function generateCodeCompilePackage() {
+                $("#overlay").fadeIn();
+                CodeGenerator.generateClassCode(graph, projectInfo).then((code) => {
+                    ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true});
+                });
+            }
+
+
+            function compile() {
+                $("#overlay").fadeIn();
+                ipcRenderer.send("codeGenerated", {code: null, compile: true, pack: false});
+            }
+
+            function pack() {
+                $("#overlay").fadeIn();
+                ipcRenderer.send("codeGenerated", {code: null, compile: false, pack: true});
+            }
+
+            function saveGraph() {
+                $("#overlay").fadeIn();
+                ipcRenderer.send("saveGraphData", graph.serialize());
+            }
+
+            function saveGraphAndClose() {
+                $("#overlay").fadeIn();
+                ipcRenderer.send("saveGraphDataAndClose", graph.serialize());
+            }
+
+            getCurrentWindow().setMenu(Menu.buildFromTemplate([
+                {
+                    label: "File",
+                    submenu: [
+                        {
+                            label: "New", role: "new", click: () => {
+                                ipcRenderer.send("showCreateNewProject");
+                            }
+                        },
+                        {
+                            label: "Open", role: "open", click: () => {
+                                ipcRenderer.send("showOpenProject");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Save",
+                            role: "save",
+                            accelerator: "CommandOrControl+S",
+                            click: () => {
+                                saveGraph()
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            role: "toggledevtools"
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Close Project",
+                            click: () => {
+                                saveGraphAndClose();
+                            }
+                        }
+                    ]
+                },
+                {
+                    label: "Project",
+                    submenu: [
+                        {
+                            label: "Edit Project Information", click: () => {
+                                ipcRenderer.send("openProjectInfoEditor");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Close",
+                            click: () => {
+                                saveGraphAndClose();
+                            }
+                        }
+                    ]
+                },
+                {
+                    label: "Compile",
+                    submenu: [
+                        {
+                            label: "Generate Code, Compile, Package", click: () => {
+                                generateCodeCompilePackage();
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Open output directory", click: () => {
+                                ipcRenderer.send("openOutputDir");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Generate Code", click: () => {
+                                generateCode();
+                            }
+                        },
+                        {
+                            label: "Compile", click: () => {
+                                compile();
+                            }
+                        },
+                        {
+                            label: "Package", click: () => {
+                                pack();
+                            }
+                        }
+                    ]
+                },
+                {
+                    label: "Run",
+                    submenu: [
+                        {
+                            label: "Start Server", click: () => {
+                                ipcRenderer.send("startServer");
+                            }
+                        },
+                        {
+                            label: "Stop Server", click: () => {
+                                ipcRenderer.send("stopServer");
+                            }
+                        }
+                    ]
+                }
+            ]))
+
+            ipcRenderer.on("projectInfo", function (event, arg) {
+                projectInfo = arg;
+                console.log("Project:")
+                console.log(arg);
+            });
+            ipcRenderer.on("graphData", function (event, arg) {
+                if (!arg) {
+                    console.warn("Empty graph data")
+                    return;
+                }
+                if (graph && arg.nodes) {
+                    graph.configure(arg);
+                }
+                $("#overlay").fadeOut();
+            })
+            ipcRenderer.on("generateDone", function (event, arg) {
+                $("#overlay").fadeOut();
+            })
+            ipcRenderer.on("generateError", function (event, arg) {
+                $("#overlay").fadeOut();
+                console.error(arg);
+            });
+            ipcRenderer.on("graphDataSaved", function (event, arg) {
+                $("#overlay").fadeOut();
+            })
+
         </script>
     </body>
 </html>

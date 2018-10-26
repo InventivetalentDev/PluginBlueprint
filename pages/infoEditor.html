@@ -78,9 +78,13 @@
         <script src="../node_modules/materialize-css/dist/js/materialize.min.js"></script>
         <script>
             const {ipcRenderer} = require("electron");
-            const {Menu,getCurrentWindow} = require("electron").remote;
+            const {Menu, getCurrentWindow} = require("electron").remote;
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
+
+            $(document).ready(function () {
+                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+            });
 
             let projectInfo = {};
 
@@ -97,42 +101,38 @@
                 }
             ]));
 
-            $(document).ready(function () {
-                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+            window.onbeforeunload = function (e) {
+                updateProjectInfo();
+            };
 
-                window.onbeforeunload = function (e) {
-                    updateProjectInfo();
-                };
+            function updateProjectInfo() {
+                projectInfo.name = $("#name").val();
+                projectInfo.version = $("#version").val();
+                projectInfo.author = $("#author").val();
+                projectInfo.package = $("#package").val();
 
-                function updateProjectInfo() {
-                    projectInfo.name = $("#name").val();
-                    projectInfo.version = $("#version").val();
-                    projectInfo.author = $("#author").val();
-                    projectInfo.package = $("#package").val();
+                ipcRenderer.send("updateProjectInfo", projectInfo);
+            }
 
-                    ipcRenderer.send("updateProjectInfo", projectInfo);
-                }
+            ipcRenderer.send("getProjectInfo");
 
-                ipcRenderer.send("getProjectInfo");
+            ipcRenderer.on("projectInfo", function (event, arg) {
+                console.log("projectInfo");
+                console.log(arg);
+                projectInfo = arg;
 
-                ipcRenderer.on("projectInfo", function (event, arg) {
-                    console.log("projectInfo");
-                    console.log(arg);
-                    projectInfo = arg;
+                if (arg.name)
+                    $("#name").val(arg.name);
+                if (arg.version)
+                    $("#version").val(arg.version);
+                if (arg.author)
+                    $("#author").val(arg.author);
+                if (arg.package)
+                    $("#package").val(arg.package);
 
-                    if (arg.name)
-                        $("#name").val(arg.name);
-                    if (arg.version)
-                        $("#version").val(arg.version);
-                    if (arg.author)
-                        $("#author").val(arg.author);
-                    if (arg.package)
-                        $("#package").val(arg.package);
+                M.updateTextFields();
 
-                    M.updateTextFields();
-
-                    $("#overlay").fadeOut();
-                })
+                $("#overlay").fadeOut();
             })
         </script>
     </body>
