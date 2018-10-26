@@ -38,7 +38,30 @@ const inputOutputSorter = function (a, b) {
 
     // names must be equal
     return 0;
-}
+};
+
+const optionalInputOutputSorter = function (a, b) {
+    var nameA = a[0].toUpperCase(); // ignore upper and lowercase
+    var nameB = b[0].toUpperCase(); // ignore upper and lowercase
+
+
+    if (nameA === "EXEC" || nameA === "REF" || nameA === "THIS") {
+        return -1;
+    }
+    if (nameB === "EXEC" || nameB === "REF" || nameB === "THIS") {
+        return 1;
+    }
+
+    if (nameA < nameB) {
+        return -1;
+    }
+    if (nameA > nameB) {
+        return 1;
+    }
+
+    // names must be equal
+    return 0;
+};
 
 function onEventAdd(node, options, e, prevMenu) {
     let entries = [];
@@ -269,20 +292,24 @@ function getOrCreateBukkitClassNode(className) {
 
         if (this.inputs)
             this.inputs.sort(inputOutputSorter);
+        if (this.optional_inputs)
+            this.optional_inputs.sort(optionalInputOutputSorter);
         if (this.outputs)
             this.outputs.sort(inputOutputSorter);
+        if (this.optional_outputs)
+            this.optional_outputs.sort(optionalInputOutputSorter);
 
         this.nodeType = "BukkitClassNode";
 
         if (classData.isEvent) {
             this.classType = "event";
-            BukkitClassNode.prototype.color = Colors.EVENT;
+            this.color = Colors.EVENT;
         } else if (classData.isEnum) {
             this.classType = "enum";
-            BukkitClassNode.prototype.color = Colors.ENUM_OFF;//TODO: separate variable
+            this.color = Colors.ENUM_OFF;//TODO: separate variable
         } else {
             this.classType = "object";
-            BukkitClassNode.prototype.color = Colors.OBJECT;
+            this.color = Colors.OBJECT;
         }
 
         this.className = classData.name;
@@ -290,6 +317,16 @@ function getOrCreateBukkitClassNode(className) {
 
     BukkitClassNode.title = simpleClassName;
 
+    BukkitClassNode.prototype.getMenuOptions = function () {
+        return [
+            {content: "Inputs", has_submenu: true, disabled: this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
+            {content: "Outputs", has_submenu: true, disabled: this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
+            null
+        ];
+    };
+    BukkitClassNode.prototype.onConfigure = function () {
+        this.size = this.computeSize();
+    };
 
     BukkitClassNode.prototype.onOutputDblClick = function (i, e) {
         handleSlotDoubleClick(this, i, e);
@@ -368,19 +405,19 @@ function addClassIO(node, classData, isChildCall) {
                 shape: LiteGraph.BOX_SHAPE,
                 color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
                 color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
-            });
+            }, true);
         } else if (method.parameters.length === 0) {
             let returnData = classStore.getClass(method.return_type);
             if (method.return_type === "boolean") {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON}, true);
             } else if (method.return_type === "number" || method.return_type === "int" || method.return_type === "double" || method.return_type === "float" || method.return_type === "short" || method.return_type === "long" || method.return_type === "byte") {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON}, true);
             } else if (method.return_type === "string" || method.return_type === "java.lang.String") {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON}, true);
             } else if (returnData && returnData.isObject) {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "object", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "object", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON}, true);
             } else if (returnData && returnData.isEnum) {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "enum", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON});
+                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "enum", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON}, true);
             } else {
                 // addNodeOutput(node,method.name, method.return_type);
                 addNodeOutput(node, method.name, classData.name + "#" + methodSignature, {
@@ -391,7 +428,7 @@ function addClassIO(node, classData, isChildCall) {
                     shape: LiteGraph.BOX_SHAPE,
                     color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
                     color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
-                });
+                }, true);
             }
         } else {
             addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {
@@ -402,7 +439,7 @@ function addClassIO(node, classData, isChildCall) {
                 shape: LiteGraph.BOX_SHAPE,
                 color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
                 color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
-            });
+            }, true);
         }
     }
 
@@ -455,6 +492,16 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
 
     BukkitMethodNode.prototype.color = Colors.FUNCTION;
 
+    BukkitMethodNode.prototype.getMenuOptions = function () {
+        return [
+            {content: "Inputs", has_submenu: true, disabled: this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
+            {content: "Outputs", has_submenu: true, disabled: this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
+            null
+        ];
+    };
+    BukkitMethodNode.prototype.onConfigure = function () {
+        this.size = this.computeSize();
+    };
 
     BukkitMethodNode.prototype.onOutputDblClick = function (i, e) {
         handleSlotDoubleClick(this, i, e);
@@ -518,8 +565,16 @@ function countNonDefaultMethods(classData) {
     return c;
 }
 
-function addNodeInput(node, name, type, options) {
-    if (node.inputs) {
+function addNodeInput(node, name, type, options, optional) {
+    if (!node.optional_inputs) node.optional_inputs = [];
+    if (!node.inputs) node.inputs = [];
+    if (optional) {
+        for (let s = 0; s < node.optional_inputs.length; s++) {
+            if (node.optional_inputs[s][0] === name) {
+                return;
+            }
+        }
+    } else {
         for (let s = 0; s < node.inputs.length; s++) {
             if (node.inputs[s].name === name) {
                 return;
@@ -527,6 +582,8 @@ function addNodeInput(node, name, type, options) {
         }
     }
     if (!options) options = {};
+    if (!options.locked) options.locked = !optional;
+    options.nameLocked = true;
     if (!options.color_on && !options.color_off) {
         let colors = getColorsForType(type);
         if (colors) {
@@ -534,12 +591,24 @@ function addNodeInput(node, name, type, options) {
             options.color_off = colors[1];
         }
     }
-    node.addInput(name, type, options);
+    if (optional) {
+        node.optional_inputs.push([name, type, options]);
+    } else {
+        node.addInput(name, type, options);
+    }
     return node.inputs.length - 1;
 }
 
-function addNodeOutput(node, name, type, options) {
-    if (node.outputs) {
+function addNodeOutput(node, name, type, options, optional) {
+    if (!node.optional_outputs) node.optional_outputs = [];
+    if (!node.outputs) node.outputs = [];
+    if (optional) {
+        for (let s = 0; s < node.optional_outputs.length; s++) {
+            if (node.optional_outputs[s][0] === name) {
+                return;
+            }
+        }
+    } else {
         for (let s = 0; s < node.outputs.length; s++) {
             if (node.outputs[s].name === name) {
                 return;
@@ -547,6 +616,8 @@ function addNodeOutput(node, name, type, options) {
         }
     }
     if (!options) options = {};
+    if (!options.locked) options.locked = !optional;
+    options.nameLocked = true;
     if (!options.color_on && !options.color_off) {
         let colors = getColorsForType(type);
         if (colors) {
@@ -554,7 +625,11 @@ function addNodeOutput(node, name, type, options) {
             options.color_off = colors[1];
         }
     }
-    node.addOutput(name, type, options);
+    if (optional) {
+        node.optional_outputs.push([name, type, options]);
+    } else {
+        node.addOutput(name, type, options);
+    }
     return node.outputs.length - 1;
 }
 
