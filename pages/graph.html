@@ -55,13 +55,13 @@
 
             let projectInfo = {};
 
+            var graph = new LGraph();
+
+            var canvas = new LGraphCanvas("#mycanvas", graph);
+            console.log(canvas);
+
             $(document).ready(function () {
                 Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
-
-                var graph = new LGraph();
-
-                var canvas = new LGraphCanvas("#mycanvas", graph);
-                console.log(canvas);
 
 
                 ipcRenderer.send("getProjectInfo");
