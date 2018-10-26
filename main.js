@@ -146,6 +146,9 @@ function readRecentProjects() {
 }
 
 function writeRecentProjects() {
+    if (recentProjects.length > 10) {
+        recentProjects.pop();
+    }
     fs.writeFile(path.join(app.getPath("userData"), "recentProjects.pbd"), JSON.stringify(recentProjects), "utf-8", function (err) {
         if (err) {
             console.warn(err);
