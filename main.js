@@ -197,30 +197,35 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
             dialog.showMessageBox({
                 title: "Select spigot.jar location",
                 message: "Please select the location of a valid spigot.jar executable",
-                buttons: ["Select"],
+                buttons: ["Select", "I don't have one"],
                 icon: path.join(__dirname, 'assets/images/logo-x64.png')
-            }, () => {
-                let libPath = dialog.showOpenDialog({
-                    properties: ["openFile"],
-                    filters: [
-                        {name: 'Spigot JAR file', extensions: ['jar']}
-                    ]
-                });
-                console.log(libPath);
-                if (!libPath || libPath.length === 0) {
-                    return;
-                }
-                if (Array.isArray(libPath)) {
-                    libPath = libPath[0];
+            }, (r) => {
+                console.log(r)
+                if (r === 0) {
+                    let libPath = dialog.showOpenDialog({
+                        properties: ["openFile"],
+                        filters: [
+                            {name: 'Spigot JAR file', extensions: ['jar']}
+                        ]
+                    });
+                    console.log(libPath);
                     if (!libPath || libPath.length === 0) {
                         return;
                     }
-                }
+                    if (Array.isArray(libPath)) {
+                        libPath = libPath[0];
+                        if (!libPath || libPath.length === 0) {
+                            return;
+                        }
+                    }
 
-                createNewProject({
-                    path: projectPath,
-                    name: name
-                }, libPath)
+                    createNewProject({
+                        path: projectPath,
+                        name: name
+                    }, libPath)
+                }else{
+                    shell.openExternal("https://www.spigotmc.org/wiki/buildtools/#running-buildtools");
+                }
             });
 
 
