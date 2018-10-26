@@ -10,6 +10,8 @@ const fs = require("fs-extra");
 const notifier = require("node-notifier");
 const Sentry = require("@sentry/electron");
 
+const DEFAULT_TITLE = "PluginBlueprint Editor";
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
@@ -43,7 +45,7 @@ function createWindow() {
 
     // Create the browser window.
     win = new BrowserWindow({
-        title: "PluginBlueprint Editor",
+        title: DEFAULT_TITLE,
         width: 1200,
         height: 800,
         show: false,
@@ -267,6 +269,7 @@ function createNewProject(arg, lib) {
 
                 if (win) {
                     win.loadFile('pages/graph.html');
+                    win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
                 }
             })
         });
@@ -331,6 +334,7 @@ function openProject(arg) {
 
         if (win) {
             win.loadFile('pages/graph.html');
+            win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
         }
     })
 }
@@ -346,6 +350,9 @@ ipcMain.on("getProjectInfo", function (event, arg) {
 ipcMain.on("updateProjectInfo", function (event, arg) {
     if (!arg) return;
     currentProject = arg;
+
+    if (win)
+        win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
 
     fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
         if (err) {
@@ -405,6 +412,7 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
     console.log("saveGraphData");
     saveGraphData(arg, function () {
         win.loadFile('index.html');
+        win.setTitle(DEFAULT_TITLE);
     });
 });
 
