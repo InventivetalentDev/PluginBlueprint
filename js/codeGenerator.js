@@ -22,8 +22,11 @@ const onDisableMethods = [];
 const onCommandMethods = [];
 const onTabCompleteMethods = [];
 
+let debug = false;
+
 function generateClassCode(graph, projectInfo) {
     return new Promise((resolve) => {
+        debug = projectInfo.debug;
         classStore.init().then(() => {
             console.log(graph)
             for (let i = 0; i < graph._nodes.length; i++) {
@@ -648,8 +651,8 @@ function nodeExec(nodeId) {
     return " node_" + nodeId + "_exec()"
 }
 
-function debugCall(nodeId) {//TODO: enable/disable debug in project settings
-    return "java.lang.System.out.println(\"pb_debug_exec=" + nodeId + "\");/** Debug call **/\n"
+function debugCall(nodeId) {
+    return debug ? "java.lang.System.out.println(\"pb_debug_exec=" + nodeId + "\");/** Debug call **/\n" : "";
 }
 
 module.exports = {

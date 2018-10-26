@@ -245,7 +245,8 @@ function createNewProject(arg, lib) {
         author: "inventivetalent",
         package: "my.awesome.plugin",
         version: "0.0.0",
-        editorVersion: app.getVersion()
+        editorVersion: app.getVersion(),
+        debug: true
     };
     fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
         if (err) {

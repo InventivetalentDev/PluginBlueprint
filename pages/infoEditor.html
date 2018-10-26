@@ -73,6 +73,18 @@
                     </div>
                 </form>
             </div>
+            <div class="row">
+                <form class="col s12">
+                    <div class="row">
+                        <p>
+                            <label>
+                                <input type="checkbox" id="debug"/>
+                                <span>Debug</span>
+                            </label>
+                        </p>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <script src="../node_modules/materialize-css/dist/js/materialize.min.js"></script>
@@ -110,6 +122,7 @@
                 projectInfo.version = $("#version").val();
                 projectInfo.author = $("#author").val();
                 projectInfo.package = $("#package").val();
+                projectInfo.debug = $("#debug").is(":checked");
 
                 ipcRenderer.send("updateProjectInfo", projectInfo);
             }
@@ -129,6 +142,8 @@
                     $("#author").val(arg.author);
                 if (arg.package)
                     $("#package").val(arg.package);
+                if(arg.debug)
+                    $("#debug").prop("checked", arg.debug);
 
                 M.updateTextFields();
 
