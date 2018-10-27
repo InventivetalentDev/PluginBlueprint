@@ -13,6 +13,9 @@ function copyPlugin(projectPath, projectName) {
             ws.on("close", function () {
                 resolve();
             });
+            ws.on("error",function () {
+                reject();
+            });
             rs.pipe(ws);
         }
 
