@@ -18,6 +18,7 @@ dist_win:
   artifacts:
     name: "$CI_PROJECT_NAME-$CI_COMMIT_SHA-win"
     paths:
+      - LICENSE
       - dist/out/*.exe
   
 dist_linux:
@@ -27,4 +28,5 @@ dist_linux:
   artifacts:
     name: "$CI_PROJECT_NAME-$CI_COMMIT_SHA-linux"
     paths:
+      - LICENSE
       - dist/out/*.deb
