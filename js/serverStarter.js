@@ -8,12 +8,17 @@ let instance = null;
 function copyPlugin(projectPath, projectName) {
     return new Promise((resolve, reject) => {
         function doCopy() {
+            let sourcePath = path.join(projectPath, "output", projectName + ".jar");
+            if(!fs.existsSync(sourcePath)){
+                reject();
+                return;
+            }
             let rs = fs.createReadStream(path.join(projectPath, "output", projectName + ".jar"));
             let ws = fs.createWriteStream(path.join(projectPath, "lib", "plugins", projectName + ".jar"));
             ws.on("close", function () {
                 resolve();
             });
-            ws.on("error",function () {
+            ws.on("error", function () {
                 reject();
             });
             rs.pipe(ws);

@@ -560,6 +560,11 @@ ipcMain.on("startServer", function (event, arg) {
     logWin = null;
     serverStarter.killInstance();
 
+    if (!fs.existsSync(path.join(currentProjectPath, "output", currentProject.name + ".jar"))) {
+        dialog.showErrorBox("Error", "Please compile your plugin first!");
+        return;
+    }
+
     logWin = new BrowserWindow({
         parent: win,
         width: 800,
