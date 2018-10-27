@@ -27,6 +27,4 @@ dist_linux:
   artifacts:
     name: "$CI_PROJECT_NAME-$CI_COMMIT_SHA-linux"
     paths:
-      - dist/out/*.snap
-      - dist/out/*.AppImage
       - dist/out/*.deb
