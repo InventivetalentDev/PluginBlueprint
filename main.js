@@ -601,7 +601,7 @@ ipcMain.on("startServer", function (event, arg) {
                         }
 
                         logWin.webContents.send("log", {
-                            type: "log",
+                            type: "out",
                             content: log
                         });
                     }
