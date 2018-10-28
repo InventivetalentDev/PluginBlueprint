@@ -95,6 +95,13 @@ function generateClassCode(graph, projectInfo) {
                 "public void onDisable() {\n" +
                 onDisableMethods.join("\n") +
                 "}\n" +
+                "\n" +
+                "@java.lang.Override\n" +
+                "public boolean onCommand(org.bukkit.command.CommandSender sender, org.bukkit.command.Command command, java.lang.String label, java.lang.String[] args) {\n" +
+                onCommandMethods.join("\n") +
+                "return false;\n" +// TODO: variable return
+                "}\n" +
+                "\n" +
                 "\n/*** Start Event Listeners ***/\n" +
                 eventListenerMethods.join("\n") +
                 "\n/*** End Event Listeners ***/\n" +
@@ -470,7 +477,16 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             onDisableMethods.push(nodeExec(node.id) + ";\n")
         }
         if (methodData.name === "onCommand") {
-            onCommandMethods.push(nodeExec(node.id) + ";\n")
+            fields.push("private org.bukkit.command.CommandSender " + nodeOutput(node.id, 1) + ";");
+            fields.push("private org.bukkit.command.Command " + nodeOutput(node.id, 2) + ";");
+            fields.push("private java.lang.String " + nodeOutput(node.id, 3) + ";");
+            fields.push("private java.lang.String[] " + nodeOutput(node.id, 4) + ";");
+            onCommandMethods.push(
+                nodeOutput(node.id, 1) + " = sender;\n" +
+                nodeOutput(node.id, 2) + " = command;\n" +
+                nodeOutput(node.id, 3) + " = label;\n" +
+                nodeOutput(node.id, 4) + " = args;\n" +
+                nodeExec(node.id) + ";\n")
         }
         if (methodData.name === "onTabComplete") {
             onTabCompleteMethods.push(nodeExec(node.id) + ";\n")
