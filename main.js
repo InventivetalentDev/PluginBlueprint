@@ -122,7 +122,7 @@ app.on('activate', () => {
 
 process.on('uncaughtException', function (error) {
     console.error(error);
-    process.crash();
+    Sentry.captureException(error);
 });
 
 // In this file you can include the rest of your app's specific main process
