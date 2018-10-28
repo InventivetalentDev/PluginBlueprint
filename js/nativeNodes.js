@@ -33,7 +33,7 @@ NumberConstant.prototype.onDrawBackground = function () {
     this.outputs[0].type = this.properties.type;
 };
 NumberConstant.prototype.getFields = function (output) {
-    return [this.type + " " + output[0] + " = " + this.properties.number];
+    return [this.properties.type + " " + output[0] + " = " + this.properties.number];
 }
 
 // Boolean Constant
