@@ -334,8 +334,8 @@ function getOrCreateBukkitClassNode(className) {
 
     BukkitClassNode.prototype.getMenuOptions = function () {
         return [
-            {content: "Inputs", has_submenu: true, disabled: this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
-            {content: "Outputs", has_submenu: true, disabled: this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
+            {content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
+            {content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
             null
         ];
     };
@@ -509,8 +509,8 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
 
     BukkitMethodNode.prototype.getMenuOptions = function () {
         return [
-            {content: "Inputs", has_submenu: true, disabled: this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
-            {content: "Outputs", has_submenu: true, disabled: this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
+            {content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
+            {content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
             null
         ];
     };
