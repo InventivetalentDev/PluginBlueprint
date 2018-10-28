@@ -1,6 +1,7 @@
 <html>
     <head>
         <link rel="stylesheet" href="../node_modules/materialize-css/dist/css/materialize.min.css">
+        <link rel="stylesheet" href="../assets/material-icons/material-icons.css">
         <style>
             #overlay {
                 position: absolute;
@@ -71,6 +72,12 @@
                             <label for="package">Package</label>
                         </div>
                     </div>
+
+                    <div class="row">
+                        <h6>Commands <a href="#" id="addCommand" class="right-align" style="color:#d2d2d2;"><i class="material-icons right">add</i></a></h6>
+                        <ul class="collection" id="commandList">
+                        </ul>
+                    </div>
                 </form>
             </div>
             <div class="row">
@@ -91,6 +98,7 @@
         <script>
             const {ipcRenderer} = require("electron");
             const {Menu, getCurrentWindow} = require("electron").remote;
+            const prompt = require('electron-prompt');
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
 
@@ -99,6 +107,7 @@
             });
 
             let projectInfo = {};
+            let commands = [];
 
             getCurrentWindow().setMenu(Menu.buildFromTemplate([
                 {
@@ -123,6 +132,7 @@
                 projectInfo.author = $("#author").val();
                 projectInfo.package = $("#package").val();
                 projectInfo.debug = $("#debug").is(":checked");
+                projectInfo.commands = commands || [];
 
                 ipcRenderer.send("updateProjectInfo", projectInfo);
             }
@@ -142,12 +152,45 @@
                     $("#author").val(arg.author);
                 if (arg.package)
                     $("#package").val(arg.package);
-                if(arg.debug)
+                if (arg.debug)
                     $("#debug").prop("checked", arg.debug);
+                if (arg.commands) {
+                    commands = arg.commands;
+                    updateCommandList();
+                }
 
                 M.updateTextFields();
 
                 $("#overlay").fadeOut();
+            });
+
+            function updateCommandList() {
+                $("#commandList").empty();
+                for (let i = 0; i < commands.length; i++) {
+                    let cmd = commands[i];
+                    let commandItem = $('<li class="collection-item"><div>' + cmd.name + '<a href="#!" class="secondary-content"><i class="material-icons delete-command">delete</i></a></div></li>')
+                    commandItem.find(".delete-command").on("click", function () {
+                        commands.splice(i, 1);
+                        updateCommandList();
+                    });
+                    commandItem.appendTo($("#commandList"))
+                }
+            }
+
+            $("#addCommand").click(function (e) {
+                prompt({
+                    title: "Command Name",
+                    label: "Command Name",
+                    value: "mycommand",
+                    height: 150
+                }).then((r) => {
+                    if (r) {
+                        commands.push({
+                            name: r.toLowerCase()
+                        });
+                        updateCommandList();
+                    }
+                })
             })
         </script>
     </body>
