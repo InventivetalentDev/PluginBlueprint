@@ -44,7 +44,7 @@
 
         <script>
             const {ipcRenderer} = require("electron");
-            const {dialog, Menu, getCurrentWindow} = require("electron").remote;
+            const {dialog, Menu, getCurrentWindow, app} = require("electron").remote;
             const prompt = require("electron-prompt");
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
@@ -76,7 +76,7 @@
 
             $(document).ready(function () {
                 console.log("" +
-                    "PluginBlueprint\n" +
+                    "PluginBlueprint, Version " + app.getVersion() + "\n" +
                     "Copyright (c) 2018, Haylee Schäfer\n" +
                     "All rights reserved.\n");
 

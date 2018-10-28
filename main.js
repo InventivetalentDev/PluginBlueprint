@@ -26,7 +26,7 @@ let recentProjects = [];
 
 function createWindow() {
     console.log("" +
-        "PluginBlueprint\n" +
+        "PluginBlueprint, Version " + app.getVersion() + "\n" +
         "Copyright (c) 2018, Haylee Schäfer\n" +
         "All rights reserved.\n");
 
@@ -226,7 +226,7 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
                         path: projectPath,
                         name: name
                     }, libPath)
-                }else{
+                } else {
                     shell.openExternal("https://www.spigotmc.org/wiki/buildtools/#running-buildtools");
                 }
             });
@@ -539,7 +539,7 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
     console.log("openProjectInfoEditor")
     let child = new BrowserWindow({
         parent: win,
-        title:DEFAULT_TITLE,
+        title: DEFAULT_TITLE,
         width: 600,
         height: 800,
         modal: true,
