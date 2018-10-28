@@ -66,11 +66,11 @@ const optionalInputOutputSorter = function (a, b) {
 function onEventAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
-    let classesByName=classStore.getClassesByName();
-    for(let c in classesByName){
-        if(!c.startsWith("org.bukkit"))continue;
+    let classesByName = classStore.getClassesByName();
+    for (let c in classesByName) {
+        if (!c.startsWith("org.bukkit")) continue;
         let clazz = classesByName[c];
-        if(!clazz.isEvent)continue;
+        if (!clazz.isEvent) continue;
         let v = clazz.name.substr("org.".length).split(".");
         v.pop();
         let v1 = v.join(".");
@@ -84,11 +84,11 @@ function onEventAdd(node, options, e, prevMenu) {
 
     function inner_clicked(v, option, e) {
         var values = [];
-        for(let c in classesByName){
-            if(!c.startsWith("org.bukkit"))continue;
+        for (let c in classesByName) {
+            if (!c.startsWith("org.bukkit")) continue;
             let clazz = classesByName[c];
-            if(!clazz.isEvent)continue;
-            let v0 =clazz.name.substr("org.".length).split(".");
+            if (!clazz.isEvent) continue;
+            let v0 = clazz.name.substr("org.".length).split(".");
             v0.pop();
             let v1 = v0.join(".");
             if (v.value === v1) {
@@ -115,8 +115,8 @@ function onEventAdd(node, options, e, prevMenu) {
 function onObjectAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
-    let classesByName=classStore.getClassesByName();
-    for(let c in classesByName) {
+    let classesByName = classStore.getClassesByName();
+    for (let c in classesByName) {
         if (!c.startsWith("org.bukkit")) continue;
         let clazz = classesByName[c];
         if (!clazz.isObject) continue;
@@ -133,7 +133,7 @@ function onObjectAdd(node, options, e, prevMenu) {
 
     function inner_clicked(v, option, e) {
         var values = [];
-        for(let c in classesByName) {
+        for (let c in classesByName) {
             if (!c.startsWith("org.bukkit")) continue;
             let clazz = classesByName[c];
             if (!clazz.isObject) continue;
@@ -164,18 +164,18 @@ function onObjectAdd(node, options, e, prevMenu) {
 function onMethodAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
-    let classesByName=classStore.getClassesByName();
-    for(let c in classesByName) {
+    let classesByName = classStore.getClassesByName();
+    for (let c in classesByName) {
         if (!c.startsWith("org.bukkit")) continue;
         let clazz = classesByName[c];
-        for(let m in clazz.methodsBySignature){
-            let v = clazz.methodsBySignature[m].substr("org.".length).split(".");
-            v.pop();
-            let v1 = v.join(".");
-            if (existingCategories.indexOf(v1) === -1) {
-                entries.push({value: v1, content: v1, has_submenu: true})
-                existingCategories.push(v1);
-            }
+
+        let v = clazz.name.substr("org.".length).split(".");
+        v.pop();
+        let v1 = v.join(".");
+        console.log(v1)
+        if (existingCategories.indexOf(v1) === -1) {
+            entries.push({value: v1, content: v1, has_submenu: true})
+            existingCategories.push(v1);
         }
     }
 
@@ -185,19 +185,17 @@ function onMethodAdd(node, options, e, prevMenu) {
     function inner_clicked(v, option, e) {
         var values = [];
         let existingCategories = [];
-        for(let c in classesByName) {
+        for (let c in classesByName) {
             if (!c.startsWith("org.bukkit")) continue;
             let clazz = classesByName[c];
-            for (let m in clazz.methodsBySignature) {
-                let split = clazz.methodsBySignature[m].substr("org.".length).split(".");
-                let classAndMethod = split[split.length - 1];
-                split.pop();
-                if (v.value === split.join(".")) {
-                    let simpleName = classAndMethod.split("#")[0];
-                    if (existingCategories.indexOf(simpleName) === -1) {
-                        values.push({content: simpleName, value: simpleName, has_submenu: true});
-                        existingCategories.push(simpleName)
-                    }
+
+            let split = clazz.name.substr("org.".length).split(".");
+            let lastSplit = split.pop();
+            if (v.value === split.join(".")) {
+                let simpleName = clazz.name;
+                if (existingCategories.indexOf(simpleName) === -1) {
+                    values.push({content: lastSplit, value: simpleName, has_submenu: true});
+                    existingCategories.push(simpleName)
                 }
             }
         }
@@ -209,18 +207,15 @@ function onMethodAdd(node, options, e, prevMenu) {
     function inner2_clicked(v, option, e) {
         var values = [];
         let existingCategories = [];
-        for(let c in classesByName) {
+        for (let c in classesByName) {
             if (!c.startsWith("org.bukkit")) continue;
             let clazz = classesByName[c];
-            for(let m in clazz.methodsBySignature) {
-                let split0 = clazz.methodsBySignature[m].substr("org.".length).split(".");
-                let split1 = split0[split0.length - 1].split("#");
-                let clazz = split1[0];
-                let method = split1[1];
-                if (v.value === clazz) {
-                    if (existingCategories.indexOf(method) === -1) {
-                        values.push({content: method, value: {class:clazz.name,method:m}, has_submenu: false});
-                        existingCategories.push(method);
+            if (v.value === clazz.name) {
+                for (let m in clazz.methodsBySignature) {
+                    let method = clazz.methodsBySignature[m];
+                    if (existingCategories.indexOf(m) === -1) {
+                        values.push({content: method.signature, value: {class: clazz.name, method: method.signature}, has_submenu: false});
+                        existingCategories.push(m);
                     }
                 }
             }
