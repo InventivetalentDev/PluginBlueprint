@@ -473,11 +473,18 @@ function saveCodeToFile(code) {
 }
 
 function makePluginYml() {
-    return "name: " + currentProject.name +
+    let yml = "name: " + currentProject.name +
         "\nversion: " + currentProject.version +
         "\nmain: " + currentProject.package + ".GeneratedPlugin" +
         "\nauthor: " + currentProject.author +
-        "\napi-version: 1.13";
+        "\napi-version: 1.13\n";
+    if (currentProject.commands) {
+        yml += "commands:\n";
+        for (let i = 0; i < currentProject.commands.length; i++) {
+            yml += "  " + currentProject.commands[i].name + ":\n";//TODO: other command attributes
+        }
+    }
+    return yml;
 }
 
 function compile() {
