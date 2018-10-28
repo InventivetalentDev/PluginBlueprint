@@ -77,6 +77,12 @@ function generateClassCode(graph, projectInfo) {
                 fields.join("\n") +
                 "\n/*** End Fields ***/\n" +
                 "\n\n" +
+                "\n" +
+                "@java.lang.Override\n" +
+                "public void onLoad() {\n" +
+                onLoadMethods.join("\n") +
+                "}\n" +
+                "\n" +
                 "@java.lang.Override\n" +
                 "public void onEnable() {\n" +
                 "getServer().getPluginManager().registerEvents(this, this);\n" +
