@@ -8,6 +8,7 @@ const nativeNodes = require("./nativeNodes");
 const constantNodes = require("./nodes/constants");
 const arithmeticNodes = require("./nodes/arithmetic");
 const relationalNodes = require("./nodes/relational");
+const variableNodes = require("./nodes/variables");
 
 const classStore = new ClassDataStore();
 
@@ -273,6 +274,9 @@ function init() {
         }
         for (let n = 0; n < constantNodes.length; n++) {
             LiteGraph.registerNodeType("constants/" + constantNodes[n].name, constantNodes[n]);
+        }
+        for (let n = 0; n < variableNodes.length; n++) {
+            LiteGraph.registerNodeType("variables/" + variableNodes[n].name, variableNodes[n]);
         }
 
         classStore.init().then(() => {
