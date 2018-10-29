@@ -66,10 +66,6 @@ ConsoleLog.prototype.getMethodBody = function (input, output) {
 
 
 module.exports = [
-    StringConstant,
-    NumberConstant,
-    BooleanConstant,
-
     Cast,
     Switch,
 
