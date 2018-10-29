@@ -90,5 +90,5 @@ module.exports = [
     extend(Subtract, ArithmeticOperator),
     extend(Multiply, ArithmeticOperator),
     extend(Divide, ArithmeticOperator),
-    extend(Modulus, Modulus)
+    extend(Modulus, ArithmeticOperator)
 ]
