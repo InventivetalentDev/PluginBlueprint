@@ -1,6 +1,22 @@
 const {exec} = require('child_process');
 const path = require("path");
 
+function testForJavac() {
+    return new Promise((resolve, reject) => {
+        exec("javac -version", (err, stdout, stderr) => {
+            console.log(stdout);
+            console.log(stderr);
+            if (err) {
+                reject();
+            } else if ((stdout && stdout.startsWith("javac")) || (stderr && stderr.startsWith("javac"))) {
+                resolve();
+            } else {
+                reject();
+            }
+        })
+    })
+}
+
 function compile(rootDir, projectInfo) {
     return new Promise((resolve, reject) => {
         //TODO: variable classpath
@@ -50,5 +66,6 @@ function package(rootDir, projectInfo) {
 
 module.exports = {
     compile: compile,
-    package: package
+    package: package,
+    testForJavac: testForJavac
 }

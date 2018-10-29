@@ -489,16 +489,20 @@ function makePluginYml() {
 
 function compile() {
     return new Promise((resolve, reject) => {
-        console.log("compile: " + Date.now())
-        fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
-            javaCompiler.compile(currentProjectPath, currentProject).then((result) => {
-                let pluginYml = makePluginYml();
-                fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), pluginYml, function (err) {
-                    console.log("compiled: " + Date.now());
-                    resolve();
-                })
-            }).catch(reject);
-        });
+        javaCompiler.testForJavac().then(()=>{
+            console.log("compile: " + Date.now())
+            fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
+                javaCompiler.compile(currentProjectPath, currentProject).then((result) => {
+                    let pluginYml = makePluginYml();
+                    fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), pluginYml, function (err) {
+                        console.log("compiled: " + Date.now());
+                        resolve();
+                    })
+                }).catch(reject);
+            });
+        }).catch(()=>{
+            dialog.showErrorBox("javac not found", "Could not find javac executable. Please download the Java Development Kit and make sure javac is in your Environment Variables.");
+        })
     })
 }
 
