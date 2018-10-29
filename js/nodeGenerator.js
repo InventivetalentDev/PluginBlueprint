@@ -2,8 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const {LiteGraph} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
-const nativeNodes = require("./nativeNodes");
 const ClassDataStore = require("./classDataStore");
+
+const nativeNodes = require("./nativeNodes");
+const arithmeticNodes = require("./nodes/arithmetic");
 
 const classStore = new ClassDataStore();
 
@@ -261,6 +263,9 @@ function init() {
         for (let n = 0; n < nativeNodes.length; n++) {
             let nativeNode = nativeNodes[n];
             LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
+        }
+        for (let n = 0; n < arithmeticNodes.length; n++) {
+            LiteGraph.registerNodeType("arithmetic/" + arithmeticNodes[n].name, arithmeticNodes[n]);
         }
 
         classStore.init().then(() => {
