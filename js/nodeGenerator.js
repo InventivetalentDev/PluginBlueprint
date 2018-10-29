@@ -5,6 +5,7 @@ const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
 
 const nativeNodes = require("./nativeNodes");
+const constantNodes = require("./nodes/constants");
 const arithmeticNodes = require("./nodes/arithmetic");
 const relationalNodes = require("./nodes/relational");
 
@@ -260,7 +261,6 @@ function init() {
 
         LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": Colors.EXEC_OFF, "boolean": Colors.BOOLEAN_OFF, "java.lang.String": Colors.STRING_OFF, "byte": Colors.NUMBER_OFF, "char": Colors.NUMBER_OFF, "short": Colors.NUMBER_OFF, "int": Colors.NUMBER_OFF, "long": Colors.NUMBER_OFF, "float": Colors.NUMBER_OFF, "double": Colors.NUMBER_OFF})
 
-        console.log("Registering " + nativeNodes.length + " native nodes...");
         for (let n = 0; n < nativeNodes.length; n++) {
             let nativeNode = nativeNodes[n];
             LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
@@ -270,6 +270,9 @@ function init() {
         }
         for (let n = 0; n < relationalNodes.length; n++) {
             LiteGraph.registerNodeType("relational/" + relationalNodes[n].name, relationalNodes[n]);
+        }
+        for (let n = 0; n < constantNodes.length; n++) {
+            LiteGraph.registerNodeType("constants/" + constantNodes[n].name, constantNodes[n]);
         }
 
         classStore.init().then(() => {
