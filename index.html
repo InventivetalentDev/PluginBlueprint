@@ -26,6 +26,11 @@
                     <p class="flow-text">
                         Welcome to the <strong>PluginBlueprint</strong> Editor!
                     </p>
+
+                    <div>
+                        <a class="btn btn-small" href="https://discord.gg/pEWdJCw" target="_blank"><i class="material-icons left">chat</i> Discord Server</a>
+                        <a class="btn btn-small" href="https://github.com/InventivetalentDev/PluginBlueprint/wiki" target="_blank"><i class="material-icons left">help</i> Wiki</a>
+                    </div>
                 </div>
             </div>
             <br/>
@@ -43,7 +48,7 @@
         </div>
 
         <script>
-            const {ipcRenderer} = require("electron");
+            const {ipcRenderer,shell} = require("electron");
             const {dialog, Menu, getCurrentWindow, app} = require("electron").remote;
             const prompt = require("electron-prompt");
             const $ = require("jquery");
@@ -104,6 +109,12 @@
                 if (arg.length === 0) {
                     $("#recentProjectRow").hide();
                 }
+            });
+
+            // external links
+            $(document).on('click', 'a[href^="http"]', function(event) {
+                event.preventDefault();
+                shell.openExternal(this.href);
             });
         </script>
     </body>
