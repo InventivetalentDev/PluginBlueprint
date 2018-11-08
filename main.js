@@ -27,7 +27,7 @@ let recentProjects = [];
 function createWindow() {
     console.log("" +
         "PluginBlueprint, Version " + app.getVersion() + "\n" +
-        "Copyright (c) 2018, Haylee Schäfer\n" +
+        "Copyright (c) 2018, Haylee Schaefer\n" +
         "All rights reserved.\n");
 
     crashReporter.start({

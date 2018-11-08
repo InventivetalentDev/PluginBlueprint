@@ -24,7 +24,7 @@
   "build": {
     "appId": "org.inventivetalent.pluginblueprint",
     "productName": "PluginBlueprint",
-    "copyright": "Copyright © 2018 Haylee Schäfer",
+    "copyright": "Copyright © 2018 Haylee Schaefer",
     "directories": {
       "output": "dist/out"
     },
@@ -60,7 +60,7 @@
     ]
   },
   "author": {
-    "name": "Haylee Schäfer",
+    "name": "Haylee Schaefer",
     "email": "mail@inventivetalent.org",
     "url": "https://inventivetalent.org"
   },
