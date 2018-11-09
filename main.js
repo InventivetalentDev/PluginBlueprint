@@ -143,8 +143,24 @@ function readRecentProjects() {
             console.warn(err);
             return;
         }
+        data = JSON.parse(data);
 
-        recentProjects = JSON.parse(data) || [];
+        let promises = [];
+        for(let i=0;i<data.length;i++){
+           promises.push(new Promise(resolve => {
+               fs.readFile(path.join(data[i], "project.pbp"),function (err,projectData) {
+                   projectData = JSON.parse(projectData);
+                   resolve({
+                       path: data[i],
+                       name: projectData.name
+                   })
+               })
+           }));
+        }
+
+        Promise.all(promises).then((projects)=>{
+            recentProjects = projects || [];
+        })
     })
 }
 
@@ -152,7 +168,11 @@ function writeRecentProjects() {
     if (recentProjects.length > 10) {
         recentProjects.pop();
     }
-    fs.writeFile(path.join(app.getPath("userData"), "recentProjects.pbd"), JSON.stringify(recentProjects), "utf-8", function (err) {
+    let paths = [];
+    for(let i=0;i<recentProjects.length;i++){
+        paths.push(recentProjects[i].path);
+    }
+    fs.writeFile(path.join(app.getPath("userData"), "recentProjects.pbd"), JSON.stringify(paths), "utf-8", function (err) {
         if (err) {
             console.warn(err);
         }
@@ -278,7 +298,10 @@ function createNewProject(arg, lib) {
                     return;
                 }
 
-                recentProjects.unshift(currentProjectPath);
+                recentProjects.unshift({
+                    path: currentProjectPath,
+                    name: currentProject.name
+                });
                 writeRecentProjects();
 
                 if (win) {
@@ -339,11 +362,14 @@ function openProject(arg) {
         currentProjectPath = arg;
         currentProject = JSON.parse(data);
 
-        let i = recentProjects.indexOf(currentProjectPath);
+        let i = recentProjects.map(function(e) { return e.path; }).indexOf(currentProjectPath);
         if (i !== -1) {
             recentProjects.splice(i, 1);
         }
-        recentProjects.unshift(currentProjectPath);
+        recentProjects.unshift({
+            path: currentProjectPath,
+            name: currentProject.name
+        });
         writeRecentProjects();
 
         if (win) {

@@ -12,6 +12,14 @@
                 background-color: #4c4c4c;
                 cursor: pointer;
             }
+
+            .collection-item .title {
+                font-weight: bold;
+            }
+
+            .collection-item p {
+                margin: 0;
+            }
         </style>
     </head>
     <body>
@@ -48,7 +56,7 @@
         </div>
 
         <script>
-            const {ipcRenderer,shell} = require("electron");
+            const {ipcRenderer, shell} = require("electron");
             const {dialog, Menu, getCurrentWindow, app} = require("electron").remote;
             const prompt = require("electron-prompt");
             const $ = require("jquery");
@@ -100,9 +108,9 @@
 
             ipcRenderer.on("recentProjects", function (event, arg) {
                 for (let i = 0; i < arg.length; i++) {
-                    let item = $('<li class="collection-item">' + arg[i] + '</li>');
+                    let item = $('<li class="collection-item"><span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p></li>');
                     item.click(() => {
-                        ipcRenderer.send("openProject", arg[i]);
+                        ipcRenderer.send("openProject", arg[i].path);
                     });
                     item.appendTo($("#recentProjects"));
                 }
@@ -112,7 +120,7 @@
             });
 
             // external links
-            $(document).on('click', 'a[href^="http"]', function(event) {
+            $(document).on('click', 'a[href^="http"]', function (event) {
                 event.preventDefault();
                 shell.openExternal(this.href);
             });
