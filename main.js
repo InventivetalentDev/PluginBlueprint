@@ -146,20 +146,30 @@ function readRecentProjects() {
         data = JSON.parse(data);
 
         let promises = [];
-        for(let i=0;i<data.length;i++){
-           promises.push(new Promise(resolve => {
-               fs.readFile(path.join(data[i], "project.pbp"),function (err,projectData) {
-                   projectData = JSON.parse(projectData);
-                   resolve({
-                       path: data[i],
-                       name: projectData.name
-                   })
-               })
-           }));
+        for (let i = 0; i < data.length; i++) {
+            promises.push(new Promise(resolve => {
+                fs.readFile(path.join(data[i], "project.pbp"), function (err, projectData) {
+                    projectData = JSON.parse(projectData);
+
+                    fs.readFile(path.join(data[i], "thumb.pbt"), "base64", function (err, thumb) {
+                        if (err) console.warn(err);
+                        console.log(thumb)
+                        resolve({
+                            path: data[i],
+                            name: projectData.name,
+                            thumbnail: thumb
+                        })
+                    })
+                })
+            }));
         }
 
-        Promise.all(promises).then((projects)=>{
+        Promise.all(promises).then((projects) => {
             recentProjects = projects || [];
+
+            if (win) {
+                win.webContents.send("recentProjects", recentProjects);
+            }
         })
     })
 }
@@ -169,7 +179,7 @@ function writeRecentProjects() {
         recentProjects.pop();
     }
     let paths = [];
-    for(let i=0;i<recentProjects.length;i++){
+    for (let i = 0; i < recentProjects.length; i++) {
         paths.push(recentProjects[i].path);
     }
     fs.writeFile(path.join(app.getPath("userData"), "recentProjects.pbd"), JSON.stringify(paths), "utf-8", function (err) {
@@ -362,7 +372,9 @@ function openProject(arg) {
         currentProjectPath = arg;
         currentProject = JSON.parse(data);
 
-        let i = recentProjects.map(function(e) { return e.path; }).indexOf(currentProjectPath);
+        let i = recentProjects.map(function (e) {
+            return e.path;
+        }).indexOf(currentProjectPath);
         if (i !== -1) {
             recentProjects.splice(i, 1);
         }
@@ -459,6 +471,21 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
     });
 });
 
+ipcMain.on("saveThumbnail", function (event, arg) {
+    if (!currentProject || !currentProjectPath) {
+        return;
+    }
+    let data = arg.replace(/^data:image\/\w+;base64,/, '');
+
+    fs.writeFile(path.join(currentProjectPath, "thumb.pbt"), data, "base64", function (err) {
+        let i = recentProjects.map(function (e) {
+            return e.path;
+        }).indexOf(currentProjectPath);
+        if (i !== -1) {
+            recentProjects[i].thumbnail = data;
+        }
+    });
+})
 
 function saveCodeToFile(code) {
     return new Promise((resolve, reject) => {
@@ -518,7 +545,7 @@ function makePluginYml() {
 
 function compile() {
     return new Promise((resolve, reject) => {
-        javaCompiler.testForJavac().then(()=>{
+        javaCompiler.testForJavac().then(() => {
             console.log("compile: " + Date.now())
             fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
                 javaCompiler.compile(currentProjectPath, currentProject).then((result) => {
@@ -530,7 +557,7 @@ function compile() {
                     })
                 }).catch(reject);
             });
-        }).catch(()=>{
+        }).catch(() => {
             dialog.showErrorBox("javac not found", "Could not find javac executable. Please download the Java Development Kit and make sure javac is in your Environment Variables.");
         })
     })

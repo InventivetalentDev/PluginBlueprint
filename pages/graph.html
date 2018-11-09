@@ -125,12 +125,19 @@
 
             function saveGraph() {
                 $("#overlay").fadeIn();
+                makeThumbnail();
                 ipcRenderer.send("saveGraphData", graph.serialize());
             }
 
             function saveGraphAndClose() {
                 $("#overlay").fadeIn();
+                makeThumbnail();
                 ipcRenderer.send("saveGraphDataAndClose", graph.serialize());
+            }
+
+            function makeThumbnail() {
+                let img = canvas.canvas.toDataURL("image/jpeg");
+                ipcRenderer.send("saveThumbnail", img);
             }
 
             getCurrentWindow().setMenu(Menu.buildFromTemplate([

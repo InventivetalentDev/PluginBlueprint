@@ -12,13 +12,33 @@
                 background-color: #4c4c4c;
                 cursor: pointer;
             }
+            .collection .collection-item.avatar{
+                min-height: 101px;
+                padding-left: 160px;
+                position: relative;
+            }
 
             .collection-item .title {
                 font-weight: bold;
+                font-size: 20px;
             }
 
             .collection-item p {
                 margin: 0;
+                color: #a5a3a3;
+            }
+
+            .collection-item.avatar>.thumbnail{
+                position: absolute;
+                width: 150px;
+                height: 100px;
+                overflow: hidden;
+                left: 0;
+                top: 0;
+                display: inline-block;
+                vertical-align: middle;
+                background-position: center;
+                background-size: cover;
             }
         </style>
     </head>
@@ -108,7 +128,7 @@
 
             ipcRenderer.on("recentProjects", function (event, arg) {
                 for (let i = 0; i < arg.length; i++) {
-                    let item = $('<li class="collection-item"><span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p></li>');
+                    let item = $('<li class="collection-item avatar">'+(arg[i].thumbnail?'<div class="thumbnail" style="background-image: url(data:image/jpeg;base64,' + arg[i].thumbnail + ')"></div>':'')+'<span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p></li>');
                     item.click(() => {
                         ipcRenderer.send("openProject", arg[i].path);
                     });
