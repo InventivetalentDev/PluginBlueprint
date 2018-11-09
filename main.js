@@ -248,6 +248,8 @@ function createNewProject(arg, lib) {
         author: "inventivetalent",
         package: "my.awesome.plugin",
         version: "0.0.0",
+        lastSave: 0,
+        lastCompile: 0,
         editorVersion: app.getVersion(),
         debug: true
     };
@@ -408,6 +410,7 @@ function saveGraphData(arg, cb) {
                 return;
             }
 
+            currentProject.lastSave = Date.now();
             if (cb) cb();
         })
     });
@@ -496,6 +499,7 @@ function compile() {
                     let pluginYml = makePluginYml();
                     fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), pluginYml, function (err) {
                         console.log("compiled: " + Date.now());
+                        currentProject.lastCompile = Date.now();
                         resolve();
                     })
                 }).catch(reject);
