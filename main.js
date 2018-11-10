@@ -32,13 +32,13 @@ function init() {
         "Copyright (c) 2018, Haylee Schaefer\n" +
         "All rights reserved.\n");
 
-    // crashReporter.start({
-    //     productName: "PluginBlueprint",
-    //     companyName: "inventivetalent",
-    //     submitURL: "https://submit.backtrace.io/inventivetalent/194573923afb55a5b91ad7cda2868bbefaf0df605ae377a7067af7bd44f88e27/minidump",
-    //     uploadToServer: true
-    // });
-    // Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+    crashReporter.start({
+        productName: "PluginBlueprint",
+        companyName: "inventivetalent",
+        submitURL: "https://submit.backtrace.io/inventivetalent/194573923afb55a5b91ad7cda2868bbefaf0df605ae377a7067af7bd44f88e27/minidump",
+        uploadToServer: true
+    });
+    Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
 
     console.log(process.argv)
     process.argv.forEach((val, index) => {

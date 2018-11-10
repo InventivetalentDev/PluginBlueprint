@@ -1,9 +1,9 @@
-const {app, net} = require('electron');
+const {app} = require('electron');
 const request = require("request");
 const fs = require("fs");
 const path = require("path");
 
-const URL = "https://blog.inventivetalent.org/wp-admin/admin-ajax.php";
+const URL = "https://shop.inventivetalent.org/wp-admin/admin-ajax.php";
 const STORE_CODE = "77o9Yl88U72X7Cv";
 
 function activate(key) {
