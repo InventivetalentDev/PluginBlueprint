@@ -65,8 +65,8 @@ function init() {
                 })
             } else {
                 let progressBar = new ProgressBar({
-                    text: "Checking License...",
-                    detail: "Checking License..."
+                    title: "Checking License...",
+                    text: "Checking License..."
                 });
                 licenseManager.activate(r).then((m) => {
                     progressBar.setCompleted();
