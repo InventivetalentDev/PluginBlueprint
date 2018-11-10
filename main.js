@@ -215,7 +215,6 @@ function readRecentProjects() {
 
                     fs.readFile(path.join(data[i], "thumb.pbt"), "base64", function (err, thumb) {
                         if (err) console.warn(err);
-                        console.log(thumb)
                         resolve({
                             path: data[i],
                             name: projectData.name,
