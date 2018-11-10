@@ -4,11 +4,13 @@ const NodeGenerator = require("./js/nodeGenerator");
 const CodeGenerator = require("./js/codeGenerator");
 const javaCompiler = require("./js/javaCompiler");
 const serverStarter = require("./js/serverStarter");
+const licenseManager = require("./js/licenseManager");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
 const notifier = require("node-notifier");
 const Sentry = require("@sentry/electron");
+const ProgressBar = require('electron-progressbar');
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
 
@@ -24,19 +26,19 @@ let currentProjectPath;
 
 let recentProjects = [];
 
-function createWindow() {
+function init() {
     console.log("" +
         "PluginBlueprint, Version " + app.getVersion() + "\n" +
         "Copyright (c) 2018, Haylee Schaefer\n" +
         "All rights reserved.\n");
 
-    crashReporter.start({
-        productName: "PluginBlueprint",
-        companyName: "inventivetalent",
-        submitURL: "https://submit.backtrace.io/inventivetalent/194573923afb55a5b91ad7cda2868bbefaf0df605ae377a7067af7bd44f88e27/minidump",
-        uploadToServer: true
-    });
-    Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+    // crashReporter.start({
+    //     productName: "PluginBlueprint",
+    //     companyName: "inventivetalent",
+    //     submitURL: "https://submit.backtrace.io/inventivetalent/194573923afb55a5b91ad7cda2868bbefaf0df605ae377a7067af7bd44f88e27/minidump",
+    //     uploadToServer: true
+    // });
+    // Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
 
     console.log(process.argv)
     process.argv.forEach((val, index) => {
@@ -46,6 +48,64 @@ function createWindow() {
         }
     });
 
+    let licenseFile = path.join(app.getPath("userData"), "license");
+    if (!fs.existsSync(licenseFile)) {
+        prompt({
+            title: "Enter License Key",
+            label: "License Key",
+            height: 150
+        }).then((r) => {
+            if (!r) {
+                dialog.showMessageBox(null, {
+                    type: "error",
+                    title: "Error",
+                    message: "Invalid license key"
+                }, function() {
+                    app.quit();
+                })
+            } else {
+                let progressBar = new ProgressBar({
+                    text: "Checking License...",
+                    detail: "Checking License..."
+                });
+                licenseManager.activate(r).then((m) => {
+                    progressBar.setCompleted();
+                    dialog.showMessageBox(null, {
+                        type: "info",
+                        title: "Success",
+                        message: m || "License activated successfully!"
+                    }, function() {
+                        progressBar.close();
+                        showWindow()
+                    })
+                }).catch((m) => {
+                    progressBar.setCompleted();
+                    dialog.showMessageBox(null, {
+                        type: "error",
+                        title: "Error",
+                        message: m || "Failed to activate license"
+                    }, function() {
+                        app.quit();
+                    })
+                })
+            }
+        });
+    } else {
+        licenseManager.validate().then(() => {
+            showWindow();
+        }).catch(() => {
+            fs.remove(licenseFile,function (err) {
+                dialog.showMessageBox(null, {
+                    type: "error",
+                    title: "Error",
+                    message: "Invalid license key"
+                }, function() {
+                    app.quit();
+                })
+            });
+        })
+    }
+
     // Create the browser window.
     win = new BrowserWindow({
         title: DEFAULT_TITLE,
@@ -54,8 +114,10 @@ function createWindow() {
         show: false,
         icon: path.join(__dirname, 'assets/images/favicon.ico'),
         backgroundColor: "#373737",
-    })
+    });
+}
 
+function showWindow() {
 
     // and load the index.html of the app.
     win.loadFile('index.html');
@@ -101,7 +163,7 @@ function createWindow() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow)
+app.on('ready', init)
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
@@ -116,7 +178,7 @@ app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (win === null) {
-        createWindow()
+        init()
     }
 });
 

@@ -75,11 +75,13 @@
   },
   "dependencies": {
     "@sentry/electron": "^0.12.1",
+    "electron-progressbar": "^1.1.0",
     "electron-prompt": "^1.2.0",
     "fs-extra": "^7.0.0",
     "jquery": "^3.3.1",
     "litegraph.js": "git+https://github.com/InventivetalentDev/litegraph.js.git",
     "materialize-css": "^1.0.0",
-    "node-notifier": "^5.3.0"
+    "node-notifier": "^5.3.0",
+    "request": "^2.88.0"
   }
 }
