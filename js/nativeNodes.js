@@ -48,6 +48,37 @@ Switch.prototype.getExecAfter = function (exec) {
         "}";
 };
 
+// String formatting
+
+function StringFormat() {
+    this.classType = "native";
+    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addInput("Format", "java.lang.String");
+    this.addInput("Variable", null);
+    this.addOutput("Formatted", "java.lang.String");
+
+    this.optional_inputs = [["Variable", null, {}]];
+}
+
+StringFormat.title = "StringFormat";
+StringFormat.prototype.getFields = function (output) {
+    return ["java.lang.String " + output[1]];// Formatted
+}
+StringFormat.prototype.getMethodBody = function (input, output) {
+    let variableInputs = input.slice(2);
+    return output[1] + " = java.lang.String.format(" + input[1] + ", " + variableInputs.join(",") + ");";
+};
+StringFormat.prototype.getExecAfter = function (exec) {
+    return exec[0].join("\n");
+};
+StringFormat.prototype.getMenuOptions = function () {
+    return [
+        {content: "Inputs", has_submenu: true, disabled: false, callback: LGraphCanvas.showMenuNodeOptionalInputs}
+    ];
+};
+
+
 // Console Log
 
 function ConsoleLog() {
@@ -68,6 +99,8 @@ ConsoleLog.prototype.getMethodBody = function (input, output) {
 module.exports = [
     Cast,
     Switch,
+
+    StringFormat,
 
     ConsoleLog
 ];
