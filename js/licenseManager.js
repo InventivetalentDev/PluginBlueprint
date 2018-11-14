@@ -41,8 +41,9 @@ function validate() {
                 console.log(data);
 
                 request(URL + "?action=license_key_validate&store_code=" + STORE_CODE + "&sku=pluginblueprint&license_key=" + data.the_key + "&activation_id=" + data.activation_id, function (err, res, body) {
-                    body = JSON.parse(body);
+                    if(err) console.warn(err);
                     console.log(body);
+                    body = JSON.parse(body);
                     if (body.error) {
                         reject(body.message);
                     } else {
