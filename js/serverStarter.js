@@ -68,7 +68,6 @@ function startServer(projectPath, outCb, errCb) {
 
 function sendCommandToInstance(cmd, cb) {
     console.log(cmd);
-    console.log(instance.stdin);
     if (!running) return;
     if (!instance) return;
     if (!instance.stdin) return;
