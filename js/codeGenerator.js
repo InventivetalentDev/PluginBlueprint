@@ -161,70 +161,74 @@ function generateCodeForEventClassNode(graph, n, node, classData) {
     // temporary variable so we can append the execution AFTER assigning variables
     let execCode = "";
 
-    for (let o = 0; o < node.outputs.length; o++) {
-        let output = node.outputs[o];
-        console.log(output)
-        if (!output) continue;
-        if (!output.links) continue;
-        if (output.links.length > 0) {
+    if(node.outputs) {
+        for (let o = 0; o < node.outputs.length; o++) {
+            let output = node.outputs[o];
+            console.log(output)
+            if (!output) continue;
+            if (!output.links) continue;
+            if (output.links.length > 0) {
 
-            for (let l = 0; l < output.links.length; l++) {
-                let linkInfo = graph.links[output.links[l]];
-                console.log(graph.links)
-                console.log(linkInfo)
-                if (!linkInfo) continue;
+                for (let l = 0; l < output.links.length; l++) {
+                    let linkInfo = graph.links[output.links[l]];
+                    console.log(graph.links)
+                    console.log(linkInfo)
+                    if (!linkInfo) continue;
 
-                if (output.type === "@EXEC") {
-                    execCode += nodeExec(linkInfo.target_id) + ";\n";
-                } else if (output.linkType === "this") {
-                    fields.push("private " + node.type + " " + nodeOutput(node.id, o) + ";");
-                    code += nodeOutput(node.id, o) + " = event;\n";
-                } else if (output.linkType !== "method") {
-                    let methodData = classStore.getMethod(output.className, output.methodSignature);
-                    /* if (output.linkType === "method") {
-                         generateMethod("event", output.methodData.name, node, output, targetNode, o, l);
+                    if (output.type === "@EXEC") {
+                        execCode += nodeExec(linkInfo.target_id) + ";\n";
+                    } else if (output.linkType === "this") {
+                        fields.push("private " + node.type + " " + nodeOutput(node.id, o) + ";");
+                        code += nodeOutput(node.id, o) + " = event;\n";
+                    } else if (output.linkType !== "method") {
+                        let methodData = classStore.getMethod(output.className, output.methodSignature);
+                        /* if (output.linkType === "method") {
+                             generateMethod("event", output.methodData.name, node, output, targetNode, o, l);
 
-                     } else*/
-                    fields.push("private " + output.type + nodeOutput(node.id, o) + ";");
-                    if (output.linkType === "object") {
-                        // code += nodeV(linkInfo.target_id) + " = event." + methodData.name + "();\n";//TODO: probably redundant
-                        code += nodeOutput(node.id, o) + " = event." + methodData.name + "();\n";
-                    } else if (output.linkType === "getter") {
-                        code += nodeOutput(node.id, o) + " = event." + methodData.name + "();\n";
-                    } else {
-                        code += "  " + output.type + " output_" + o + "_" + l + " = event." + methodData.name + "();\n";
+                         } else*/
+                        fields.push("private " + output.type + nodeOutput(node.id, o) + ";");
+                        if (output.linkType === "object") {
+                            // code += nodeV(linkInfo.target_id) + " = event." + methodData.name + "();\n";//TODO: probably redundant
+                            code += nodeOutput(node.id, o) + " = event." + methodData.name + "();\n";
+                        } else if (output.linkType === "getter") {
+                            code += nodeOutput(node.id, o) + " = event." + methodData.name + "();\n";
+                        } else {
+                            code += "  " + output.type + " output_" + o + "_" + l + " = event." + methodData.name + "();\n";
+                        }
                     }
+
+                    // if (targetInput.linkType === "trigger" || targetInput.linkType === "setter") {
+                    //     generateSetterMethodCall(targetInput.name, targetNode, targetInput, output.links[l].target_slot, "node_" + node.id, "node_" + node.id + "_output_" + o);
+                    // }
+
+                    // if (output.linkType === "this") {
+                    //     code += node.type + " output_" + o + "_" + l + " = event;\n";
+                    //
+                    // } else if (output.linkType === "method") {
+                    //     generateMethodCall("event", output.methodData.name, node, output, node.getOutputNodes(o)[l], o, l);
+                    //
+                    // } else if (output.linkType === "object") {
+                    //     code += "node_" + node.getOutputNodes(o)[l].id + " = event." + output.name + "();\n";
+                    // } else {
+                    //     code += output.type + " output_" + o + "_" + l + " = event." + output.name + "();\n";
+                    // }
                 }
-
-                // if (targetInput.linkType === "trigger" || targetInput.linkType === "setter") {
-                //     generateSetterMethodCall(targetInput.name, targetNode, targetInput, output.links[l].target_slot, "node_" + node.id, "node_" + node.id + "_output_" + o);
-                // }
-
-                // if (output.linkType === "this") {
-                //     code += node.type + " output_" + o + "_" + l + " = event;\n";
-                //
-                // } else if (output.linkType === "method") {
-                //     generateMethodCall("event", output.methodData.name, node, output, node.getOutputNodes(o)[l], o, l);
-                //
-                // } else if (output.linkType === "object") {
-                //     code += "node_" + node.getOutputNodes(o)[l].id + " = event." + output.name + "();\n";
-                // } else {
-                //     code += output.type + " output_" + o + "_" + l + " = event." + output.name + "();\n";
-                // }
             }
         }
     }
 
-    for (let i = 0; i < node.inputs.length; i++) {
-        let input = node.inputs[i];
-        if (!input) continue;
-        if (!input.link) continue;
-        let linkInfo = graph.links[input.link];
-        if (!linkInfo) continue;
+    if(node.inputs) {
+        for (let i = 0; i < node.inputs.length; i++) {
+            let input = node.inputs[i];
+            if (!input) continue;
+            if (!input.link) continue;
+            let linkInfo = graph.links[input.link];
+            if (!linkInfo) continue;
 
-        if (input.linkType === "trigger" || input.linkType === "setter") {
-            let m = generateSetterMethodCall(input.name, node, input, i, nodeV(node.id), input.linkType === "setter" ? nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) : "");
-            code += "  " + m + "();\n";
+            if (input.linkType === "trigger" || input.linkType === "setter") {
+                let m = generateSetterMethodCall(input.name, node, input, i, nodeV(node.id), input.linkType === "setter" ? nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) : "");
+                code += "  " + m + "();\n";
+            }
         }
     }
 
@@ -357,19 +361,21 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
             initCode += nodeV(node.id) + " = new " + classData.name + "(";
 
             let params = [];
-            for (let i = 0; i < node.inputs.length; i++) {
-                let input = node.inputs[i];
-                if (!input) continue;
-                if (input.type === "@EXEC") continue;
-                let linkInfo = graph.links[input.link];
-                if (!input.link || !linkInfo) {
-                    // params.push("null");
-                    continue;
-                }
+            if(node.inputs) {
+                for (let i = 0; i < node.inputs.length; i++) {
+                    let input = node.inputs[i];
+                    if (!input) continue;
+                    if (input.type === "@EXEC") continue;
+                    let linkInfo = graph.links[input.link];
+                    if (!input.link || !linkInfo) {
+                        // params.push("null");
+                        continue;
+                    }
 
 
-                if (input.linkType === "constructorParam") {
-                    params.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
+                    if (input.linkType === "constructorParam") {
+                        params.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
+                    }
                 }
             }
 
@@ -431,35 +437,37 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
     }
 
     let params = [];
-    for (let i = 0; i < node.inputs.length; i++) {
-        let input = node.inputs[i];
-        if (!input) continue;
-        // if (!input.link) continue;
-        let linkInfo = input.link ? graph.links[input.link] : null;
-        if (!linkInfo) {
-            if (i === 1) {// REF
-                console.warn("Missing method reference for " + node.name);
-                return;// can't continue -> no object to execute the method on
+    if(node.inputs) {
+        for (let i = 0; i < node.inputs.length; i++) {
+            let input = node.inputs[i];
+            if (!input) continue;
+            // if (!input.link) continue;
+            let linkInfo = input.link ? graph.links[input.link] : null;
+            if (!linkInfo) {
+                if (i === 1) {// REF
+                    console.warn("Missing method reference for " + node.name);
+                    return;// can't continue -> no object to execute the method on
+                }
             }
-        }
-        let sourceNode = linkInfo ? graph.getNodeById(linkInfo.origin_id) : null;
-        let sourceOutput = sourceNode ? sourceNode.outputs[linkInfo.origin_slot] : null;
+            let sourceNode = linkInfo ? graph.getNodeById(linkInfo.origin_id) : null;
+            let sourceOutput = sourceNode ? sourceNode.outputs[linkInfo.origin_slot] : null;
 
-        if (i === 0) continue;// EXEC
-        if (i === 1) {// param opening bracket
-            // code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
-            if (sourceNode.classType === "enum" || methodData.isStatic) {
-                code += " " + classData.name + "." + methodData.name.split("(")[0] + "(";
-            } else if (!node.isAbstractMethod) {
-                code += nodeV(linkInfo.origin_id) + "." + methodData.name.split("(")[0] + "(";
+            if (i === 0) continue;// EXEC
+            if (i === 1) {// param opening bracket
+                // code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
+                if (sourceNode.classType === "enum" || methodData.isStatic) {
+                    code += " " + classData.name + "." + methodData.name.split("(")[0] + "(";
+                } else if (!node.isAbstractMethod) {
+                    code += nodeV(linkInfo.origin_id) + "." + methodData.name.split("(")[0] + "(";
+                }
+                continue;
             }
-            continue;
-        }
 
-        if (!linkInfo || !sourceNode) {
-            params.push("null");
-        } else {// append param
-            params.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
+            if (!linkInfo || !sourceNode) {
+                params.push("null");
+            } else {// append param
+                params.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
+            }
         }
     }
 
