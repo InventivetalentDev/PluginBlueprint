@@ -12,7 +12,8 @@
                 background-color: #4c4c4c;
                 cursor: pointer;
             }
-            .collection .collection-item.avatar{
+
+            .collection .collection-item.avatar {
                 min-height: 101px;
                 padding-left: 160px;
                 position: relative;
@@ -28,7 +29,7 @@
                 color: #a5a3a3;
             }
 
-            .collection-item.avatar>.thumbnail{
+            .collection-item.avatar > .thumbnail {
                 position: absolute;
                 width: 150px;
                 height: 100px;
@@ -113,7 +114,16 @@
                     "Copyright (c) 2018, Haylee Schaefer\n" +
                     "All rights reserved.\n");
 
-                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+                Sentry.init({
+                    dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246',
+                    beforeSend(event) {
+                        // Check if it is an exception, if so, show the report dialog
+                        if (event.exception) {
+                            Sentry.showReportDialog();
+                        }
+                        return event;
+                    }
+                });
             });
 
             ipcRenderer.send("getRecentProjects");
@@ -128,7 +138,7 @@
 
             ipcRenderer.on("recentProjects", function (event, arg) {
                 for (let i = 0; i < arg.length; i++) {
-                    let item = $('<li class="collection-item avatar">'+(arg[i].thumbnail?'<div class="thumbnail" style="background-image: url(data:image/jpeg;base64,' + arg[i].thumbnail + ')"></div>':'')+'<span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p></li>');
+                    let item = $('<li class="collection-item avatar">' + (arg[i].thumbnail ? '<div class="thumbnail" style="background-image: url(data:image/jpeg;base64,' + arg[i].thumbnail + ')"></div>' : '') + '<span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p></li>');
                     item.click(() => {
                         ipcRenderer.send("openProject", arg[i].path);
                     });

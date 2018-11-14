@@ -61,7 +61,16 @@
             console.log(canvas);
 
             $(document).ready(function () {
-                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+                Sentry.init({
+                    dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246',
+                    beforeSend(event) {
+                        // Check if it is an exception, if so, show the report dialog
+                        if (event.exception) {
+                            Sentry.showReportDialog();
+                        }
+                        return event;
+                    }
+                });
             })
 
             ipcRenderer.send("getProjectInfo");
