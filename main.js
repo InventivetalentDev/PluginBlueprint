@@ -211,6 +211,7 @@ function readRecentProjects() {
         for (let i = 0; i < data.length; i++) {
             promises.push(new Promise(resolve => {
                 fs.readFile(path.join(data[i], "project.pbp"), function (err, projectData) {
+                    if (err) console.warn(err);
                     projectData = JSON.parse(projectData);
 
                     fs.readFile(path.join(data[i], "thumb.pbt"), "base64", function (err, thumb) {
