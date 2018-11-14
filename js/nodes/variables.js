@@ -25,10 +25,10 @@ function Get() {
 }
 
 Get.prototype.onDrawBackground = function () {
-    this.outputs[1].label = this.properties.name;
+    this.outputs[0].label = this.properties.name;
 };
 Get.prototype.getMethodBody = function (input, output) {
-    return output[1] + " = " + this.propeties.name + ";";
+    return output[0] + " = " + this.properties.name + ";";
 };
 
 
