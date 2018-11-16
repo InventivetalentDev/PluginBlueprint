@@ -50,8 +50,22 @@ BooleanConstant.prototype.getFields = function (output) {
     return ["boolean " + output[0] + " = " + this.properties.value];
 };
 
-module.exports=[
+// Null Constant
+
+function Null() {
+    this.classType = "native";
+    this.addOutput("null", null, {color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON});
+}
+
+Null.prototype.color = Colors.OBJECT_OFF;
+Null.prototype.getFields = function (output) {
+    return ["java.lang.Object " + output[0] + " = null"];
+};
+
+
+module.exports = [
     StringConstant,
     NumberConstant,
-    BooleanConstant
+    BooleanConstant,
+    Null
 ];
