@@ -16,7 +16,7 @@ RelationalOperator.prototype.init = function (booleanInputs) {
         this.addInput("A", "byte,char,short,int,long,float,double", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
         this.addInput("B", "byte,char,short,int,long,float,double", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
     }
-    this.addOutput("", "boolean", {color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON});
+    this.addOutput(this.operation, "boolean", {color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON});
 };
 
 RelationalOperator.prototype.onDrawBackground = function (ctx) {
