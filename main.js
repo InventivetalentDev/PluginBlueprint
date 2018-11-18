@@ -709,6 +709,12 @@ ipcMain.on("startServer", function (event, arg) {
     logWin.setTitle("PluginBlueprint Test Server")
     logWin.loadFile('pages/log.html');
     logWin.show();
+    // Open the DevTools.
+    if (debug) {
+        logWin.webContents.openDevTools({
+            mode: "detach"
+        });
+    }
     let port = "";
     serverStarter.copyPlugin(currentProjectPath, currentProject.name).then(() => {
         serverStarter.startServer(currentProjectPath,
