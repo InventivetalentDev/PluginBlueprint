@@ -741,10 +741,15 @@ ipcMain.on("startServer", function (event, arg) {
                             continue;// don't log
                         }
 
-                        logWin.webContents.send("log", {
+                        let logData = {
                             type: "out",
                             content: log
-                        });
+                        };
+                        if (log.indexOf("Caused by:") === 0) {
+                            logData.href = "https://www.google.de/search?q=" + log;
+                        }
+
+                        logWin.webContents.send("log", logData);
                     }
                 }
             },

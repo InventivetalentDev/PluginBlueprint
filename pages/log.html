@@ -21,6 +21,10 @@
             .entry.warn {
                 color: orange;
             }
+            .entry.has-href{
+                cursor: pointer;
+                color: #008282;
+            }
 
             #cmdInput {
                 position: fixed;
@@ -42,7 +46,7 @@
         </div>
         <input id="cmdInput" type="text" autofocus onblur="this.focus()">
         <script>
-            const {ipcRenderer} = require("electron");
+            const {ipcRenderer,shell} = require("electron");
             const {Menu, getCurrentWindow} = require("electron").remote;
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
@@ -103,6 +107,13 @@
                 if (arg.type === "out") {
                     if (content.indexOf("ERROR") !== -1) entry.addClass("err");
                     if (content.indexOf("WARN") !== -1) entry.addClass("warn");
+                }
+                if(arg.href){
+                    entry.addClass("has-href");
+                    entry.on("click",function (e) {
+                        e.preventDefault();
+                        shell.openExternal(arg.href);
+                    })
                 }
                 entry.appendTo($("#log"));
                 if (followLog) {
