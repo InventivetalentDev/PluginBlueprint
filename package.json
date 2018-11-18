@@ -55,7 +55,7 @@
         "ext": "pbg",
         "name": "PluginBlueprint Graph",
         "description": "PluginBlueprint Graph",
-        "icon": "build/icon.ico"
+        "icon": "build/icon-gray.ico"
       }
     ]
   },
