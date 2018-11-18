@@ -748,6 +748,11 @@ ipcMain.on("startServer", function (event, arg) {
                         if (log.indexOf("Caused by:") === 0) {
                             logData.href = "https://www.google.de/search?q=" + log;
                         }
+                        if (log.indexOf(currentProject.package) !== -1) {
+                            if (log.indexOf("node_") !== -1) {
+                                logData.hasNode = true;
+                            }
+                        }
 
                         logWin.webContents.send("log", logData);
                     }
@@ -773,6 +778,12 @@ ipcMain.on("stopServer", function (event, arg) {
     logWin = null;
     serverStarter.killInstance();
 });
+
+ipcMain.on("highlightNode",function (event,arg) {
+    if (win) {
+        win.webContents.send("highlightNode", arg);
+    }
+})
 
 function showNotification(body, title) {
 

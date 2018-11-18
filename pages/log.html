@@ -21,9 +21,15 @@
             .entry.warn {
                 color: orange;
             }
-            .entry.has-href{
+
+            .entry.has-href {
                 cursor: pointer;
-                color: #008282;
+                color: #e16700;
+            }
+
+            .entry.has-node > .node-ref {
+                cursor: pointer;
+                color: #00d1f7;
             }
 
             #cmdInput {
@@ -46,7 +52,7 @@
         </div>
         <input id="cmdInput" type="text" autofocus onblur="this.focus()">
         <script>
-            const {ipcRenderer,shell} = require("electron");
+            const {ipcRenderer, shell} = require("electron");
             const {Menu, getCurrentWindow} = require("electron").remote;
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
@@ -103,16 +109,28 @@
 
             ipcRenderer.on("log", function (event, arg) {
                 let content = arg.content.replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
+                if (arg.hasNode) {
+                    content = content.replace(/node_([0-9]+)/gm, '<a class="node-ref" data-node="$1">node_$1</a>');
+                }
                 let entry = $("<div class='entry " + arg.type + "'>" + content + "</div>");
                 if (arg.type === "out") {
                     if (content.indexOf("ERROR") !== -1) entry.addClass("err");
                     if (content.indexOf("WARN") !== -1) entry.addClass("warn");
                 }
-                if(arg.href){
+                if (arg.href) {
                     entry.addClass("has-href");
-                    entry.on("click",function (e) {
+                    entry.on("click", function (e) {
                         e.preventDefault();
                         shell.openExternal(arg.href);
+                    })
+                }
+                if (arg.hasNode) {
+                    entry.addClass("has-node");
+                    entry.find(".node-ref").on("click", function (e) {
+                        e.preventDefault();
+                        ipcRenderer.send("highlightNode", {
+                            node: $(this).data("node")
+                        })
                     })
                 }
                 entry.appendTo($("#log"));

@@ -325,6 +325,16 @@
                     }
                 }
             })
+
+            ipcRenderer.on("highlightNode",function (event,arg) {
+                let node = graph.getNodeById(arg.node);
+                if (node) {
+                    console.log(node);
+                    canvas.selectNode(node);
+                    canvas.centerOnNode(node);
+                    canvas.setZoom(2);
+                }
+            })
         </script>
     </body>
 </html>
