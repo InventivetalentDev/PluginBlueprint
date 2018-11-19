@@ -3,6 +3,10 @@
   "version": "1.0.5",
   "description": "UI to create Bukkit/Spigot plugins",
   "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/InventivetalentDev/PluginBlueprint.git"
+  },
   "scripts": {
     "test": "mocha",
     "start": "electron . --debug",
