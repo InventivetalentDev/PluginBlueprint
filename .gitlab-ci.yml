@@ -5,14 +5,14 @@ before_script:
 
 stages:
   - test
-  - build
+  - package
 
 test:
   stage: test
   script: npm run test
   
 dist_win:
-  stage: build
+  stage: package
   image: electronuserland/builder:wine
   script: npm run dist:win
   artifacts:
@@ -22,7 +22,7 @@ dist_win:
       - dist/out/*.exe
   
 dist_linux:
-  stage: build
+  stage: package
   image: electronuserland/builder:10
   script: npm run dist:linux
   artifacts:
