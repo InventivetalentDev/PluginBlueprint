@@ -18,6 +18,7 @@ const DEFAULT_TITLE = "PluginBlueprint Editor";
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
 let logWin;
+let errWin;
 
 let debug = false;
 
@@ -60,7 +61,7 @@ function init() {
                     type: "error",
                     title: "Error",
                     message: "Invalid license key"
-                }, function() {
+                }, function () {
                     app.quit();
                 })
             } else {
@@ -74,7 +75,7 @@ function init() {
                         type: "info",
                         title: "Success",
                         message: m || "License activated successfully!"
-                    }, function() {
+                    }, function () {
                         progressBar.close();
                         showWindow()
                     })
@@ -84,7 +85,7 @@ function init() {
                         type: "error",
                         title: "Error",
                         message: m || "Failed to activate license"
-                    }, function() {
+                    }, function () {
                         app.quit();
                     })
                 })
@@ -94,12 +95,12 @@ function init() {
         licenseManager.validate().then(() => {
             showWindow();
         }).catch(() => {
-            fs.remove(licenseFile,function (err) {
+            fs.remove(licenseFile, function (err) {
                 dialog.showMessageBox(null, {
                     type: "error",
                     title: "Error",
                     message: "Invalid license key"
-                }, function() {
+                }, function () {
                     app.quit();
                 })
             });
@@ -637,6 +638,33 @@ function pack() {
     })
 }
 
+function showCustomErrorDialog(error, title) {
+    if (errWin) errWin.destroy();
+    errWin = null;
+
+    errWin = new BrowserWindow({
+        parent: win,
+        width: 800,
+        height: 600,
+        modal: false,
+        show: false,
+        resizable: true,
+        backgroundColor: "#373737",
+        icon: path.join(__dirname, 'assets/images/favicon.ico')
+    });
+    errWin.setMenu(null);
+    errWin.setTitle(title || "An Error occurred!")
+    errWin.loadFile('pages/error.html');
+    errWin.theError = error;
+    errWin.show();
+    // Open the DevTools.
+    if (debug) {
+        errWin.webContents.openDevTools({
+            mode: "detach"
+        });
+    }
+}
+
 ipcMain.on("codeGenerated", function (event, arg) {
     generateCompilePackage(arg).then(() => {
         console.log("Done!");
@@ -644,7 +672,7 @@ ipcMain.on("codeGenerated", function (event, arg) {
         event.sender.send("generateDone");
     }).catch((err) => {
         event.sender.send("generateError", err);
-        dialog.showErrorBox("Compilation Error", err.message);
+        showCustomErrorDialog(err, "Compilation Error");
     })
 });
 
@@ -779,7 +807,7 @@ ipcMain.on("stopServer", function (event, arg) {
     serverStarter.killInstance();
 });
 
-ipcMain.on("highlightNode",function (event,arg) {
+ipcMain.on("highlightNode", function (event, arg) {
     if (win) {
         win.webContents.send("highlightNode", arg);
     }
