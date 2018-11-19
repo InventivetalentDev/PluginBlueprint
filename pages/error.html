@@ -1,0 +1,50 @@
+<html>
+    <head>
+        <style>
+            #content {
+                font-family: Consolas, monospace;
+                color: white;
+            }
+
+            .node-ref {
+                cursor: pointer;
+                color: #00d1f7;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="content">
+
+        </div>
+        <script>
+            const {ipcRenderer, shell} = require("electron");
+            const {getCurrentWindow} = require("electron").remote;
+            const $ = require("jquery");
+            const Sentry = require("@sentry/electron");
+
+
+            String.prototype.replaceAll = function (search, replacement) {
+                var target = this;
+                return target.replace(new RegExp(search, 'g'), replacement);
+            };
+
+            $(document).ready(function () {
+                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+            });
+
+            let error = getCurrentWindow().theError;
+            let message = typeof error === "string" ? error : error.message || error.msg;
+            message = message.replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
+            message = message.replace(/node_([0-9]+)/gm, '<a class="node-ref" data-node="$1">node_$1</a>')
+
+            $("#content").append(message);
+
+            $(".node-ref").on("click", function (e) {
+                e.preventDefault();
+                ipcRenderer.send("highlightNode", {
+                    node: $(this).data("node")
+                })
+            })
+        </script>
+    </body>
+</html>
