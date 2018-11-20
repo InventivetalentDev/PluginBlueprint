@@ -392,7 +392,7 @@ function createNewProject(arg, lib) {
                 });
                 writeRecentProjects();
 
-                app.addRecentDocument(currentProjectPath);
+                app.addRecentDocument(path.join(currentProjectPath, "project.pbp"));
 
                 if (win) {
                     win.loadFile('pages/graph.html');
@@ -467,7 +467,7 @@ function openProject(arg) {
         });
         writeRecentProjects();
 
-        app.addRecentDocument(currentProjectPath);
+        app.addRecentDocument(path.join(currentProjectPath, "project.pbp"));
 
         if (win) {
             win.loadFile('pages/graph.html');
