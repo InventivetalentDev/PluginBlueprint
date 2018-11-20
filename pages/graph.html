@@ -50,13 +50,38 @@
             const {LiteGraph, LGraph, LGraphCanvas} = require("../node_modules/litegraph.js/build/litegraph");
             const NodeGenerator = require("../js/nodeGenerator");
             const CodeGenerator = require("../js/codeGenerator");
+            const History = require("../js/history");
             const analytics = getGlobal("analytics");
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
 
             let projectInfo = {};
 
+            let history=new History();
+            history.pause();
+
             var graph = new LGraph();
+            graph.onNodeAdded = function () {
+                if (history) {
+                    history.track(JSON.stringify(graph.serialize()));
+
+                    console.log(history)
+                }
+            };
+            graph.onNodeRemoved = function () {
+                if (history) {
+                    history.track(JSON.stringify(graph.serialize()));
+
+                    console.log(history)
+                }
+            };
+            graph.onConnectionChange = function () {
+                if (history) {
+                    history.track(JSON.stringify(graph.serialize()));
+
+                    console.log(history)
+                }
+            };
 
             LGraphCanvas.search_filter = true;
             LGraphCanvas.search_limit = 100;
@@ -75,7 +100,7 @@
                     }
                 });
 
-                analytics.event("Graph", "Open Editor").pageview("/graph","","Graph").send();
+                analytics.event("Graph", "Open Editor").pageview("/graph", "", "Graph").send();
             })
 
             ipcRenderer.send("getProjectInfo");
@@ -197,8 +222,41 @@
                     ]
                 },
                 {
-                    label: "Project",
+                    label: "Edit",
                     submenu: [
+                        {
+                            label: "Undo",
+                            accelerator: "CommandOrControl+Z",
+                            click: () => {
+                                console.log("canUndo: " + history.canUndo());
+                                history.pause();
+                                if (history.canUndo()) {
+                                    let undone = history.undo();
+                                    console.log(undone)
+                                    graph.configure(JSON.parse(undone))
+                                }
+                                history.unpause();
+                                console.log(history)
+                            }
+                        },
+                        {
+                            label: "Redo",
+                            accelerator: "CommandOrControl+Y",
+                            click: () => {
+                                console.log("canRedo: " + history.canRedo());
+                                history.pause();
+                                if (history.canRedo()){
+                                    let redone = history.redo();
+                                    console.log(redone)
+                                    graph.configure(JSON.parse(redone));
+                                }
+                                history.unpause();
+                                console.log(history)
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
                         {
                             label: "Edit Project Information", click: () => {
                                 ipcRenderer.send("openProjectInfoEditor");
@@ -282,6 +340,9 @@
                     graph.configure(arg);
                 }
                 $("#overlay").fadeOut();
+
+                history.unpause();
+                history.track(JSON.stringify(graph.serialize()));
             })
             ipcRenderer.on("generateDone", function (event, arg) {
                 $("#overlay").fadeOut();
