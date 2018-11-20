@@ -377,6 +377,8 @@ function createNewProject(arg, lib) {
                 });
                 writeRecentProjects();
 
+                app.addRecentDocument(currentProjectPath);
+
                 if (win) {
                     win.loadFile('pages/graph.html');
                     win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
@@ -446,6 +448,8 @@ function openProject(arg) {
             name: currentProject.name
         });
         writeRecentProjects();
+
+        app.addRecentDocument(currentProjectPath);
 
         if (win) {
             win.loadFile('pages/graph.html');
