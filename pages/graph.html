@@ -46,10 +46,11 @@
         <canvas id='mycanvas' width='1920' height='1080'></canvas>
         <script>
             const {ipcRenderer} = require("electron");
-            const {Menu, getCurrentWindow} = require("electron").remote;
+            const {Menu, getCurrentWindow, getGlobal} = require("electron").remote;
             const {LiteGraph, LGraph, LGraphCanvas} = require("../node_modules/litegraph.js/build/litegraph");
             const NodeGenerator = require("../js/nodeGenerator");
             const CodeGenerator = require("../js/codeGenerator");
+            const analytics = getGlobal("analytics");
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
 
@@ -73,6 +74,8 @@
                         return event;
                     }
                 });
+
+                analytics.event("Graph", "Open Editor").pageview("/graph","","Graph").send();
             })
 
             ipcRenderer.send("getProjectInfo");
@@ -308,7 +311,7 @@
                                     if (linkInfo) {
                                         let originNode = graph.getNodeById(linkInfo.origin_id);
                                         if (originNode) {
-                                            console.log("Trigger slot", linkInfo.origin_slot, "in node", linkInfo.origin_id," - triggered by",node.id);
+                                            console.log("Trigger slot", linkInfo.origin_slot, "in node", linkInfo.origin_id, " - triggered by", node.id);
                                             originNode.triggerSlot(linkInfo.origin_slot);
                                         }
                                     }
@@ -326,13 +329,15 @@
                 }
             })
 
-            ipcRenderer.on("highlightNode",function (event,arg) {
+            ipcRenderer.on("highlightNode", function (event, arg) {
                 let node = graph.getNodeById(arg.node);
                 if (node) {
                     console.log(node);
                     canvas.selectNode(node);
                     canvas.centerOnNode(node);
                     canvas.setZoom(2);
+
+                    analytics.event("Graph", "Highlight Node").send();
                 }
             })
         </script>

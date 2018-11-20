@@ -5,6 +5,7 @@ const CodeGenerator = require("./js/codeGenerator");
 const javaCompiler = require("./js/javaCompiler");
 const serverStarter = require("./js/serverStarter");
 const licenseManager = require("./js/licenseManager");
+const googleAnalytics = require("./js/analytics");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
@@ -49,6 +50,12 @@ function init() {
         }
     });
 
+    function licenseValid() {
+        googleAnalytics.init().then(analytics => {
+            showWindow();
+        })
+    }
+
     let licenseFile = path.join(app.getPath("userData"), "license");
     if (!fs.existsSync(licenseFile)) {
         prompt({
@@ -77,7 +84,7 @@ function init() {
                         message: m || "License activated successfully!"
                     }, function () {
                         progressBar.close();
-                        showWindow()
+                        licenseValid();
                     })
                 }).catch((m) => {
                     progressBar.setCompleted();
@@ -93,7 +100,7 @@ function init() {
         });
     } else {
         licenseManager.validate().then(() => {
-            showWindow();
+            licenseValid();
         }).catch(() => {
             fs.remove(licenseFile, function (err) {
                 dialog.showMessageBox(null, {
@@ -123,7 +130,8 @@ function showWindow() {
     // and load the index.html of the app.
     win.loadFile('index.html');
     win.once('ready-to-show', () => {
-        win.show()
+        win.show();
+        global.analytics.screenview("Home", app.getName(), app.getVersion()).send();
 
         // Open the DevTools.
         if (debug) {
@@ -279,6 +287,8 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
     }
     let pathSplit = projectPath.split("\\");
 
+    global.analytics.event("Project", "Start creating new").send();
+
     let name = pathSplit[pathSplit.length - 1];
     prompt({
         title: "Give your project a name",
@@ -371,6 +381,8 @@ function createNewProject(arg, lib) {
                     return;
                 }
 
+                global.analytics.event("Project", "New created").send();
+
                 recentProjects.unshift({
                     path: currentProjectPath,
                     name: currentProject.name
@@ -394,6 +406,8 @@ ipcMain.on("createNewProject", function (event, arg) {
 
 
 ipcMain.on("showOpenProject", function (event, arg) {
+    global.analytics.event("Project", "Show File Selector").send();
+
     let p = dialog.showOpenDialog({
         properties: ["openFile"],
         filters: [
@@ -425,6 +439,7 @@ function openProject(arg) {
         dialog.showErrorBox("Not found", "Could not find a PluginBlueprint project in that directory");
         return;
     }
+    global.analytics.event("Project", "Open Project").send();
     fs.readFile(projectFilePath, "utf-8", function (err, data) {
         if (err) {
             console.error("Failed to read project file");
@@ -558,6 +573,8 @@ function saveCodeToFile(code) {
         }
         if (!code) return reject();
 
+        global.analytics.event("Code", "Save to File").send();
+
         fs.emptyDir(path.join(currentProjectPath, "src"), function (err) {
             fs.mkdirs(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\")), function (err) {
                 if (err) {
@@ -608,6 +625,8 @@ function makePluginYml() {
 
 function compile() {
     return new Promise((resolve, reject) => {
+        global.analytics.event("Code", "Compile").send();
+
         javaCompiler.testForJavac().then(() => {
             console.log("compile: " + Date.now())
             fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
@@ -628,6 +647,8 @@ function compile() {
 
 function pack() {
     return new Promise((resolve, reject) => {
+        global.analytics.event("Code", "Pack").send();
+
         console.log("package: " + Date.now());
         fs.emptyDir(path.join(currentProjectPath, "output"), function (err) {
             javaCompiler.package(currentProjectPath, currentProject).then(() => {
@@ -690,6 +711,7 @@ async function generateCompilePackage(arg) {
 }
 
 ipcMain.on("openOutputDir", function (event, arg) {
+    global.analytics.event("Project", "Open Output Directory").send();
     shell.openItem(path.join(currentProjectPath, "output"));
 });
 
@@ -708,6 +730,7 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
     });
     child.loadFile('pages/infoEditor.html');
     child.show();
+    global.analytics.screenview("Info Editor", app.getName(), app.getVersion()).event("Project","Open Info Editor").send();
 });
 
 ipcMain.on("startServer", function (event, arg) {
@@ -737,6 +760,7 @@ ipcMain.on("startServer", function (event, arg) {
     logWin.setTitle("PluginBlueprint Test Server")
     logWin.loadFile('pages/log.html');
     logWin.show();
+    global.analytics.screenview("Server Log", app.getName(), app.getVersion()).event("Project","Start Server").send();
     // Open the DevTools.
     if (debug) {
         logWin.webContents.openDevTools({

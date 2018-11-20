@@ -78,7 +78,8 @@
 
         <script>
             const {ipcRenderer, shell} = require("electron");
-            const {dialog, Menu, getCurrentWindow, app} = require("electron").remote;
+            const {dialog, Menu, getCurrentWindow, app, getGlobal} = require("electron").remote;
+            const analytics = getGlobal("analytics");
             const prompt = require("electron-prompt");
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
@@ -124,15 +125,19 @@
                         return event;
                     }
                 });
+
+                analytics.pageview("/", "", "Home").send()
             });
 
             ipcRenderer.send("getRecentProjects");
 
             $(".createNewProject").click(() => {
+                analytics.event("Home", "Create New Project").send();
                 ipcRenderer.send("showCreateNewProject");
             })
 
             $("#openProject").click(() => {
+                analytics.event("Home", "Open Project").send();
                 ipcRenderer.send("showOpenProject");
             })
 
@@ -140,6 +145,7 @@
                 for (let i = 0; i < arg.length; i++) {
                     let item = $('<li class="collection-item avatar">' + (arg[i].thumbnail ? '<div class="thumbnail" style="background-image: url(data:image/jpeg;base64,' + arg[i].thumbnail + ')"></div>' : '') + '<span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p></li>');
                     item.click(() => {
+                        analytics.event("Home", "Open Recent Project").send();
                         ipcRenderer.send("openProject", arg[i].path);
                     });
                     item.appendTo($("#recentProjects"));
@@ -152,6 +158,7 @@
             // external links
             $(document).on('click', 'a[href^="http"]', function (event) {
                 event.preventDefault();
+                analytics.pageview(this.href).send();
                 shell.openExternal(this.href);
             });
         </script>
