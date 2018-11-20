@@ -52,6 +52,9 @@ function init() {
 
     function licenseValid() {
         googleAnalytics.init().then(analytics => {
+            analytics.set("validLicense", true);
+            analytics.set("debugEnabled", debug);
+            analytics.set("appVersion", app.getVersion());
             showWindow();
         })
     }
@@ -730,7 +733,7 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
     });
     child.loadFile('pages/infoEditor.html');
     child.show();
-    global.analytics.screenview("Info Editor", app.getName(), app.getVersion()).event("Project","Open Info Editor").send();
+    global.analytics.screenview("Info Editor", app.getName(), app.getVersion()).event("Project", "Open Info Editor").send();
 });
 
 ipcMain.on("startServer", function (event, arg) {
@@ -760,7 +763,7 @@ ipcMain.on("startServer", function (event, arg) {
     logWin.setTitle("PluginBlueprint Test Server")
     logWin.loadFile('pages/log.html');
     logWin.show();
-    global.analytics.screenview("Server Log", app.getName(), app.getVersion()).event("Project","Start Server").send();
+    global.analytics.screenview("Server Log", app.getName(), app.getVersion()).event("Project", "Start Server").send();
     // Open the DevTools.
     if (debug) {
         logWin.webContents.openDevTools({
