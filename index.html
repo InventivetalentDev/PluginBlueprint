@@ -47,18 +47,25 @@
         <br/>
         <div class="container">
             <div class="row" style="color:#d2d2d2;">
-                <div class="col s3">
-                    <img src="assets/images/logo-x256.png" class="responsive-img">
+                <div class="col s4">
+                    <img src="assets/images/logo-x512.png" class="responsive-img">
                 </div>
-                <div class="col s9">
-                    <h4>Hi!</h4>
-                    <p class="flow-text">
-                        Welcome to the <strong>PluginBlueprint</strong> Editor!
-                    </p>
+                <div class="col s8">
+                    <div class="row">
+                        <h4>Hi!</h4>
+                        <p class="flow-text">
+                            Welcome to the <strong>PluginBlueprint</strong> Editor!
+                        </p>
+                    </div>
 
-                    <div>
+                    <div class="row">
                         <a class="btn btn-small" href="https://discord.gg/pEWdJCw" target="_blank"><i class="material-icons left">chat</i> Discord Server</a>
                         <a class="btn btn-small" href="https://github.com/InventivetalentDev/PluginBlueprint/wiki" target="_blank"><i class="material-icons left">help</i> Wiki</a>
+                    </div>
+
+                    <div class="row" id="updateCheckContent">
+                        <img src="assets/images/spinner.svg" style="width: 48px; float:left;">
+                        <span style="float: left; line-height: 48px; height: 48px; vertical-align: middle;">Checking for updates...</span>
                     </div>
                 </div>
             </div>
@@ -126,7 +133,10 @@
                     }
                 });
 
-                analytics.pageview("/", "", "Home").send()
+                analytics.pageview("/", "", "Home").send();
+
+                console.log("Checking for updates...");
+                ipcRenderer.send("checkUpdate");
             });
 
             ipcRenderer.send("getRecentProjects");
@@ -160,6 +170,17 @@
                 event.preventDefault();
                 analytics.pageview(this.href).send();
                 shell.openExternal(this.href);
+            });
+
+            ipcRenderer.on("updateInfo", function (event, arg) {
+                $("#updateCheckContent").empty();
+                if (arg.hasUpdate) {
+                    console.log("Update available!", arg);
+
+                    $("#updateCheckContent").append("<strong>Update available!</strong> (v" + arg.updateVersion + ") <a href='https://shop.inventivetalent.org/my-account/downloads/'>Download</a>")
+                } else {
+                    console.log("No update found", arg)
+                }
             });
         </script>
     </body>

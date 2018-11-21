@@ -10,6 +10,7 @@ const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
 const notifier = require("node-notifier");
+const request = require("request");
 const Sentry = require("@sentry/electron");
 const ProgressBar = require('electron-progressbar');
 
@@ -392,6 +393,8 @@ function createNewProject(arg, lib) {
                 });
                 writeRecentProjects();
 
+                app.addRecentDocument(path.join(currentProjectPath, "project.pbp"));
+
                 if (win) {
                     win.loadFile('pages/graph.html');
                     win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
@@ -464,6 +467,8 @@ function openProject(arg) {
             name: currentProject.name
         });
         writeRecentProjects();
+
+        app.addRecentDocument(path.join(currentProjectPath, "project.pbp"));
 
         if (win) {
             win.loadFile('pages/graph.html');
@@ -838,7 +843,32 @@ ipcMain.on("highlightNode", function (event, arg) {
     if (win) {
         win.webContents.send("highlightNode", arg);
     }
-})
+});
+
+ipcMain.on("checkUpdate", function (event) {
+    checkUpdate().then(u => {
+        event.sender.send("updateInfo", u);
+    })
+});
+
+function checkUpdate() {
+    return new Promise(resolve => {
+        request("https://pluginblueprint.inventivetalent.org/checkupdate.php", function (err, res, body) {
+            if (err) {
+                resolve({
+                    hasUpdate: false
+                });
+                return;
+            }
+            let currentVersion = app.getVersion();
+            resolve({
+                hasUpdate: body > currentVersion,
+                appVersion: currentVersion,
+                updateVersion: body
+            })
+        })
+    });
+}
 
 function showNotification(body, title) {
 

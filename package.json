@@ -75,6 +75,7 @@
   },
   "dependencies": {
     "@sentry/electron": "^0.12.1",
+    "deep-equal": "^1.0.1",
     "electron-progressbar": "^1.1.0",
     "electron-prompt": "^1.2.0",
     "fs-extra": "^7.0.0",
