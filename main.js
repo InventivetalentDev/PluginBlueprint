@@ -648,7 +648,7 @@ function compile() {
                 }).catch(reject);
             });
         }).catch(() => {
-            dialog.showErrorBox("javac not found", "Could not find javac executable. Please download the Java Development Kit and make sure javac is in your Environment Variables.");
+            dialog.showErrorBox("javac not found", "Could not find javac executable. Please download the Java Development Kit and make sure javac is in your Environment Variables. (See https://yeleha.co/pb-jdk for details)");
         })
     })
 }
