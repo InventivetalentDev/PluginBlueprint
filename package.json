@@ -11,7 +11,7 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux AppImage snap deb",
+    "dist:linux": "electron-builder --linux snap deb",
     "dist:all": "electron-builder -wl"
   },
   "files": [
