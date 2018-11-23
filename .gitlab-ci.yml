@@ -30,4 +30,3 @@ dist_linux:
     paths:
       - LICENSE
       - dist/out/*.deb
-      - dist/out/*.AppImage
