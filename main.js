@@ -853,7 +853,7 @@ ipcMain.on("checkUpdate", function (event) {
 
 function checkUpdate() {
     return new Promise(resolve => {
-        request("https://pluginblueprint.inventivetalent.org/checkupdate.php", function (err, res, body) {
+        request("https://pluginblueprint.net/checkupdate.php", function (err, res, body) {
             if (err) {
                 resolve({
                     hasUpdate: false
