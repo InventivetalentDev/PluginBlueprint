@@ -51,6 +51,16 @@ function init() {
         }
     });
 
+    // Create the browser window.
+    win = new BrowserWindow({
+        title: DEFAULT_TITLE,
+        width: 1200,
+        height: 800,
+        show: false,
+        icon: path.join(__dirname, 'assets/images/favicon.ico'),
+        backgroundColor: "#373737",
+    });
+
     function licenseValid() {
         googleAnalytics.init().then(analytics => {
             analytics.set("validLicense", true);
@@ -117,16 +127,6 @@ function init() {
             });
         })
     }
-
-    // Create the browser window.
-    win = new BrowserWindow({
-        title: DEFAULT_TITLE,
-        width: 1200,
-        height: 800,
-        show: false,
-        icon: path.join(__dirname, 'assets/images/favicon.ico'),
-        backgroundColor: "#373737",
-    });
 }
 
 function showWindow() {
