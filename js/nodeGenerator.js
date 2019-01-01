@@ -220,7 +220,7 @@ function onMethodAdd(node, options, e, prevMenu) {
                 for (let m in clazz.methodsBySignature) {
                     let method = clazz.methodsBySignature[m];
                     if (existingCategories.indexOf(m) === -1) {
-                        values.push({content: method.signature, value: {class: clazz.name, method: method.signature}, has_submenu: false});
+                        values.push({content: method.fullSignature, value: {class: clazz.name, method: method.fullSignature}, has_submenu: false});
                         existingCategories.push(m);
                     }
                 }
@@ -291,7 +291,7 @@ function init() {
                 getOrCreateBukkitClassNode(clazz.name);
                 for (let m in clazz.methodsBySignature) {
                     let method = clazz.methodsBySignature[m];
-                    getOrCreateBukkitMethodNode(clazz.name, method.signature);
+                    getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
                 }
             }
             resolve();
@@ -306,8 +306,7 @@ function getOrCreateBukkitClassNode(className) {
         return null;
     }
 
-    let classNameSplit = classData.name.split(".");
-    let simpleClassName = classNameSplit[classNameSplit.length - 1];
+    let simpleClassName = classData.simpleName;
     // let packageSplit = className.substr("org.".length).split(".");
     // if (packageSplit.length > 2 && packageSplit[packageSplit.length - 2].charAt(0) === packageSplit[packageSplit.length - 2].charAt(0).toUpperCase()) {
     //     simpleClassName = packageSplit[packageSplit.length - 2] + "." + packageSplit[packageSplit.length - 1];
@@ -316,7 +315,7 @@ function getOrCreateBukkitClassNode(className) {
     //     packageSplit[packageSplit.length - 1] = temp;
     //
     // }
-    let categoryName = classData.name;
+    let categoryName = classData.qualifiedName;
 
     if (LiteGraph.registered_node_types.hasOwnProperty(categoryName)) {
         return categoryName;
@@ -377,15 +376,15 @@ function getOrCreateBukkitClassNode(className) {
 
 function addClassIO(node, classData, isChildCall) {
     if (!isChildCall) {
-        if (!classData.isEvent && !classData.isEnum && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
+        if (!classData.isEvent && !classData.isEnum && classData.qualifiedName !== "org.bukkit.plugin.java.JavaPlugin") {
             addNodeInput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
         }
-        if (!classData.isEnum && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
+        if (!classData.isEnum && classData.qualifiedName !== "org.bukkit.plugin.java.JavaPlugin") {
             addNodeOutput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
         }
     }
 
-    if (!isChildCall && classData.isObject && classData.name !== "org.bukkit.plugin.java.JavaPlugin") {
+    if (!isChildCall && classData.isObject && classData.qualifiedName !== "org.bukkit.plugin.java.JavaPlugin") {
         addNodeInput(node, "REF", classData.name, {linkType: "ref", shape: LiteGraph.BOX_SHAPE, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON})
     }
     if (!isChildCall && !classData.isEnum) {
@@ -407,11 +406,11 @@ function addClassIO(node, classData, isChildCall) {
     // }
 
     if (!classData.isInterface && !classData.isAbstract) {
-        for (let c in classData.constructorsByName) {
-            let constructor = classData.constructorsByName[c];
+        for (let c=0;c<classData.constructors.length;c++) {
+            let constructor = classData.constructors[c];
             for (let i = 0; i < constructor.parameters.length; i++) {
                 let param = constructor.parameters[i];
-                addNodeInput(node, param.name, param.type, {linkType: "constructorParam", constructorName: constructor.name, paramName: param.name})
+                addNodeInput(node, param.name, param.type.qualifiedName, {linkType: "constructorParam", constructorName: constructor.name, paramName: param.name})
             }
         }
     }
@@ -421,7 +420,7 @@ function addClassIO(node, classData, isChildCall) {
         let method = classData.methodsBySignature[m];
 
 
-        let methodSignature = method.signature;
+        let methodSignature = method.fullSignature;
 
 
         let isLambda = checkLambda(classData, method);
@@ -436,30 +435,30 @@ function addClassIO(node, classData, isChildCall) {
                 linkType: isLambda ? "abstractMethod" : "method",
                 className: classData.name,
                 methodName: method.name,
-                methodSignature: method.signature,
+                methodSignature: method.fullSignature,
                 shape: LiteGraph.BOX_SHAPE,
                 color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
                 color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
             }, true);
         } else if (method.parameters.length === 0) {
-            let returnData = classStore.getClass(method.return_type);
-            if (method.return_type === "boolean") {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON}, true);
-            } else if (method.return_type === "number" || method.return_type === "int" || method.return_type === "double" || method.return_type === "float" || method.return_type === "short" || method.return_type === "long" || method.return_type === "byte") {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON}, true);
-            } else if (method.return_type === "string" || method.return_type === "java.lang.String") {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON}, true);
+            let returnData = classStore.getClass(method.returnType.qualifiedName);
+            if (method.returnType.qualifiedName === "boolean") {
+                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {linkType: "getter", returnType: method.returnType.qualifiedName, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON}, true);
+            } else if (method.returnType.qualifiedName === "number" || method.returnType.qualifiedName === "int" || method.returnType.qualifiedName === "double" || method.returnType.qualifiedName === "float" || method.returnType.qualifiedName === "short" || method.returnType.qualifiedName === "long" || method.returnType.qualifiedName === "byte") {
+                addNodeOutput(node, method.name, method.return_type + method.returnType.dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON}, true);
+            } else if (method.returnType.qualifiedName === "string" || method.returnType.qualifiedName === "java.lang.String") {
+                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {linkType: "getter", returnType: method.returnType.qualifiedName, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON}, true);
             } else if (returnData && returnData.isObject) {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "object", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON}, true);
+                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {linkType: "object", returnType: method.returnType.qualifiedName, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON}, true);
             } else if (returnData && returnData.isEnum) {
-                addNodeOutput(node, method.name, method.return_type + method.return_type_dimension, {linkType: "enum", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.signature, color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON}, true);
+                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {linkType: "enum", returnType: method.returnType.qualifiedName, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON}, true);
             } else {
                 // addNodeOutput(node,method.name, method.return_type);
                 addNodeOutput(node, method.name, classData.name + "#" + methodSignature, {
                     linkType: isLambda ? "abstractMethod" : "method",
                     className: classData.name,
                     methodName: method.name,
-                    methodSignature: method.signature,
+                    methodSignature: method.fullSignature,
                     shape: LiteGraph.BOX_SHAPE,
                     color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
                     color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
@@ -470,7 +469,7 @@ function addClassIO(node, classData, isChildCall) {
                 linkType: isLambda ? "abstractMethod" : "method",
                 className: classData.name,
                 methodName: method.name,
-                methodSignature: method.signature,
+                methodSignature: method.fullSignature,
                 shape: LiteGraph.BOX_SHAPE,
                 color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
                 color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
@@ -481,15 +480,23 @@ function addClassIO(node, classData, isChildCall) {
     // Interfaces
     if (classData.interfaces) {
         for (let i = 0; i < classData.interfaces.length; i++) {
-            let interfaceData = classStore.getClass(classData.interfaces[i])
-            addClassIO(node, interfaceData, true);
+            let interfaceData = classStore.getClass(classData.interfaces[i]);
+            if(interfaceData) {
+                addClassIO(node, interfaceData, true);
+            }else{
+                console.warn("Missing class data for interface class " + classData.interfaces[i]);
+            }
         }
     }
     // Superclass
     if (classData.superclass && classData.superclass.length > 0 && classData.superclass !== "java.lang.Object" && classData.superclass !== "java.lang.Enum") {
         console.log(classData.superclass);
-        let superData = classStore.getClass(classData.superclass)
-        addClassIO(node, superData, true);
+        let superData = classStore.getClass(classData.superclass);
+        if(superData) {
+            addClassIO(node, superData, true);
+        }else{
+            console.warn("Missing class data for superclass " + classData.superclass);
+        }
     }
 }
 
@@ -500,8 +507,7 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
         console.warn("Class " + className + " does not exist or isn't loaded");
         return null;
     }
-    let classNameSplit = classData.name.split(".");
-    let simpleClassName = classNameSplit[classNameSplit.length - 1];
+    let simpleClassName = classData.simpleName;
 
     let methodData = classStore.getMethod(className, methodSignature);
     if (!methodData) {
@@ -520,7 +526,7 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
         this.nodeType = "BukkitMethodNode";
         this.className = classData.name;
         this.methodName = methodData.name;
-        this.methodSignature = methodData.signature;
+        this.methodSignature = methodData.fullSignature;
     }
 
     BukkitMethodNode.title = simpleClassName + "#" + methodSignature;
@@ -552,7 +558,7 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
 
 function addMethodIO(node, classData, methodData) {
 
-    let methodSignature = methodData.signature;
+    let methodSignature = methodData.fullSignature;
 
     let isLambda = checkLambda(classData, methodData);
 
@@ -568,22 +574,22 @@ function addMethodIO(node, classData, methodData) {
         node.color = Colors.ABSTRACT_FUNCTION_OFF;
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
-            let paramType = methodData.parameters[p].typeParameter ? "java.lang.Object" : param.type;
+            let paramType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : param.type.qualifiedName;
 
-            addNodeOutput(node, param.name, paramType + param.type_dimension, {paramName: param.name});
+            addNodeOutput(node, param.name, paramType + param.type.dimension, {paramName: param.name});
         }
 
-        if (methodData.return_type !== "void") {
-            addNodeInput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {returnType: methodData.return_type});
+        if (methodData.returnType.qualifiedName !== "void") {
+            addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, {returnType: methodData.returnType.qualifiedName});
         }
     } else {
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
-            addNodeInput(node, param.name, param.type + param.type_dimension, {paramName: param.name});
+            addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, {paramName: param.name});
         }
 
         if (methodData.return_type !== "void") {
-            addNodeOutput(node, "RETURN", methodData.return_type + methodData.return_type_dimension, {returnType: methodData.return_type});
+            addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, {returnType: methodData.returnType.qualifiedName});
         }
     }
 }
