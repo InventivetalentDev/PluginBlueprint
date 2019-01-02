@@ -13,15 +13,6 @@ const arrayNodes = require("./nodes/array");
 
 const classStore = new ClassDataStore();
 
-// const classesByName = {};
-//
-// const eventClasses = [];
-// const objectClasses = [];
-// const enumClasses = [];
-//
-// const methods = [];
-//
-// const canvasMenuData = {};
 
 const inputOutputSorter = function (a, b) {
     var nameA = a.name.toUpperCase(); // ignore upper and lowercase
@@ -406,7 +397,7 @@ function addClassIO(node, classData, isChildCall) {
     // }
 
     if (!classData.isInterface && !classData.isAbstract) {
-        for (let c=0;c<classData.constructors.length;c++) {
+        for (let c = 0; c < classData.constructors.length; c++) {
             let constructor = classData.constructors[c];
             for (let i = 0; i < constructor.parameters.length; i++) {
                 let param = constructor.parameters[i];
@@ -430,7 +421,7 @@ function addClassIO(node, classData, isChildCall) {
         } else if (method.name.startsWith("set")) {
             addNodeInput(node,method.name.substr(3), method.return_type);
         } else*/
-        if (method.return_type === "void") {
+        if (method.return_type === "void") {// Regular void or abstract Method
             addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {
                 linkType: isLambda ? "abstractMethod" : "method",
                 className: classData.name,
@@ -440,20 +431,64 @@ function addClassIO(node, classData, isChildCall) {
                 color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
                 color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
             }, true);
-        } else if (method.parameters.length === 0) {
+        } else if (method.parameters.length === 0) {// non-void method without parameters
             let returnData = classStore.getClass(method.returnType.qualifiedName);
-            if (method.returnType.qualifiedName === "boolean") {
-                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {linkType: "getter", returnType: method.returnType.qualifiedName, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON}, true);
-            } else if (method.returnType.qualifiedName === "number" || method.returnType.qualifiedName === "int" || method.returnType.qualifiedName === "double" || method.returnType.qualifiedName === "float" || method.returnType.qualifiedName === "short" || method.returnType.qualifiedName === "long" || method.returnType.qualifiedName === "byte") {
-                addNodeOutput(node, method.name, method.return_type + method.returnType.dimension, {linkType: "getter", returnType: method.return_type, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON}, true);
-            } else if (method.returnType.qualifiedName === "string" || method.returnType.qualifiedName === "java.lang.String") {
-                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {linkType: "getter", returnType: method.returnType.qualifiedName, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON}, true);
-            } else if (returnData && returnData.isObject) {
-                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {linkType: "object", returnType: method.returnType.qualifiedName, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON}, true);
-            } else if (returnData && returnData.isEnum) {
-                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {linkType: "enum", returnType: method.returnType.qualifiedName, className: classData.name, methodName: method.name, methodSignature: method.fullSignature, color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON}, true);
-            } else {
-                // addNodeOutput(node,method.name, method.return_type);
+            if (method.returnType.qualifiedName === "boolean") {// boolean return
+                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {
+                    linkType: "getter",
+                    returnType: method.returnType.qualifiedName,
+                    className: classData.name,
+                    methodName: method.name,
+                    methodSignature: method.fullSignature,
+                    color_off: Colors.BOOLEAN_OFF,
+                    color_on: Colors.BOOLEAN_ON
+                }, true);
+            } else if (method.returnType.qualifiedName === "int" ||
+                method.returnType.qualifiedName === "double" ||
+                method.returnType.qualifiedName === "float" ||
+                method.returnType.qualifiedName === "short" ||
+                method.returnType.qualifiedName === "long" ||
+                method.returnType.qualifiedName === "byte") {// number return
+                addNodeOutput(node, method.name, method.return_type + method.returnType.dimension, {
+                    linkType: "getter",
+                    returnType: method.return_type,
+                    className: classData.name,
+                    methodName: method.name,
+                    methodSignature: method.fullSignature,
+                    color_off: Colors.NUMBER_OFF,
+                    color_on: Colors.NUMBER_ON
+                }, true);
+            } else if (method.returnType.qualifiedName === "java.lang.String") {// String return
+                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {
+                    linkType: "getter",
+                    returnType: method.returnType.qualifiedName,
+                    className: classData.name,
+                    methodName: method.name,
+                    methodSignature: method.fullSignature,
+                    color_off: Colors.STRING_OFF,
+                    color_on: Colors.STRING_ON
+                }, true);
+            } else if (returnData && returnData.isObject) {// Object return
+                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {
+                    linkType: "object",
+                    returnType: method.returnType.qualifiedName,
+                    className: classData.name,
+                    methodName: method.name,
+                    methodSignature: method.fullSignature,
+                    color_off: Colors.OBJECT_OFF,
+                    color_on: Colors.OBJECT_ON
+                }, true);
+            } else if (returnData && returnData.isEnum) {// Enum return
+                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {
+                    linkType: "enum",
+                    returnType: method.returnType.qualifiedName,
+                    className: classData.name,
+                    methodName: method.name,
+                    methodSignature: method.fullSignature,
+                    color_off: Colors.ENUM_OFF,
+                    color_on: Colors.ENUM_ON
+                }, true);
+            } else {// fallback to abstract/regular method
                 addNodeOutput(node, method.name, classData.name + "#" + methodSignature, {
                     linkType: isLambda ? "abstractMethod" : "method",
                     className: classData.name,
@@ -464,7 +499,7 @@ function addClassIO(node, classData, isChildCall) {
                     color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
                 }, true);
             }
-        } else {
+        } else {// fallback to abstract/regular method
             addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {
                 linkType: isLambda ? "abstractMethod" : "method",
                 className: classData.name,
@@ -481,9 +516,9 @@ function addClassIO(node, classData, isChildCall) {
     if (classData.interfaces) {
         for (let i = 0; i < classData.interfaces.length; i++) {
             let interfaceData = classStore.getClass(classData.interfaces[i]);
-            if(interfaceData) {
+            if (interfaceData) {
                 addClassIO(node, interfaceData, true);
-            }else{
+            } else {
                 console.warn("Missing class data for interface class " + classData.interfaces[i]);
             }
         }
@@ -492,9 +527,9 @@ function addClassIO(node, classData, isChildCall) {
     if (classData.superclass && classData.superclass.length > 0 && classData.superclass !== "java.lang.Object" && classData.superclass !== "java.lang.Enum") {
         console.log(classData.superclass);
         let superData = classStore.getClass(classData.superclass);
-        if(superData) {
+        if (superData) {
             addClassIO(node, superData, true);
-        }else{
+        } else {
             console.warn("Missing class data for superclass " + classData.superclass);
         }
     }
@@ -730,10 +765,4 @@ module.exports = {
     init: init,
     getOrCreateBukkitClassNode: getOrCreateBukkitClassNode,
     getOrCreateBukkitMethodNode: getOrCreateBukkitMethodNode,
-    getClassesByName: () => {
-        return classesByName;
-    },
-    getMethods: () => {
-        return methods;
-    }
 };
