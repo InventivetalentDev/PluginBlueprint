@@ -93,6 +93,7 @@
 
             var graph = new LGraph();
             graph.onNodeAdded = function () {
+                console.debug("[HISTORY] onNodeAdded");
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
@@ -100,6 +101,7 @@
                 }
             };
             graph.onNodeRemoved = function () {
+                console.debug("[HISTORY] onNodeRemoved");
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
@@ -107,6 +109,7 @@
                 }
             };
             graph.onConnectionChange = function () {
+                console.debug("[HISTORY] onConnectionChange");
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
@@ -135,13 +138,6 @@
             })
 
             ipcRenderer.send("getProjectInfo");
-
-            graph.onNodeAdded = function (node) {
-                console.log(node);
-            };
-            canvas.onNodeSelected = function (node) {
-                console.log(node)
-            }
 
             window.addEventListener("resize", function () {
                 canvas.resize();
