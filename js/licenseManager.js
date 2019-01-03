@@ -10,11 +10,15 @@ function activate(key) {
     return new Promise(((resolve, reject) => {
         request(URL + "?action=license_key_activate&store_code=" + STORE_CODE + "&sku=pluginblueprint&license_key=" + key, function (err, res, body) {
             console.log(body);
+            if (!res || res.statusCode !== 200) {
+                reject("Failed to contact license server (Status " + res.statusCode + ")");
+                return;
+            }
             body = JSON.parse(body);
             if (body.error) {
                 reject(body.message);
             } else {
-                fs.writeFile(path.join(app.getPath("userData"), "license"), Buffer.from(JSON.stringify(body.data)).toString("base64"),"utf8", function (err) {
+                fs.writeFile(path.join(app.getPath("userData"), "license"), Buffer.from(JSON.stringify(body.data)).toString("base64"), "utf8", function (err) {
                     if (err) {
                         console.error(err);
                     }
@@ -41,8 +45,12 @@ function validate() {
                 console.log(data);
 
                 request(URL + "?action=license_key_validate&store_code=" + STORE_CODE + "&sku=pluginblueprint&license_key=" + data.the_key + "&activation_id=" + data.activation_id, function (err, res, body) {
-                    if(err) console.warn(err);
+                    if (err) console.warn(err);
                     console.log(body);
+                    if (!res || res.statusCode !== 200) {
+                        reject("Failed to contact license server (Status " + res.statusCode + ")");
+                        return;
+                    }
                     body = JSON.parse(body);
                     if (body.error) {
                         reject(body.message);
