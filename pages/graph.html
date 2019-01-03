@@ -35,12 +35,42 @@
                 height: 128px;
                 opacity: 1;
             }
+
+            #helpBox {
+                position: absolute;
+                width: 100%;
+                height: 10%;
+                background-color: #00000069;
+                z-index: 18;
+                bottom: 0;
+                text-align: center;
+                color: white;
+                font-family: "Courier New", monospace;
+                font-size: 20px;
+            }
+
+            #helpBox .helpBox-shortcut {
+                height: 80%;
+                width: auto;
+                padding-top: 5px;
+            }
+
+            #helpBox .keypics {
+                height: 100%;
+                width: auto;
+                vertical-align: middle;
+            }
         </style>
     </head>
     <body>
         <div id="overlay">
             <div id="overlay-loader">
                 <img src="../assets/images/spinner.svg">
+            </div>
+        </div>
+        <div id="helpBox">
+            <div class="helpBox-shortcut">
+                <i class="keypics" data-type="mouse" data-color="dark" data-label="x2" data-fontFamily="RobotoMono">left</i>&nbsp;to search for elements to add
             </div>
         </div>
         <canvas id='mycanvas' width='1920' height='1080'></canvas>
@@ -54,10 +84,11 @@
             const analytics = getGlobal("analytics");
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
+            const KeyPics = require("key.pics");
 
             let projectInfo = {};
 
-            let history=new History();
+            let history = new History();
             history.pause();
 
             var graph = new LGraph();
@@ -245,7 +276,7 @@
                             click: () => {
                                 console.log("canRedo: " + history.canRedo());
                                 history.pause();
-                                if (history.canRedo()){
+                                if (history.canRedo()) {
                                     let redone = history.redo();
                                     console.log(redone)
                                     graph.configure(JSON.parse(redone));

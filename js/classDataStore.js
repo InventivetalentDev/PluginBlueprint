@@ -7,7 +7,7 @@ function ClassDataStore() {
     this.loadClassFile = function (fileName) {
         return new Promise(((resolve, reject) => {
             console.log("[ClassStore] Load " + fileName);
-            fs.readFile(path.join(__dirname, "../data/" + fileName + ".json"), "utf-8", (err, data) => {
+            fs.readFile(path.join(__dirname, "../data/classes/" + fileName + ".json"), "utf-8", (err, data) => {
                 if (err) {
                     reject();
                     return;
@@ -17,10 +17,11 @@ function ClassDataStore() {
 
                 for (let c = 0; c < data.classes.length; c++) {
                     let clazz = Object.assign({}, data.classes[c]);
+                    clazz.name=clazz.qualifiedName;
                     clazz.fieldsByName = {};
                     clazz.methodsBySignature = {};
                     clazz.constructorsByName = {};
-                    clazz.isEvent = clazz.name.indexOf("Event") !== -1;
+                    clazz.isEvent = clazz.qualifiedName.indexOf("Event") !== -1;
                     clazz.isObject = !clazz.isEvent && !clazz.isEnum;
 
                     for (let f = 0; f < clazz.fields.length; f++) {
@@ -36,9 +37,10 @@ function ClassDataStore() {
                             method.paramsByName[param.name.toLowerCase()] = param;
                         }
 
-                        method.signature = this.getMethodSignatureFromData(method);
-                        clazz.methodsBySignature[method.signature] = method;
+                        method.fullSignature = method.name+method.signature;
+                        clazz.methodsBySignature[method.fullSignature] = method;
                     }
+                    ///TODO: storing constructors by name makes no sense
                     for (let m = 0; m < clazz.constructors.length; m++) {
                         let constr = Object.assign({}, clazz.constructors[m]);
                         constr.paramsByName = {};
@@ -51,7 +53,7 @@ function ClassDataStore() {
                         clazz.constructorsByName[constr.name.toLowerCase()] = constr;
                     }
 
-                    this.classStore[clazz.name.toLowerCase()] = clazz;
+                    this.classStore[clazz.qualifiedName.toLowerCase()] = clazz;
                 }
 
                 console.log("[ClassStore] Loaded " + fileName);
@@ -64,8 +66,8 @@ function ClassDataStore() {
 
 ClassDataStore.prototype.init = function () {
     return Promise.all([
-        this.loadClassFile("javaClasses"),
-        this.loadClassFile("bukkitClasses")
+        this.loadClassFile("java"),
+        this.loadClassFile("spigot")
     ]);
 };
 
@@ -130,15 +132,10 @@ ClassDataStore.prototype.getMethodSignatureFromMethodAndParamTypes = function (m
 ClassDataStore.prototype.getMethodSignatureFromData = function (methodData) {
     let params = [];
     for (let i = 0; i < methodData.parameters.length; i++) {
-        params.push(this.typeToSimple(methodData.parameters[i].type) + methodData.parameters[i].type_dimension);
+        params.push(methodData.parameters[i].type.simpleName + methodData.parameters[i].type.dimension);
     }
     return this.getMethodSignatureFromMethodAndParamTypes(methodData.name, params);
 };
 
-ClassDataStore.prototype.typeToSimple = function (type) {
-    if (!type) return null;
-    let split = type.split(".");
-    return split[split.length - 1];
-};
 
 module.exports = ClassDataStore;
