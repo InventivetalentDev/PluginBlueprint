@@ -2,6 +2,7 @@ const fs = require("fs");
 const {LiteGraph} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
+const {getNullForType} = require("./util");
 
 const classStore = new ClassDataStore();
 
@@ -509,21 +510,6 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
     methodCalls.push(code);
 
 
-}
-
-function getNullForType(type) {
-    if (type && type.isPrimitive) {
-        if (type.qualifiedName === "boolean") {
-            return "false";
-        }
-        if (type.qualifiedName === "byte" || type.qualifiedName === "short" || type.qualifiedName === "int" || type.qualifiedName === "long" || type.qualifiedName === "float" || type.qualifiedName === "double") {
-            return "0";
-        }
-        if (type.qualifiedName === "char") {
-            return "''";
-        }
-    }
-    return "null";
 }
 
 function generateCodeForNativeNode(graph, n, node) {

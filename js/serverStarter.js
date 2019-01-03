@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs-extra");
 const {exec, spawn} = require("child_process");
+const {copyFile} = require("./util");
 
 let running = false;
 let instance = null;
@@ -81,24 +82,7 @@ function killInstance() {
     }
 }
 
-function copyFile(src, dest) {
-    return new Promise((resolve, reject) => {
-        console.debug("copy ", src, "->", dest);
-        if (!fs.existsSync(src)) {
-            reject();
-            return;
-        }
-        let rs = fs.createReadStream(src);
-        let ws = fs.createWriteStream(dest);
-        ws.on("close", function () {
-            resolve();
-        });
-        ws.on("error", function () {
-            reject();
-        });
-        rs.pipe(ws);
-    })
-}
+
 
 module.exports = {
     copyPlugin: copyPlugin,
