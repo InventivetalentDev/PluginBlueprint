@@ -833,7 +833,7 @@ ipcMain.on("startServer", function (event, arg) {
                             content: log
                         };
                         if (log.indexOf("Caused by:") === 0) {
-                            logData.href = "https://www.google.de/search?q=" + log;
+                            logData.href = "https://www.google.com/search?q=" + log;
                         }
                         if (log.indexOf(currentProject.package) !== -1) {
                             if (log.indexOf("node_") !== -1) {
@@ -865,6 +865,23 @@ ipcMain.on("stopServer", function (event, arg) {
     logWin = null;
     serverStarter.killInstance();
 });
+
+ipcMain.on("reloadPlugin", function (event, arg) {
+    reloadPlugin();
+});
+
+function reloadPlugin() {
+    if (!currentProject) return;
+    console.log("Reloading plugin...");
+    serverStarter.sendCommandToInstance("pluginblueprint unload " + currentProject.name, () => {
+        serverStarter.copyPlugin(currentProjectPath, currentProject.name, true, true).then(() => {
+            serverStarter.sendCommandToInstance("pluginblueprint load " + currentProject.name, () => {
+                console.log("Plugin reloaded!");
+                showNotification("Plugin reloaded!");
+            })
+        })
+    })
+}
 
 ipcMain.on("highlightNode", function (event, arg) {
     if (win) {

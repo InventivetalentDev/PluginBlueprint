@@ -91,6 +91,14 @@
                             label: "Stop Server", click: () => {
                                 ipcRenderer.send("stopServer");
                             }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Reload Plugin", click: () => {
+                                ipcRenderer.send("reloadPlugin");
+                            }
                         }
                     ]
                 }

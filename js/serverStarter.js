@@ -5,31 +5,30 @@ const {exec, spawn} = require("child_process");
 let running = false;
 let instance = null;
 
-function copyPlugin(projectPath, projectName) {
+function copyPlugin(projectPath, projectName, skipEmpty, skipReloadHelper) {
     return new Promise((resolve, reject) => {
         function doCopy() {
-            let sourcePath = path.join(projectPath, "output", projectName + ".jar");
-            if(!fs.existsSync(sourcePath)){
-                reject();
-                return;
-            }
-            let rs = fs.createReadStream(path.join(projectPath, "output", projectName + ".jar"));
-            let ws = fs.createWriteStream(path.join(projectPath, "lib", "plugins", projectName + ".jar"));
-            ws.on("close", function () {
-                resolve();
-            });
-            ws.on("error", function () {
-                reject();
-            });
-            rs.pipe(ws);
+            copyFile(path.join(projectPath, "output", projectName + ".jar"), path.join(projectPath, "lib", "plugins", projectName + ".jar"))// copy plugin
+                .then(() => {
+                    if (skipReloadHelper) {
+                        resolve()
+                    } else {
+                        copyFile(path.join(__dirname, "../assets/lib/livereload.jar"), path.join(projectPath, "lib", "plugins", "livereload.jar"))// copy livereload helper plugin
+                            .then(resolve).catch(reject);
+                    }
+                }).catch(reject);
         }
 
         let pluginsDir = path.join(projectPath, "lib", "plugins");
         if (fs.existsSync(pluginsDir)) {
-            fs.emptyDir(pluginsDir, function (err) {
-                if (err) return reject(err);
+            if (skipEmpty) {
                 doCopy();
-            });
+            } else {
+                fs.emptyDir(pluginsDir, function (err) {
+                    if (err) return reject(err);
+                    doCopy();
+                });
+            }
         } else {
             fs.mkdirs(pluginsDir, function (err) {
                 if (err) return reject(err);
@@ -80,6 +79,25 @@ function killInstance() {
     if (instance) {
         instance.kill();
     }
+}
+
+function copyFile(src, dest) {
+    return new Promise((resolve, reject) => {
+        console.debug("copy ", src, "->", dest);
+        if (!fs.existsSync(src)) {
+            reject();
+            return;
+        }
+        let rs = fs.createReadStream(src);
+        let ws = fs.createWriteStream(dest);
+        ws.on("close", function () {
+            resolve();
+        });
+        ws.on("error", function () {
+            reject();
+        });
+        rs.pipe(ws);
+    })
 }
 
 module.exports = {
