@@ -135,7 +135,6 @@ function showWindow() {
     win.loadFile('index.html');
     win.once('ready-to-show', () => {
         win.show();
-        global.analytics.screenview("Home", app.getName(), app.getVersion()).send();
 
         // Open the DevTools.
         if (debug) {
@@ -145,6 +144,7 @@ function showWindow() {
         }
 
         checkFileAssociation();
+        global.analytics.screenview("Home", app.getName(), app.getVersion()).send();
     })
 
     win.on("close", function (e) {
@@ -291,7 +291,11 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
     }
     let pathSplit = projectPath.split("\\");
 
-    global.analytics.event("Project", "Start creating new").send();
+    try {
+        global.analytics.event("Project", "Start creating new").send();
+    } catch (e) {
+        console.warn(e);
+    }
 
     let name = pathSplit[pathSplit.length - 1];
     prompt({
@@ -385,8 +389,6 @@ function createNewProject(arg, lib) {
                     return;
                 }
 
-                global.analytics.event("Project", "New created").send();
-
                 recentProjects.unshift({
                     path: currentProjectPath,
                     name: currentProject.name
@@ -399,6 +401,7 @@ function createNewProject(arg, lib) {
                     win.loadFile('pages/graph.html');
                     win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
                 }
+                global.analytics.event("Project", "New created").send();
             })
         });
         rs.pipe(ws);
@@ -412,7 +415,11 @@ ipcMain.on("createNewProject", function (event, arg) {
 
 
 ipcMain.on("showOpenProject", function (event, arg) {
-    global.analytics.event("Project", "Show File Selector").send();
+    try {
+        global.analytics.event("Project", "Show File Selector").send();
+    } catch (e) {
+        console.warn(e);
+    }
 
     let p = dialog.showOpenDialog({
         properties: ["openFile"],
@@ -445,7 +452,11 @@ function openProject(arg) {
         dialog.showErrorBox("Not found", "Could not find a PluginBlueprint project in that directory");
         return;
     }
-    global.analytics.event("Project", "Open Project").send();
+    try {
+        global.analytics.event("Project", "Open Project").send();
+    } catch (e) {
+        console.warn(e);
+    }
     fs.readFile(projectFilePath, "utf-8", function (err, data) {
         if (err) {
             console.error("Failed to read project file");
@@ -581,7 +592,11 @@ function saveCodeToFile(code) {
         }
         if (!code) return reject();
 
-        global.analytics.event("Code", "Save to File").send();
+        try {
+            global.analytics.event("Code", "Save to File").send();
+        } catch (e) {
+            console.warn(e);
+        }
 
         fs.emptyDir(path.join(currentProjectPath, "src"), function (err) {
             fs.mkdirs(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\")), function (err) {
@@ -633,7 +648,11 @@ function makePluginYml() {
 
 function compile() {
     return new Promise((resolve, reject) => {
-        global.analytics.event("Code", "Compile").send();
+        try {
+            global.analytics.event("Code", "Compile").send();
+        } catch (e) {
+            console.warn(e);
+        }
 
         javaCompiler.testForJavac().then(() => {
             console.log("compile: " + Date.now())
@@ -655,7 +674,11 @@ function compile() {
 
 function pack() {
     return new Promise((resolve, reject) => {
-        global.analytics.event("Code", "Pack").send();
+        try {
+            global.analytics.event("Code", "Pack").send();
+        } catch (e) {
+            console.warn(e);
+        }
 
         console.log("package: " + Date.now());
         fs.emptyDir(path.join(currentProjectPath, "output"), function (err) {
@@ -719,8 +742,8 @@ async function generateCompilePackage(arg) {
 }
 
 ipcMain.on("openOutputDir", function (event, arg) {
-    global.analytics.event("Project", "Open Output Directory").send();
     shell.openItem(path.join(currentProjectPath, "output"));
+    global.analytics.event("Project", "Open Output Directory").send();
 });
 
 ipcMain.on("openProjectInfoEditor", function (event, arg) {
@@ -768,7 +791,11 @@ ipcMain.on("startServer", function (event, arg) {
     logWin.setTitle("PluginBlueprint Test Server")
     logWin.loadFile('pages/log.html');
     logWin.show();
-    global.analytics.screenview("Server Log", app.getName(), app.getVersion()).event("Project", "Start Server").send();
+    try {
+        global.analytics.screenview("Server Log", app.getName(), app.getVersion()).event("Project", "Start Server").send();
+    } catch (e) {
+        console.warn(e);
+    }
     // Open the DevTools.
     if (debug) {
         logWin.webContents.openDevTools({
