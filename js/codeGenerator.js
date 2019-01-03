@@ -335,7 +335,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                         let methodData = classStore.getMethod(classData.name, output.methodSignature);
                         let params = [];
                         for (let p = 0; p < methodData.parameters.length; p++) {
-                            let pType = methodData.parameters[p].typeParameter ? "java.lang.Object" : methodData.parameters[p].type;
+                            let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
                             console.log(methodData.parameters[p]);
                             console.log(pType)
                             params.push(pType + " " + methodData.parameters[p].name);
@@ -345,7 +345,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                             let linkInfo = graph.links[output.links[l]];
                             if (!linkInfo) continue;
                             for (let p = 0; p < methodData.parameters.length; p++) {
-                                let pType = methodData.parameters[p].typeParameter ? "java.lang.Object" : methodData.parameters[p].type;
+                                let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
                                 fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
                                 initCode += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
                             }
