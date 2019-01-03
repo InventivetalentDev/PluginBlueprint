@@ -97,7 +97,12 @@
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
-                    console.log(history)
+                    console.log(history);
+
+                    // hide inside the history's timeout to prevent hiding it instantly
+                    if (!history.paused) {
+                        $("#helpBox").hide();
+                    }
                 }
             };
             graph.onNodeRemoved = function () {
@@ -428,6 +433,11 @@
                     analytics.event("Graph", "Highlight Node").send();
                 }
             })
+
+            // HelpBox timeout
+            setTimeout(function () {
+                $("#helpBox").hide();
+            }, 60000);
         </script>
     </body>
 </html>
