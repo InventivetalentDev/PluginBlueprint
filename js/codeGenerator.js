@@ -453,7 +453,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             let sourceOutput = sourceNode ? sourceNode.outputs[linkInfo.origin_slot] : null;
 
             if (i === 0) continue;// EXEC
-            if (i === 1) {// param opening bracket
+            if (i === 1) {// REF | param opening bracket
                 // code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
                 if (sourceNode.classType === "enum" || methodData.isStatic) {
                     code += " " + classData.name + "." + methodData.name.split("(")[0] + "(";
@@ -464,7 +464,8 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             }
 
             if (!linkInfo || !sourceNode) {
-                params.push("null");
+                let param = methodData.parameters[i - 2];
+                params.push(getNullForType(param ? param.type : null));
             } else {// append param
                 params.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
             }
@@ -508,6 +509,21 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
     methodCalls.push(code);
 
 
+}
+
+function getNullForType(type) {
+    if (type && type.isPrimitive) {
+        if (type.qualifiedName === "boolean") {
+            return "false";
+        }
+        if (type.qualifiedName === "byte" || type.qualifiedName === "short" || type.qualifiedName === "int" || type.qualifiedName === "long" || type.qualifiedName === "float" || type.qualifiedName === "double") {
+            return "0";
+        }
+        if (type.qualifiedName === "char") {
+            return "''";
+        }
+    }
+    return "null";
 }
 
 function generateCodeForNativeNode(graph, n, node) {
