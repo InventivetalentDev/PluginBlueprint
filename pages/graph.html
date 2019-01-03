@@ -147,7 +147,7 @@
             window.addEventListener("resize", function () {
                 canvas.resize();
             });
-            window.addEventListener("keydown", canvas.processKey.bind(canvas));
+            $("body")[0].addEventListener("keydown", canvas.processKey.bind(canvas));
             canvas.resize();
 
             console.log("Initializing Bukkit Node generator...")
@@ -211,6 +211,30 @@
                 ipcRenderer.send("saveThumbnail", img);
             }
 
+            function undo() {
+                console.log("canUndo: " + history.canUndo());
+                history.pause();
+                if (history.canUndo()) {
+                    let undone = history.undo();
+                    console.log(undone)
+                    graph.configure(JSON.parse(undone))
+                }
+                history.unpause();
+                console.log(history)
+            }
+
+            function redo() {
+                console.log("canRedo: " + history.canRedo());
+                history.pause();
+                if (history.canRedo()) {
+                    let redone = history.redo();
+                    console.log(redone)
+                    graph.configure(JSON.parse(redone));
+                }
+                history.unpause();
+                console.log(history)
+            }
+
             getCurrentWindow().setMenu(Menu.buildFromTemplate([
                 {
                     label: "File",
@@ -259,32 +283,12 @@
                         {
                             label: "Undo",
                             accelerator: "CommandOrControl+Z",
-                            click: () => {
-                                console.log("canUndo: " + history.canUndo());
-                                history.pause();
-                                if (history.canUndo()) {
-                                    let undone = history.undo();
-                                    console.log(undone)
-                                    graph.configure(JSON.parse(undone))
-                                }
-                                history.unpause();
-                                console.log(history)
-                            }
+                            click: () => undo()
                         },
                         {
                             label: "Redo",
                             accelerator: "CommandOrControl+Y",
-                            click: () => {
-                                console.log("canRedo: " + history.canRedo());
-                                history.pause();
-                                if (history.canRedo()) {
-                                    let redone = history.redo();
-                                    console.log(redone)
-                                    graph.configure(JSON.parse(redone));
-                                }
-                                history.unpause();
-                                console.log(history)
-                            }
+                            click: () => redo()
                         },
                         {
                             type: "separator"
