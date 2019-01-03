@@ -161,7 +161,7 @@ function generateCodeForEventClassNode(graph, n, node, classData) {
     // temporary variable so we can append the execution AFTER assigning variables
     let execCode = "";
 
-    if(node.outputs) {
+    if (node.outputs) {
         for (let o = 0; o < node.outputs.length; o++) {
             let output = node.outputs[o];
             console.log(output)
@@ -217,7 +217,7 @@ function generateCodeForEventClassNode(graph, n, node, classData) {
         }
     }
 
-    if(node.inputs) {
+    if (node.inputs) {
         for (let i = 0; i < node.inputs.length; i++) {
             let input = node.inputs[i];
             if (!input) continue;
@@ -361,7 +361,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
             initCode += nodeV(node.id) + " = new " + classData.name + "(";
 
             let params = [];
-            if(node.inputs) {
+            if (node.inputs) {
                 for (let i = 0; i < node.inputs.length; i++) {
                     let input = node.inputs[i];
                     if (!input) continue;
@@ -437,7 +437,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
     }
 
     let params = [];
-    if(node.inputs) {
+    if (node.inputs) {
         for (let i = 0; i < node.inputs.length; i++) {
             let input = node.inputs[i];
             if (!input) continue;
@@ -703,4 +703,4 @@ function debugCall(nodeId) {
 
 module.exports = {
     generateClassCode: generateClassCode
-}
+};
