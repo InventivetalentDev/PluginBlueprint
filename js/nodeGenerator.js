@@ -3,6 +3,7 @@ const path = require("path");
 const {LiteGraph} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
+const {shapeAndColorsForSlotType, isPrimitiveType} = require("./util");
 
 const nativeNodes = require("./nativeNodes");
 const constantNodes = require("./nodes/constants");
@@ -252,7 +253,18 @@ function init() {
         };
 
 
-        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {"@EXEC": Colors.EXEC_OFF, "boolean": Colors.BOOLEAN_OFF, "java.lang.String": Colors.STRING_OFF, "byte": Colors.NUMBER_OFF, "char": Colors.NUMBER_OFF, "short": Colors.NUMBER_OFF, "int": Colors.NUMBER_OFF, "long": Colors.NUMBER_OFF, "float": Colors.NUMBER_OFF, "double": Colors.NUMBER_OFF})
+        LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {
+            "@EXEC": Colors.EXEC_OFF,
+            "boolean": Colors.BOOLEAN_OFF,
+            "java.lang.String": Colors.STRING_OFF,
+            "byte": Colors.NUMBER_OFF,
+            "char": Colors.NUMBER_OFF,
+            "short": Colors.NUMBER_OFF,
+            "int": Colors.NUMBER_OFF,
+            "long": Colors.NUMBER_OFF,
+            "float": Colors.NUMBER_OFF,
+            "double": Colors.NUMBER_OFF
+        })
 
         for (let n = 0; n < nativeNodes.length; n++) {
             let nativeNode = nativeNodes[n];
@@ -368,23 +380,27 @@ function getOrCreateBukkitClassNode(className) {
 function addClassIO(node, classData, isChildCall) {
     if (!isChildCall) {
         if (!classData.isEvent && !classData.isEnum && classData.qualifiedName !== "org.bukkit.plugin.java.JavaPlugin") {
-            addNodeInput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+            addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
         }
         if (!classData.isEnum && classData.qualifiedName !== "org.bukkit.plugin.java.JavaPlugin") {
-            addNodeOutput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+            addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
         }
     }
 
     if (!isChildCall && classData.isObject && classData.qualifiedName !== "org.bukkit.plugin.java.JavaPlugin") {
-        addNodeInput(node, "REF", classData.name, {linkType: "ref", shape: LiteGraph.BOX_SHAPE, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON})
+        addNodeInput(node, "REF", classData.name, shapeAndColorsForSlotType("REF", {linkType: "ref"}))
     }
     if (!isChildCall && !classData.isEnum) {
-        addNodeOutput(node, "THIS", classData.name, {linkType: "this", shape: LiteGraph.BOX_SHAPE, color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON})
+        addNodeOutput(node, "THIS", classData.name, shapeAndColorsForSlotType("THIS", {linkType: "this"}))
     }
 
 
     if (classData.isEnum && classData.enumConstants.length > 0) {
-        let i = addNodeOutput(node, classData.enumConstants[0], classData.name, {linkType: "enum", className: classData.name, enumName: classData.enumConstants[0], color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON});
+        let i = addNodeOutput(node, classData.enumConstants[0], classData.name, shapeAndColorsForSlotType("enum", {
+            linkType: "enum",
+            className: classData.name,
+            enumName: classData.enumConstants[0]
+        }));
         node.addProperty("en", classData.enumConstants[0], "enum", {values: classData.enumConstants})
         node.onDrawBackground = function () {
             this.outputs[i].label = "[" + this.properties.en + "]";
@@ -401,7 +417,11 @@ function addClassIO(node, classData, isChildCall) {
             let constructor = classData.constructors[c];
             for (let i = 0; i < constructor.parameters.length; i++) {
                 let param = constructor.parameters[i];
-                addNodeInput(node, param.name, param.type.qualifiedName, {linkType: "constructorParam", constructorName: constructor.name, paramName: param.name})
+                addNodeInput(node, param.name, param.type.qualifiedName, shapeAndColorsForSlotType(param.type.qualifiedName, {
+                    linkType: "constructorParam",
+                    constructorName: constructor.name,
+                    paramName: param.name
+                }))
             }
         }
     }
@@ -416,99 +436,44 @@ function addClassIO(node, classData, isChildCall) {
 
         let isLambda = checkLambda(classData, method);
 
-        /*if (method.name.startsWith("get")) {
-            addNodeOutput(node,method.name.substr(3), method.return_type);
-        } else if (method.name.startsWith("set")) {
-            addNodeInput(node,method.name.substr(3), method.return_type);
-        } else*/
         if (method.return_type === "void") {// Regular void or abstract Method
-            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {
+            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
                 linkType: isLambda ? "abstractMethod" : "method",
                 className: classData.name,
                 methodName: method.name,
-                methodSignature: method.fullSignature,
-                shape: LiteGraph.BOX_SHAPE,
-                color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
-                color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
-            }, true);
+                methodSignature: method.fullSignature
+            }), true);
         } else if (method.parameters.length === 0) {// non-void method without parameters
             let returnData = classStore.getClass(method.returnType.qualifiedName);
-            if (method.returnType.qualifiedName === "boolean") {// boolean return
-                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {
-                    linkType: "getter",
-                    returnType: method.returnType.qualifiedName,
-                    className: classData.name,
-                    methodName: method.name,
-                    methodSignature: method.fullSignature,
-                    color_off: Colors.BOOLEAN_OFF,
-                    color_on: Colors.BOOLEAN_ON
-                }, true);
-            } else if (method.returnType.qualifiedName === "int" ||
-                method.returnType.qualifiedName === "double" ||
-                method.returnType.qualifiedName === "float" ||
-                method.returnType.qualifiedName === "short" ||
-                method.returnType.qualifiedName === "long" ||
-                method.returnType.qualifiedName === "byte") {// number return
-                addNodeOutput(node, method.name, method.return_type + method.returnType.dimension, {
-                    linkType: "getter",
-                    returnType: method.return_type,
-                    className: classData.name,
-                    methodName: method.name,
-                    methodSignature: method.fullSignature,
-                    color_off: Colors.NUMBER_OFF,
-                    color_on: Colors.NUMBER_ON
-                }, true);
-            } else if (method.returnType.qualifiedName === "java.lang.String") {// String return
-                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {
-                    linkType: "getter",
-                    returnType: method.returnType.qualifiedName,
-                    className: classData.name,
-                    methodName: method.name,
-                    methodSignature: method.fullSignature,
-                    color_off: Colors.STRING_OFF,
-                    color_on: Colors.STRING_ON
-                }, true);
+
+            let linkType = "";
+            let extraDataType = "";
+            if (isPrimitiveType(method.returnType.qualifiedName) || method.returnType.qualifiedName === "java.lang.String") {// use getter
+                linkType = "getter";
+                extraDataType = method.returnType.qualifiedName;
             } else if (returnData && returnData.isObject) {// Object return
-                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {
-                    linkType: "object",
-                    returnType: method.returnType.qualifiedName,
-                    className: classData.name,
-                    methodName: method.name,
-                    methodSignature: method.fullSignature,
-                    color_off: Colors.OBJECT_OFF,
-                    color_on: Colors.OBJECT_ON
-                }, true);
+                linkType = extraDataType = "object";
             } else if (returnData && returnData.isEnum) {// Enum return
-                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, {
-                    linkType: "enum",
-                    returnType: method.returnType.qualifiedName,
-                    className: classData.name,
-                    methodName: method.name,
-                    methodSignature: method.fullSignature,
-                    color_off: Colors.ENUM_OFF,
-                    color_on: Colors.ENUM_ON
-                }, true);
+                linkType = extraDataType = "enum";
             } else {// fallback to abstract/regular method
-                addNodeOutput(node, method.name, classData.name + "#" + methodSignature, {
-                    linkType: isLambda ? "abstractMethod" : "method",
-                    className: classData.name,
-                    methodName: method.name,
-                    methodSignature: method.fullSignature,
-                    shape: LiteGraph.BOX_SHAPE,
-                    color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
-                    color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
-                }, true);
+                linkType = extraDataType = isLambda ? "abstractMethod" : "method";
             }
+
+            // add it!
+            addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, shapeAndColorsForSlotType(extraDataType, {
+                linkType: linkType,
+                returnType: method.returnType.qualifiedName,
+                className: classData.name,
+                methodName: method.name,
+                methodSignature: method.fullSignature
+            }), true);
         } else {// fallback to abstract/regular method
-            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, {
+            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
                 linkType: isLambda ? "abstractMethod" : "method",
                 className: classData.name,
                 methodName: method.name,
-                methodSignature: method.fullSignature,
-                shape: LiteGraph.BOX_SHAPE,
-                color_off: isLambda ? Colors.ABSTRACT_FUNCTION_OFF : Colors.FUNCTION_OFF,
-                color_on: isLambda ? Colors.ABSTRACT_FUNCTION_ON : Colors.FUNCTION_ON
-            }, true);
+                methodSignature: method.fullSignature
+            }), true);
         }
     }
 
@@ -598,10 +563,10 @@ function addMethodIO(node, classData, methodData) {
     let isLambda = checkLambda(classData, methodData);
 
     if (!isLambda)
-        addNodeInput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    addNodeOutput(node, "EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+        addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
-    addNodeInput(node, "REF", classData.name + "#" + methodSignature, {shape: LiteGraph.BOX_SHAPE, color_off: Colors.FUNCTION_OFF, color_on: Colors.FUNCTION_ON});
+    addNodeInput(node, "REF", classData.name + "#" + methodSignature, shapeAndColorsForSlotType("REF"));
 
 
     if (isLambda && methodData.return_type === "void" || (classData.name === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete"))) {
@@ -611,20 +576,20 @@ function addMethodIO(node, classData, methodData) {
             let param = methodData.parameters[p];
             let paramType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : param.type.qualifiedName;
 
-            addNodeOutput(node, param.name, paramType + param.type.dimension, {paramName: param.name});
+            addNodeOutput(node, param.name, paramType + param.type.dimension, shapeAndColorsForSlotType(paramType,{paramName: param.name}));
         }
 
         if (methodData.returnType.qualifiedName !== "void") {
-            addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, {returnType: methodData.returnType.qualifiedName});
+            addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName,{returnType: methodData.returnType.qualifiedName}));
         }
     } else {
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
-            addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, {paramName: param.name});
+            addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName,{paramName: param.name}));
         }
 
         if (methodData.return_type !== "void") {
-            addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, {returnType: methodData.returnType.qualifiedName});
+            addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName,{returnType: methodData.returnType.qualifiedName}));
         }
     }
 }
@@ -660,13 +625,6 @@ function addNodeInput(node, name, type, options, optional) {
     if (!options) options = {};
     if (!options.locked) options.locked = !optional;
     options.nameLocked = true;
-    if (!options.color_on && !options.color_off) {
-        let colors = getColorsForType(type);
-        if (colors) {
-            options.color_on = colors[0];
-            options.color_off = colors[1];
-        }
-    }
     if (optional) {
         node.optional_inputs.push([name, type, options]);
     } else {
@@ -694,47 +652,12 @@ function addNodeOutput(node, name, type, options, optional) {
     if (!options) options = {};
     if (!options.locked) options.locked = !optional;
     options.nameLocked = true;
-    if (!options.color_on && !options.color_off) {
-        let colors = getColorsForType(type);
-        if (colors) {
-            options.color_on = colors[0];
-            options.color_off = colors[1];
-        }
-    }
     if (optional) {
         node.optional_outputs.push([name, type, options]);
     } else {
         node.addOutput(name, type, options);
     }
     return node.outputs.length - 1;
-}
-
-function getColorsForType(type) {
-    switch (type) {
-        case "boolean":
-            return [Colors.BOOLEAN_ON, Colors.BOOLEAN_OFF];
-        case "string":
-        case "java.lang.String":
-            return [Colors.STRING_ON, Colors.STRING_OFF];
-        case "byte":
-        case "char":
-        case "short":
-        case "int":
-        case "long":
-        case "float":
-        case "double":
-            return [Colors.NUMBER_ON, Colors.NUMBER_OFF];
-    }
-
-    let classInfo = classStore.getClass(type);
-    if (classInfo) {
-        if (classInfo.isEnum) {
-            return [Colors.ENUM_ON, Colors.ENUM_OFF];
-        }
-        if (classInfo.isObject) {
-            return [Colors.OBJECT_ON, Colors.OBJECT_OFF];
-        }
-    }
 }
 
 function handleSlotDoubleClick(node, i, e) {

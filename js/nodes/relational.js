@@ -1,4 +1,5 @@
 const Colors = require("../colors");
+const {shapeAndColorsForSlotType} = require("../util");
 
 const RelationalOperator = function () {
     this.classType = "native";
@@ -6,8 +7,8 @@ const RelationalOperator = function () {
 };
 
 RelationalOperator.prototype.init = function (booleanInputs) {
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC",  shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
     if (booleanInputs) {
         this.addInput("A", "boolean,byte,char,short,int,long,float,double", {color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON});
@@ -16,7 +17,7 @@ RelationalOperator.prototype.init = function (booleanInputs) {
         this.addInput("A", "byte,char,short,int,long,float,double", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
         this.addInput("B", "byte,char,short,int,long,float,double", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
     }
-    this.addOutput(this.operation, "boolean", {color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON});
+    this.addOutput(this.operation, "boolean", shapeAndColorsForSlotType("boolean"));
 };
 
 RelationalOperator.prototype.onDrawBackground = function (ctx) {

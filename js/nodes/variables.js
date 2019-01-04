@@ -1,8 +1,9 @@
 const Colors = require("../colors");
+const {shapeAndColorsForSlotType} = require("../util");
 
 function Set() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("myVariable", null);
     this.addProperty("name", "myVariable", "string");
     this.addProperty("type", "string", "enum", {values: ["string", "byte", "char", "short", "int", "long", "float", "double", "any"]})

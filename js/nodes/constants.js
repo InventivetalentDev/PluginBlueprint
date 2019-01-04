@@ -1,10 +1,11 @@
 const Colors = require("../colors");
+const {shapeAndColorsForSlotType} = require("../util");
 
 // String Constant
 
 function StringConstant() {
     this.classType = "native";
-    this.addOutput("", "java.lang.String", {color_off: Colors.STRING_OFF, color_on: Colors.STRING_ON});
+    this.addOutput("", "java.lang.String", shapeAndColorsForSlotType("java.lang.String"));
     this.addProperty("string", "", "string");
 }
 
@@ -38,7 +39,7 @@ NumberConstant.prototype.getFields = function (output) {
 
 function BooleanConstant() {
     this.classType = "native";
-    this.addOutput("", "boolean", {color_off: Colors.BOOLEAN_OFF, color_on: Colors.BOOLEAN_ON});
+    this.addOutput("", "boolean", shapeAndColorsForSlotType("boolean"));
     this.addProperty("value", false, "boolean");
 }
 
@@ -54,7 +55,7 @@ BooleanConstant.prototype.getFields = function (output) {
 
 function Null() {
     this.classType = "native";
-    this.addOutput("null", null, {color_off: Colors.OBJECT_OFF, color_on: Colors.OBJECT_ON});
+    this.addOutput("null", null, shapeAndColorsForSlotType("object"));
 }
 
 Null.prototype.color = Colors.OBJECT_OFF;

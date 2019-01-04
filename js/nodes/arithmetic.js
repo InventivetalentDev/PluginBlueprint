@@ -1,4 +1,5 @@
 const Colors = require("../colors");
+const {shapeAndColorsForSlotType, isPrimitiveType} = require("../util");
 
 const ArithmeticOperator = function () {
     this.classType = "native";
@@ -7,8 +8,8 @@ const ArithmeticOperator = function () {
 
 ArithmeticOperator.prototype.init = function () {
     this.addProperty("type", "int", "enum", {values: ["byte", "char", "short", "int", "long", "float", "double"]});
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC",  shapeAndColorsForSlotType("@EXEC"));
 
     this.addInput("A", "int", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
     this.addInput("B", "int", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});

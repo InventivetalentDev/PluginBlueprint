@@ -1,11 +1,12 @@
 const Colors = require("../colors");
+const {shapeAndColorsForSlotType} = require("../util");
 
 function SetIndex() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Array", null);
-    this.addInput("index", "int", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
+    this.addInput("index", "int", shapeAndColorsForSlotType("int"));
     this.addInput("Value", null);
 }
 
@@ -19,10 +20,10 @@ SetIndex.prototype.getExecAfter = function (exec) {
 
 function GetIndex() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Array", null);
-    this.addInput("index", "int", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
+    this.addInput("index", "int", shapeAndColorsForSlotType("int"));
     this.addOutput("Value", null);
 }
 
@@ -40,10 +41,10 @@ GetIndex.prototype.getExecAfter = function (exec) {
 
 function Length() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Array", null);
-    this.addOutput("length", "int");
+    this.addOutput("length", "int",shapeAndColorsForSlotType("int"));
 }
 
 Length.prototype.getFields = function (output) {
