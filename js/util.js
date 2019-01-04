@@ -115,5 +115,6 @@ function isNumberType(type) {
     return type === "byte" || type === "short" || type === "int" || type === "long" || type === "float" || type === "double";
 }
 
+
 module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType};
 
