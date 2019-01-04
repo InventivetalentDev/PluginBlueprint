@@ -25,7 +25,7 @@ function drawFontAwesomeIcon(node, ctx, iconName, x, y, size, color = "white", p
 function handleDrawTitleBox(ctx, titleHeight, size, scale) {
     if (!this.iconName) return;
     if (scale > 0.5) {
-        drawFontAwesomeIcon(this, ctx, this.iconName, 4, -titleHeight + 4, 0.025, "white", "fas")
+        drawFontAwesomeIcon(this, ctx, this.iconName, 4, -titleHeight + 4, 0.025, this.iconColor || "white", this.iconPrefix || "fas")
     }
 }
 
