@@ -1,4 +1,5 @@
 const Colors = require("./colors");
+const fs = require("fs");
 
 function copyFile(src, dest) {
     return new Promise((resolve, reject) => {
