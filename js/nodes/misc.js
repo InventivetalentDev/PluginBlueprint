@@ -63,6 +63,7 @@ StringFormat.prototype.getMenuOptions = function () {
 
 function ConsoleLog() {
     this.classType = "native";
+    this.iconName = "print";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("", null);
 }
@@ -74,6 +75,7 @@ ConsoleLog.prototype.getFields = function (output) {
 ConsoleLog.prototype.getMethodBody = function (input, output) {
     return "java.lang.System.out.println(" + input[1] + ");";
 };
+ConsoleLog.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 
 module.exports = [

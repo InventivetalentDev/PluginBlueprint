@@ -5,6 +5,7 @@ const {shapeAndColorsForSlotType} = require("../util");
 
 function StringConstant() {
     this.classType = "native";
+    this.iconName = "align-left";
     this.addOutput("", "java.lang.String", shapeAndColorsForSlotType("java.lang.String"));
     this.addProperty("string", "", "string");
 }
@@ -15,12 +16,14 @@ StringConstant.prototype.onDrawBackground = function () {
 };
 StringConstant.prototype.getFields = function (output) {
     return ["java.lang.String " + output[0] + " = \"" + this.properties.string + "\""];
-}
+};
+StringConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 // Number Constant
 
 function NumberConstant() {
     this.classType = "native";
+    this.iconName = "sort-numeric-down";//TODO: find a better icon
     this.addOutput("", "int", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
     this.addProperty("type", "int", "enum", {values: ["byte", "char", "short", "int", "long", "float", "double"]});
     this.addProperty("number", 0, "number");
@@ -33,12 +36,14 @@ NumberConstant.prototype.onDrawBackground = function () {
 };
 NumberConstant.prototype.getFields = function (output) {
     return [this.properties.type + " " + output[0] + " = " + this.properties.number];
-}
+};
+NumberConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 // Boolean Constant
 
 function BooleanConstant() {
     this.classType = "native";
+    this.iconName = "toggle-on";
     this.addOutput("", "boolean", shapeAndColorsForSlotType("boolean"));
     this.addProperty("value", false, "boolean");
 }
@@ -50,6 +55,7 @@ BooleanConstant.prototype.onDrawBackground = function () {
 BooleanConstant.prototype.getFields = function (output) {
     return ["boolean " + output[0] + " = " + this.properties.value];
 };
+BooleanConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 // Null Constant
 
