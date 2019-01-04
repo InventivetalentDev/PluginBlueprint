@@ -1,12 +1,13 @@
 const Colors = require("../colors");
+const {shapeAndColorsForSlotType, isPrimitiveType} = require("../util");
 
 
 // Cast
 
 function Cast() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("", null);
     this.addOutput("", null);
     this.addProperty("castTo", "java.lang.Object", "string");
@@ -30,10 +31,10 @@ Cast.prototype.getExecAfter = function (exec) {
 
 function Switch() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addOutput("True", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addOutput("False", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addInput("boolean", "boolean");
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("True", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("False", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addInput("boolean", "boolean", shapeAndColorsForSlotType("boolean"));
 }
 
 Switch.title = "Switch";
@@ -52,11 +53,11 @@ Switch.prototype.getExecAfter = function (exec) {
 
 function StringFormat() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addOutput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
-    this.addInput("Format", "java.lang.String");
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addInput("Format", "java.lang.String", shapeAndColorsForSlotType("java.lang.String"));
     this.addInput("Variable", null);
-    this.addOutput("Formatted", "java.lang.String");
+    this.addOutput("Formatted", "java.lang.String", shapeAndColorsForSlotType("java.lang.String"));
 
     this.optional_inputs = [["Variable", null, {}]];
 }
@@ -83,7 +84,7 @@ StringFormat.prototype.getMenuOptions = function () {
 
 function ConsoleLog() {
     this.classType = "native";
-    this.addInput("EXEC", "@EXEC", {shape: LiteGraph.ARROW_SHAPE, color_off: Colors.EXEC_OFF, color_on: Colors.EXEC_ON});
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("", null);
 }
 
