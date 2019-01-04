@@ -3,6 +3,7 @@ const {shapeAndColorsForSlotType} = require("../util");
 
 function Set() {
     this.classType = "native";
+    this.iconName = "sign-in-alt";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("myVariable", null);
     this.addProperty("name", "myVariable", "string");
@@ -18,11 +19,13 @@ Set.prototype.getFields = function (output) {
 }
 Set.prototype.getMethodBody = function (input, output) {
     return this.properties.name + " = " + input[1] + ";";
-}
+};
+Set.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 
 function Get() {
     this.classType = "native";
+    this.iconName = "sign-out-alt";
     this.addOutput("myVariable", null);
     this.addProperty("name", "myVariable", "string");
     this.addProperty("type", "string", "enum", {values: ["string", "byte", "char", "short", "int", "long", "float", "double", "any"]})
@@ -35,6 +38,7 @@ Get.prototype.onDrawBackground = function () {
 Get.prototype.getMethodBody = function (input, output) {
     return output[0] + " = " + this.properties.name + ";";
 };
+Get.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 function parseType(type) {
     if (!type || type === "any") {
