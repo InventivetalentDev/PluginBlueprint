@@ -9,7 +9,7 @@ const ArithmeticOperator = function () {
 ArithmeticOperator.prototype.init = function () {
     this.addProperty("type", "int", "enum", {values: ["byte", "char", "short", "int", "long", "float", "double"]});
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
-    this.addOutput("EXEC", "@EXEC",  shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
     this.addInput("A", "int", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
     this.addInput("B", "int", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
@@ -40,6 +40,7 @@ ArithmeticOperator.prototype.getMethodBody = function (input, output) {
 ArithmeticOperator.prototype.getExecAfter = function (exec) {
     return exec[0].join("\n");
 };
+ArithmeticOperator.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 function extend(ChildClass, ParentClass) {
     ChildClass.prototype = new ParentClass();
@@ -51,6 +52,7 @@ function extend(ChildClass, ParentClass) {
 
 function Add() {
     this.operation = "+";
+    this.iconName = "plus";
     this.init();
 }
 
@@ -59,6 +61,7 @@ function Add() {
 
 function Subtract() {
     this.operation = "-";
+    this.iconName = "minus";
     this.init();
 }
 
@@ -67,6 +70,7 @@ function Subtract() {
 
 function Multiply() {
     this.operation = "*";
+    this.iconName = "times";
     this.init();
 }
 
@@ -75,6 +79,7 @@ function Multiply() {
 
 function Divide() {
     this.operation = "/";
+    this.iconName = "divide";
     this.init();
 }
 

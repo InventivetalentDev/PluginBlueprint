@@ -6,6 +6,7 @@ const {shapeAndColorsForSlotType, isPrimitiveType} = require("../util");
 
 function Switch() {
     this.classType = "native";
+    this.iconName = "code-branch";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("True (if)", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("False (else)", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
@@ -23,11 +24,13 @@ Switch.prototype.getExecAfter = function (exec) {
         exec[1].join("\n") + "//False\n" +
         "}";
 };
+Switch.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 // For-Loop
 
 function ForLoop() {
     this.classType = "native";
+    this.iconName = "redo";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("FirstIndex", "int", shapeAndColorsForSlotType("int"));
     this.addInput("LastIndex", "int", shapeAndColorsForSlotType("int"));
@@ -52,6 +55,7 @@ ForLoop.prototype.getExecAfter = function (exec, output) {
         "}\n" +
         exec[1].join("\n");// completed exec
 };
+ForLoop.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 
 module.exports = [
