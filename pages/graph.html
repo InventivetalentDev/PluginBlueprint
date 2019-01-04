@@ -92,7 +92,7 @@
             history.pause();
 
             var graph = new LGraph();
-            graph.onNodeAdded = function () {
+            graph.onNodeAdded = function (n) {
                 console.debug("[HISTORY] onNodeAdded");
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
@@ -104,14 +104,17 @@
                         $("#helpBox").hide();
                     }
                 }
+
+                analytics.event("Graph", "Add Node", n.type).send();
             };
-            graph.onNodeRemoved = function () {
+            graph.onNodeRemoved = function (n) {
                 console.debug("[HISTORY] onNodeRemoved");
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
                     console.log(history)
                 }
+                analytics.event("Graph", "Remove Node", n.type).send();
             };
             graph.onConnectionChange = function () {
                 console.debug("[HISTORY] onConnectionChange");
