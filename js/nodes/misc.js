@@ -1,4 +1,4 @@
-const Colors = require("./colors");
+const Colors = require("../colors");
 
 
 // Cast

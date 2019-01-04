@@ -5,7 +5,7 @@ const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
 const {shapeAndColorsForSlotType, isPrimitiveType} = require("./util");
 
-const nativeNodes = require("./nativeNodes");
+const miscNodes = require("./nodes/misc");
 const constantNodes = require("./nodes/constants");
 const arithmeticNodes = require("./nodes/arithmetic");
 const relationalNodes = require("./nodes/relational");
@@ -266,8 +266,8 @@ function init() {
             "double": Colors.NUMBER_OFF
         })
 
-        for (let n = 0; n < nativeNodes.length; n++) {
-            let nativeNode = nativeNodes[n];
+        for (let n = 0; n < miscNodes.length; n++) {
+            let nativeNode = miscNodes[n];
             LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
         }
         for (let n = 0; n < arithmeticNodes.length; n++) {
