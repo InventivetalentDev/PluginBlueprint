@@ -2,7 +2,7 @@ const Colors = require("../colors");
 const {shapeAndColorsForSlotType, isPrimitiveType} = require("../util");
 
 
-// Switch
+// Switch (if/else)
 
 function Switch() {
     this.classType = "native";
@@ -24,6 +24,38 @@ Switch.prototype.getExecAfter = function (exec) {
         "}";
 };
 
+// For-Loop
+
+function ForLoop() {
+    this.classType = "native";
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addInput("FirstIndex", "int", shapeAndColorsForSlotType("int"));
+    this.addInput("LastIndex", "int", shapeAndColorsForSlotType("int"));
+
+    this.addOutput("Loop", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("Index", "int", shapeAndColorsForSlotType("int"));
+    this.addOutput("Completed", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+}
+
+ForLoop.title = "ForLoop";
+ForLoop.prototype.getFields = function (output) {
+    return ["int " + output[1]];
+};
+ForLoop.prototype.getMethodBody = function (input, output) {
+    return "int startIndex = " + input[1] + ";\n" +
+        "int lastIndex = " + input[2] + ";\n";
+};
+ForLoop.prototype.getExecAfter = function (exec, output) {
+    return "for(int i = startIndex; i < lastIndex; i++) {\n" +
+        output[1] + " = i;\n" +// set index output
+        exec[0].join("\n") + "\n" +// loop exec
+        "}\n" +
+        exec[1].join("\n");// completed exec
+};
+
+
 module.exports = [
-    Switch
+    Switch,
+
+    ForLoop
 ];
