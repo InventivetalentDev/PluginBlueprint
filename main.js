@@ -632,8 +632,9 @@ function saveCodeToFile(code) {
 }
 
 function makePluginYml() {
+    if (!currentProject.buildNumber) currentProject.buildNumber = 0;
     let yml = "name: " + currentProject.name +
-        "\nversion: " + currentProject.version +
+        "\nversion: " + currentProject.version + (currentProject.debug ? ("-b" + ++currentProject.buildNumber) : "") +
         "\nmain: " + currentProject.package + ".GeneratedPlugin" +
         "\nauthor: " + currentProject.author +
         "\ngenerator: PluginBlueprint " + app.getVersion() +
