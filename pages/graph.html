@@ -269,6 +269,15 @@
                             type: "separator"
                         },
                         {
+                            label: "Export Project",
+                            click: () => {
+                                ipcRenderer.send("showExportDialog");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
                             role: "toggledevtools"
                         },
                         {

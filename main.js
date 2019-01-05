@@ -14,6 +14,7 @@ const request = require("request");
 const Sentry = require("@sentry/electron");
 const ProgressBar = require('electron-progressbar');
 const {copyFile} = require("./js/util");
+const AdmZip = require("adm-zip");
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
 
@@ -643,7 +644,7 @@ function saveCodeToFile(code) {
 function makePluginYml() {
     if (!currentProject.buildNumber) currentProject.buildNumber = 0;
     let yml = "name: " + currentProject.name +
-        "\ndescription: "+currentProject.description+
+        "\ndescription: " + currentProject.description +
         "\nversion: " + currentProject.version + (currentProject.debug ? ("-b" + ++currentProject.buildNumber) : "") +
         "\nmain: " + currentProject.package + ".GeneratedPlugin" +
         "\nauthor: " + currentProject.author +
@@ -950,6 +951,33 @@ ipcMain.on("highlightNode", function (event, arg) {
         win.webContents.send("highlightNode", arg);
     }
 });
+
+ipcMain.on("showExportDialog", function (event, arg) {
+    console.log("showExportDialog")
+    showExportDialog();
+});
+
+function showExportDialog() {
+    if (!currentProject || !currentProjectPath) return;
+    dialog.showSaveDialog(win, {
+        defaultPath: path.join(currentProjectPath, currentProject.name + ".zip"),
+        filters: [{
+            name: "ZIP File",
+            extensions: ["zip"]
+        }]
+    }, (file) => {
+        if (!file) return;
+        exportProject(file);
+    })
+}
+
+function exportProject(output) {
+    if (!currentProject || !currentProjectPath) return;
+    let zip = new AdmZip();
+    zip.addLocalFile(path.join(currentProjectPath, "project.pbp"));
+    zip.addLocalFile(path.join(currentProjectPath, "graph.pbg"));
+    zip.writeZip(output);
+}
 
 ipcMain.on("checkUpdate", function (event) {
     checkUpdate().then(u => {
