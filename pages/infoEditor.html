@@ -56,6 +56,12 @@
                     </div>
                     <div class="row">
                         <div class="input-field col s12">
+                            <input value="My Awesome Plugin!" id="description" type="text">
+                            <label for="description">Description</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
                             <input value="0.0.0" id="version" type="text">
                             <label for="version">Version</label>
                         </div>
@@ -130,6 +136,7 @@
 
             function updateProjectInfo() {
                 projectInfo.name = $("#name").val();
+                projectInfo.description = $("#description").val();
                 projectInfo.version = $("#version").val();
                 projectInfo.author = $("#author").val();
                 projectInfo.package = $("#package").val();
@@ -148,6 +155,8 @@
 
                 if (arg.name)
                     $("#name").val(arg.name);
+                if (arg.description)
+                    $("#description").val(arg.description);
                 if (arg.version)
                     $("#version").val(arg.version);
                 if (arg.author)

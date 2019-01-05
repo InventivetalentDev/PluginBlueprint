@@ -357,6 +357,7 @@ function createNewProject(arg, lib) {
     let projectInfo = {
         name: arg.name,
         creationTime: Date.now(),
+        description: "My Awesome Plugin!!",
         author: "inventivetalent",
         package: "my.awesome.plugin",
         version: "0.0.0",
