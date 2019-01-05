@@ -784,6 +784,11 @@ ipcMain.on("startServer", function (event, arg) {
         return;
     }
 
+    if (serverStarter.isRunning()) {
+        dialog.showErrorBox("Error", "Please wait for the existing server to shut down and try again");
+        return;
+    }
+
     logWin = new BrowserWindow({
         parent: win,
         width: 800,
