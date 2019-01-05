@@ -363,6 +363,7 @@ function createNewProject(arg, lib) {
         lastSave: 0,
         lastCompile: 0,
         editorVersion: app.getVersion(),
+        buildNumber: 0,
         debug: true
     };
     fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
@@ -535,7 +536,7 @@ function saveGraphData(arg, cb) {
         return;
     }
     // backup
-    copyFile(path.join(currentProjectPath, 'graph.pbg'),path.join(currentProjectPath, 'graph.pbg.old')).then(()=>{
+    copyFile(path.join(currentProjectPath, 'graph.pbg'), path.join(currentProjectPath, 'graph.pbg.old')).then(() => {
         // write data
         fs.writeFile(path.join(currentProjectPath, "graph.pbg"), JSON.stringify(arg), "utf-8", function (err) {
             if (err) {
