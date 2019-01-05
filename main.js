@@ -13,6 +13,7 @@ const notifier = require("node-notifier");
 const request = require("request");
 const Sentry = require("@sentry/electron");
 const ProgressBar = require('electron-progressbar');
+const {copyFile} = require("./js/util");
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
 
@@ -534,9 +535,7 @@ function saveGraphData(arg, cb) {
         return;
     }
     // backup
-    let rs = fs.createReadStream(path.join(currentProjectPath, 'graph.pbg'));
-    let ws = fs.createWriteStream(path.join(currentProjectPath, 'graph.pbg.old'));
-    ws.on("close", function () {
+    copyFile(path.join(currentProjectPath, 'graph.pbg'),path.join(currentProjectPath, 'graph.pbg.old')).then(()=>{
         // write data
         fs.writeFile(path.join(currentProjectPath, "graph.pbg"), JSON.stringify(arg), "utf-8", function (err) {
             if (err) {
@@ -546,10 +545,16 @@ function saveGraphData(arg, cb) {
             }
 
             currentProject.lastSave = Date.now();
-            if (cb) cb();
+            fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
+                if (err) {
+                    console.error("Failed to write project file");
+                    console.error(err);
+                    return;
+                }
+                if (cb) cb();
+            });
         })
     });
-    rs.pipe(ws);
 }
 
 ipcMain.on("saveGraphData", function (event, arg) {
