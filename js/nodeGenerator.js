@@ -425,7 +425,7 @@ function addClassIO(node, classData, isChildCall) {
                     linkType: "constructorParam",
                     constructorName: constructor.name,
                     paramName: param.name
-                }))
+                }), true)
             }
         }
     }
@@ -580,20 +580,20 @@ function addMethodIO(node, classData, methodData) {
             let param = methodData.parameters[p];
             let paramType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : param.type.qualifiedName;
 
-            addNodeOutput(node, param.name, paramType + param.type.dimension, shapeAndColorsForSlotType(paramType,{paramName: param.name}));
+            addNodeOutput(node, param.name, paramType + param.type.dimension, shapeAndColorsForSlotType(paramType, {paramName: param.name}));
         }
 
         if (methodData.returnType.qualifiedName !== "void") {
-            addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName,{returnType: methodData.returnType.qualifiedName}));
+            addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
         }
     } else {
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
-            addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName,{paramName: param.name}));
+            addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {paramName: param.name}));
         }
 
         if (methodData.return_type !== "void") {
-            addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName,{returnType: methodData.returnType.qualifiedName}));
+            addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
         }
     }
 }
