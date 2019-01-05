@@ -40,6 +40,7 @@ function copyPlugin(projectPath, projectName, skipEmpty, skipReloadHelper) {
 }
 
 function startServer(projectPath, outCb, errCb) {
+    if (running || instance) return false;
     let spawned = spawn("java", ["-DIReallyKnowWhatIAmDoingISwear", "-Dcom.mojang.eula.agree=true", "-jar", "spigot.jar"], {
         cwd: path.join(projectPath, "lib"),
         // shell: true
@@ -55,7 +56,6 @@ function startServer(projectPath, outCb, errCb) {
     spawned.stdout.on('data', (data) => {
         if (outCb) outCb(data.toString())
     });
-
     spawned.stderr.on('data', (data) => {
         if (errCb) errCb(data.toString());
     });
@@ -64,6 +64,7 @@ function startServer(projectPath, outCb, errCb) {
         running = false;
         instance = null;
     });
+    return true;
 }
 
 function sendCommandToInstance(cmd, cb) {
@@ -81,7 +82,6 @@ function killInstance() {
         instance.kill();
     }
 }
-
 
 
 module.exports = {
