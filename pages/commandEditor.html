@@ -60,6 +60,12 @@
                             <label for="description">Description</label>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input value="/<command>" id="usage" type="text">
+                            <label for="usage">Usage</label>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="row">
@@ -85,10 +91,10 @@
                 analytics.pageview("/commandEditor", "", "Command Editor").send();
             });
 
-            let custom=getCurrentWindow().custom;
+            let custom = getCurrentWindow().custom;
             let commandInfo = custom.command;
             let commandIndex = custom.index;
-            let isNew = commandIndex===-1;
+            let isNew = commandIndex === -1;
 
             window.onbeforeunload = function (e) {
                 saveCommand();
@@ -101,26 +107,29 @@
             function saveCommand() {
                 commandInfo.name = $("#name").val();
                 commandInfo.description = $("#description").val();
+                commandInfo.usage = $("#usage").val();
 
-                ipcRenderer.send("saveCommand",{
-                    command:commandInfo,
-                    isNew:isNew,
-                    index:commandIndex
+                ipcRenderer.send("saveCommand", {
+                    command: commandInfo,
+                    isNew: isNew,
+                    index: commandIndex
                 })
             }
 
 
-         if(commandInfo){
-             if(commandInfo.name)
-                 $("#name").val(commandInfo.name);
-             if(commandInfo.description)
-                 $("#description").val(commandInfo.description);
+            if (commandInfo) {
+                if (commandInfo.name)
+                    $("#name").val(commandInfo.name);
+                if (commandInfo.description)
+                    $("#description").val(commandInfo.description);
+                if (commandInfo.usage)
+                    $("#usage").val(commandInfo.usage);
 
 
-             M.updateTextFields();
+                M.updateTextFields();
 
-             $("#overlay").fadeOut();
-         }
+                $("#overlay").fadeOut();
+            }
 
         </script>
     </body>

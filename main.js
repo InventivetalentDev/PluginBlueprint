@@ -652,8 +652,9 @@ function makePluginYml() {
     if (currentProject.commands) {
         yml += "commands:\n";
         for (let i = 0; i < currentProject.commands.length; i++) {
-            yml += "  " + currentProject.commands[i].name + ":\n";//TODO: other command attributes
+            yml += "  " + currentProject.commands[i].name + ":\n";
             yml += "    description: " + currentProject.commands[i].description + "\n";
+            yml += "    usage: " + currentProject.commands[i].usage + "\n";
         }
     }
     return yml;
