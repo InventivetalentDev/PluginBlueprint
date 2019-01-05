@@ -22,6 +22,8 @@ const DEFAULT_TITLE = "PluginBlueprint Editor";
 let win;
 let logWin;
 let errWin;
+let editorWin;
+let commandWin;
 
 let debug = false;
 
@@ -641,6 +643,7 @@ function saveCodeToFile(code) {
 function makePluginYml() {
     if (!currentProject.buildNumber) currentProject.buildNumber = 0;
     let yml = "name: " + currentProject.name +
+        "\ndescription: "+currentProject.description+
         "\nversion: " + currentProject.version + (currentProject.debug ? ("-b" + ++currentProject.buildNumber) : "") +
         "\nmain: " + currentProject.package + ".GeneratedPlugin" +
         "\nauthor: " + currentProject.author +
@@ -650,6 +653,7 @@ function makePluginYml() {
         yml += "commands:\n";
         for (let i = 0; i < currentProject.commands.length; i++) {
             yml += "  " + currentProject.commands[i].name + ":\n";//TODO: other command attributes
+            yml += "    description: " + currentProject.commands[i].description + "\n";
         }
     }
     return yml;
@@ -768,10 +772,53 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
         backgroundColor: "#373737",
         icon: path.join(__dirname, 'assets/icons/favicon.ico')
     });
+    editorWin = child;
+    child.on("close", () => {
+        editorWin = null;
+    });
     child.loadFile('pages/infoEditor.html');
     child.show();
     global.analytics.screenview("Info Editor", app.getName(), app.getVersion()).event("Project", "Open Info Editor").send();
 });
+
+ipcMain.on("openCommandEditor", function (event, arg) {
+    console.log("openCommandEditor")
+    let child = new BrowserWindow({
+        parent: win,
+        title: DEFAULT_TITLE,
+        width: 600,
+        height: 500,
+        modal: true,
+        show: false,
+        resizable: false,
+        backgroundColor: "#373737",
+        icon: path.join(__dirname, 'assets/icons/favicon.ico')
+    });
+    child.custom = {
+        command: arg.command,
+        index: arg.index
+    };
+    commandWin = child;
+    child.on("close", () => {
+        commandWin = null;
+    });
+    child.loadFile('pages/commandEditor.html');
+    child.show();
+    global.analytics.screenview("Command Editor", app.getName(), app.getVersion()).event("Project", "Open Command Editor").send();
+});
+
+ipcMain.on("saveCommand", function (event, arg) {
+    if (editorWin) {
+        if (arg.isNew) {
+            editorWin.webContents.send("commandAdded", arg.command);
+        } else {
+            editorWin.webContents.send("commandUpdated", {
+                command: arg.command,
+                index: arg.index
+            })
+        }
+    }
+})
 
 ipcMain.on("startServer", function (event, arg) {
     if (!currentProject || !currentProjectPath) {

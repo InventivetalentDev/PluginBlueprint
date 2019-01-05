@@ -1,0 +1,127 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="../node_modules/materialize-css/dist/css/materialize.min.css">
+        <link rel="stylesheet" href="../assets/material-icons/material-icons.css">
+        <style>
+            #overlay {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                background-color: black;
+                opacity: 0.5;
+                z-index: 20;
+            }
+
+            #overlay-loader {
+                top: 50%;
+                left: 50%;
+                position: absolute;
+                transform: translate(-50%, -50%);
+            }
+
+            #overlay-loader > .preloader-wrapper {
+                width: 128px;
+                height: 128px;
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="overlay">
+            <div id="overlay-loader">
+                <div class="preloader-wrapper big active">
+                    <div class="spinner-layer spinner-blue-only">
+                        <div class="circle-clipper left">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="gap-patch">
+                            <div class="circle"></div>
+                        </div>
+                        <div class="circle-clipper right">
+                            <div class="circle"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <br/>
+        <div class="container">
+            <div class="row">
+                <form class="col s12">
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input value="MyCommand" id="name" type="text">
+                            <label for="name">Name</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input value="My Command!" id="description" type="text">
+                            <label for="description">Description</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="row">
+                <form class="col s12">
+                    <div class="row">
+                        <button class="btn" id="saveCommand">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="../node_modules/materialize-css/dist/js/materialize.min.js"></script>
+        <script>
+            const {ipcRenderer} = require("electron");
+            const {Menu, getCurrentWindow, getGlobal} = require("electron").remote;
+            const prompt = require('electron-prompt');
+            const analytics = getGlobal("analytics");
+            const $ = require("jquery");
+            const Sentry = require("@sentry/electron");
+
+            $(document).ready(function () {
+                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+                analytics.pageview("/commandEditor", "", "Command Editor").send();
+            });
+
+            let custom=getCurrentWindow().custom;
+            let commandInfo = custom.command;
+            let commandIndex = custom.index;
+            let isNew = commandIndex===-1;
+
+            window.onbeforeunload = function (e) {
+                saveCommand();
+            };
+
+            $("#saveCommand").on("click", function () {
+                getCurrentWindow().close();
+            });
+
+            function saveCommand() {
+                commandInfo.name = $("#name").val();
+                commandInfo.description = $("#description").val();
+
+                ipcRenderer.send("saveCommand",{
+                    command:commandInfo,
+                    isNew:isNew,
+                    index:commandIndex
+                })
+            }
+
+
+         if(commandInfo){
+             if(commandInfo.name)
+                 $("#name").val(commandInfo.name);
+             if(commandInfo.description)
+                 $("#description").val(commandInfo.description);
+
+
+             M.updateTextFields();
+
+             $("#overlay").fadeOut();
+         }
+
+        </script>
+    </body>
+</html>

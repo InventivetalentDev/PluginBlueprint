@@ -98,6 +98,13 @@
                     </div>
                 </form>
             </div>
+            <div class="row">
+                <form class="col s12">
+                    <div class="row">
+                        <button class="btn" id="saveInfo">Save</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <script src="../node_modules/materialize-css/dist/js/materialize.min.js"></script>
@@ -133,6 +140,10 @@
             window.onbeforeunload = function (e) {
                 updateProjectInfo();
             };
+
+            $("#saveInfo").on("click", function () {
+                getCurrentWindow().close();
+            });
 
             function updateProjectInfo() {
                 projectInfo.name = $("#name").val();
@@ -184,24 +195,30 @@
                         commands.splice(i, 1);
                         updateCommandList();
                     });
+                    commandItem.on("click", function () {
+                        ipcRenderer.send("openCommandEditor", {
+                            command: commands[i],
+                            index: i
+                        })
+                    });
                     commandItem.appendTo($("#commandList"))
                 }
             }
 
             $("#addCommand").click(function (e) {
-                prompt({
-                    title: "Command Name",
-                    label: "Command Name",
-                    value: "mycommand",
-                    height: 150
-                }).then((r) => {
-                    if (r) {
-                        commands.push({
-                            name: r.toLowerCase()
-                        });
-                        updateCommandList();
-                    }
+                ipcRenderer.send("openCommandEditor", {
+                    command: {},
+                    index: -1
                 })
+            })
+
+            ipcRenderer.on("commandAdded", function (event, arg) {
+                commands.push(arg);
+                updateCommandList();
+            });
+            ipcRenderer.on("commandUpdated", function (event, arg) {
+                commands[arg.index] = arg.command;
+                updateCommandList();
             })
         </script>
     </body>
