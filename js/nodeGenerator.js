@@ -530,7 +530,7 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
         this.nodeType = "BukkitMethodNode";
         this.className = classData.name;
         this.methodName = methodData.name;
-        this.methodSignature = methodData.fullSignature;
+        this.methodSignature = methodData.fullFlatSignature;
     }
 
     BukkitMethodNode.title = simpleClassName + "#" + methodSignature;
