@@ -213,7 +213,7 @@ function onMethodAdd(node, options, e, prevMenu) {
                 for (let m in clazz.methodsBySignature) {
                     let method = clazz.methodsBySignature[m];
                     if (existingCategories.indexOf(m) === -1) {
-                        values.push({content: method.fullSignature, value: {class: clazz.name, method: method.fullSignature}, has_submenu: false});
+                        values.push({content: method.fullFlatSignature, value: {class: clazz.name, method: method.fullSignature}, has_submenu: false});
                         existingCategories.push(m);
                     }
                 }
@@ -441,7 +441,7 @@ function addClassIO(node, classData, isChildCall) {
         let isLambda = checkLambda(classData, method);
 
         if (method.returnType.qualifiedName === "void") {// Regular void or abstract Method
-            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
+            addNodeOutput(node, method.fullFlatSignature, classData.name + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
                 linkType: isLambda ? "abstractMethod" : "method",
                 className: classData.name,
                 methodName: method.name,
@@ -472,7 +472,7 @@ function addClassIO(node, classData, isChildCall) {
                 methodSignature: method.fullSignature
             }), true);
         } else {// fallback to abstract/regular method
-            addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
+            addNodeOutput(node, method.fullFlatSignature, classData.name + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
                 linkType: isLambda ? "abstractMethod" : "method",
                 className: classData.name,
                 methodName: method.name,

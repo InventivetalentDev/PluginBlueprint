@@ -17,7 +17,7 @@ function ClassDataStore() {
 
                 for (let c = 0; c < data.classes.length; c++) {
                     let clazz = Object.assign({}, data.classes[c]);
-                    clazz.name=clazz.qualifiedName;
+                    clazz.name = clazz.qualifiedName;
                     clazz.fieldsByName = {};
                     clazz.methodsBySignature = {};
                     clazz.constructorsByName = {};
@@ -37,7 +37,8 @@ function ClassDataStore() {
                             method.paramsByName[param.name.toLowerCase()] = param;
                         }
 
-                        method.fullSignature = method.name+method.signature;
+                        method.fullSignature = method.name + method.signature;
+                        method.fullFlatSignature = method.name + method.flatSignature;
                         clazz.methodsBySignature[method.fullSignature] = method;
                     }
                     ///TODO: storing constructors by name makes no sense
