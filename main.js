@@ -944,6 +944,7 @@ function reloadPlugin() {
             })
         })
     })
+    global.analytics.event("Project", "Reload Plugin").send();
 }
 
 ipcMain.on("highlightNode", function (event, arg) {
@@ -977,6 +978,7 @@ function exportProject(output) {
     zip.addLocalFile(path.join(currentProjectPath, "project.pbp"));
     zip.addLocalFile(path.join(currentProjectPath, "graph.pbg"));
     zip.writeZip(output);
+    global.analytics.event("Project", "Export").send();
 }
 
 ipcMain.on("checkUpdate", function (event) {
