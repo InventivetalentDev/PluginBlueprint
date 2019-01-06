@@ -440,7 +440,7 @@ function addClassIO(node, classData, isChildCall) {
 
         let isLambda = checkLambda(classData, method);
 
-        if (method.return_type === "void") {// Regular void or abstract Method
+        if (method.returnType.qualifiedName === "void") {// Regular void or abstract Method
             addNodeOutput(node, methodSignature, classData.name + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
                 linkType: isLambda ? "abstractMethod" : "method",
                 className: classData.name,
@@ -573,7 +573,7 @@ function addMethodIO(node, classData, methodData) {
     addNodeInput(node, "REF", classData.name + "#" + methodSignature, shapeAndColorsForSlotType("REF"));
 
 
-    if (isLambda && methodData.return_type === "void" || (classData.name === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete"))) {
+    if (isLambda && methodData.returnType.qualifiedName === "void" || (classData.name === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete"))) {
         node.isAbstractMethod = true;
         node.color = Colors.ABSTRACT_FUNCTION_OFF;
         for (let p = 0; p < methodData.parameters.length; p++) {
@@ -592,7 +592,7 @@ function addMethodIO(node, classData, methodData) {
             addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {paramName: param.name}));
         }
 
-        if (methodData.return_type !== "void") {
+        if (methodData.returnType.qualifiedName !== "void") {
             addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
         }
     }
