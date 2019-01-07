@@ -362,7 +362,8 @@ function getOrCreateBukkitClassNode(className) {
         return [
             {content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
             {content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
-            null
+            null,
+            {content: "Properties", has_submenu: true, disabled: !this.properties || Object.keys(this.properties).length === 0, callback: LGraphCanvas.onShowMenuNodeProperties}
         ];
     };
     BukkitClassNode.prototype.onConfigure = function () {
@@ -405,10 +406,11 @@ function addClassIO(node, classData, isChildCall) {
             className: classData.name,
             enumName: classData.enumConstants[0]
         }));
-        node.addProperty("en", classData.enumConstants[0], "enum", {values: classData.enumConstants})
-        node.onDrawBackground = function () {
-            this.outputs[i].label = "[" + this.properties.en + "]";
-        };
+        node.addProperty("constant", classData.enumConstants[0], "enum", {values: classData.enumConstants});
+        node.onPropertyChanged = function (property, value) {
+            this.outputs[i].label = "[" + value + "]";
+            this.outputs[i].enumName = value;
+        }
     }
 
     // for (let f = 0; f < classData.enumConstants.length; f++) {
