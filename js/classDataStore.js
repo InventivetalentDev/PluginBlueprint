@@ -20,7 +20,7 @@ function ClassDataStore() {
                     clazz.name = clazz.qualifiedName;
                     clazz.fieldsByName = {};
                     clazz.methodsBySignature = {};
-                    clazz.constructorsByName = {};
+                    clazz.constructorsBySignature = {};
                     clazz.isEvent = clazz.qualifiedName.indexOf("Event") !== -1;
                     clazz.isObject = !clazz.isEvent && !clazz.isEnum;
 
@@ -41,7 +41,6 @@ function ClassDataStore() {
                         method.fullFlatSignature = method.name + method.flatSignature;
                         clazz.methodsBySignature[method.fullSignature] = method;
                     }
-                    ///TODO: storing constructors by name makes no sense
                     for (let m = 0; m < clazz.constructors.length; m++) {
                         let constr = Object.assign({}, clazz.constructors[m]);
                         constr.paramsByName = {};
@@ -51,7 +50,9 @@ function ClassDataStore() {
                             constr.paramsByName[param.name.toLowerCase()] = param;
                         }
 
-                        clazz.constructorsByName[constr.name.toLowerCase()] = constr;
+                        constr.fullSignature = constr.name + constr.signature;
+                        constr.fullFlatSignature = constr.name + constr.flatSignature;
+                        clazz.constructorsBySignature[constr.fillSignature] = constr;
                     }
 
                     this.classStore[clazz.qualifiedName.toLowerCase()] = clazz;
@@ -93,18 +94,18 @@ ClassDataStore.prototype.getField = function (className, fieldName) {
 };
 
 
-ClassDataStore.prototype.getConstructor = function (className, constructorName) {
-    if (!className || !constructorName) return null;
+ClassDataStore.prototype.getConstructor = function (className, constructorSignature) {
+    if (!className || !constructorSignature) return null;
     let clazz = this.classStore[className.toLowerCase()];
     if (!clazz) return null;
-    return clazz.constructorsByName[constructorName.toLowerCase()];
+    return clazz.constructorsBySignature[constructorSignature];
 };
 
-ClassDataStore.prototype.getConstructorParam = function (className, constructorName, paramName) {
+ClassDataStore.prototype.getConstructorParam = function (className, constructorSignature, paramName) {
     if (!className || !constructorName || !paramName) return null;
     let clazz = this.classStore[className.toLowerCase()];
     if (!clazz) return null;
-    let constructor = clazz.constructorsByName[constructorName.toLowerCase()];
+    let constructor = clazz.constructorsBySignature[constructorSignature];
     if (!constructor) return null;
     return constructor.paramsByName[paramName.toLowerCase()];
 };
