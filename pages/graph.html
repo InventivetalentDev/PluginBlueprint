@@ -96,6 +96,9 @@
             var graph = new LGraph();
             graph.onNodeAdded = function (n) {
                 console.debug("[HISTORY] onNodeAdded");
+                if (n) {
+                    n.size = n.computeSize();
+                }
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
