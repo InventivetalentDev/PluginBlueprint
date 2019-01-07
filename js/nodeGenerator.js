@@ -426,7 +426,9 @@ function addClassIO(node, classData, isChildCall) {
                 addNodeInput(node, param.name, param.type.qualifiedName, shapeAndColorsForSlotType(param.type.qualifiedName, {
                     linkType: "constructorParam",
                     constructorName: constructor.name,
-                    paramName: param.name
+                    paramType:param.type.qualifiedName,
+                    paramName: param.name,
+                    paramIndex: i
                 }), true)
             }
         }
@@ -582,7 +584,11 @@ function addMethodIO(node, classData, methodData) {
             let param = methodData.parameters[p];
             let paramType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : param.type.qualifiedName;
 
-            addNodeOutput(node, param.name, paramType + param.type.dimension, shapeAndColorsForSlotType(paramType, {paramName: param.name}));
+            addNodeOutput(node, param.name, paramType + param.type.dimension, shapeAndColorsForSlotType(paramType, {
+                paramName: param.name,
+                paramType:param.type.qualifiedName,
+                paramIndex: p
+            }));
         }
 
         if (methodData.returnType.qualifiedName !== "void") {
@@ -591,7 +597,11 @@ function addMethodIO(node, classData, methodData) {
     } else {
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
-            addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {paramName: param.name}));
+            addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {
+                paramName: param.name,
+                paramType:param.type.qualifiedName,
+                paramIndex: p
+            }));
         }
 
         if (methodData.returnType.qualifiedName !== "void") {
