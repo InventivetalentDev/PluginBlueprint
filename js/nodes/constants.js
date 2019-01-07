@@ -1,5 +1,5 @@
 const Colors = require("../colors");
-const {shapeAndColorsForSlotType} = require("../util");
+const {shapeAndColorsForSlotType, getNumberSuffix} = require("../util");
 
 // String Constant
 
@@ -35,7 +35,7 @@ NumberConstant.prototype.onDrawBackground = function () {
     this.outputs[0].type = this.properties.type;
 };
 NumberConstant.prototype.getFields = function (output) {
-    return [this.properties.type + " " + output[0] + " = " + this.properties.number];
+    return [this.properties.type + " " + output[0] + " = " + this.properties.number + getNumberSuffix(this.properties.type)];
 };
 NumberConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 

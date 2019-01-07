@@ -115,6 +115,25 @@ function isNumberType(type) {
     return type === "byte" || type === "short" || type === "int" || type === "long" || type === "float" || type === "double";
 }
 
+function getNumberSuffix(type) {
+    if (type) {
+        if (typeof type !== "string") {
+            type = type.qualifiedName;
+        }
+        if (type === "float") {
+            return "F";
+        }
+        if (type === "double") {
+            return "D";
+        }
+        if (type === "long") {
+            return "L";
+        }
+    }
+    return "";
+}
 
-module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType};
+
+
+module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType,getNumberSuffix};
 
