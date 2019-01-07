@@ -426,7 +426,7 @@ function addClassIO(node, classData, isChildCall) {
                 addNodeInput(node, param.name, param.type.qualifiedName, shapeAndColorsForSlotType(param.type.qualifiedName, {
                     linkType: "constructorParam",
                     constructorName: constructor.name,
-                    paramType:param.type.qualifiedName,
+                    paramType: param.type.qualifiedName,
                     paramName: param.name,
                     paramIndex: i
                 }), true)
@@ -687,7 +687,7 @@ function handleSlotDoubleClick(node, i, e) {
     } else if (slot.type.indexOf("#") !== -1) {
         nodeName = getOrCreateBukkitMethodNode(slot.className, slot.methodSignature);//TODO: update params
     } else /*if (slot.type.startsWith("org.bukkit") && classesByName.hasOwnProperty(slot.type))*/ {
-        nodeName = getOrCreateBukkitClassNode(slot.className);
+        nodeName = getOrCreateBukkitClassNode(slot.className || slot.type);
     }
     if (nodeName) {
         console.log(nodeName)
