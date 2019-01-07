@@ -406,7 +406,7 @@ function addClassIO(node, classData, isChildCall) {
             className: classData.name,
             enumName: classData.enumConstants[0]
         }));
-        node.addProperty("constant", classData.enumConstants[0], "enum", {values: classData.enumConstants});
+        node.addProperty("en", classData.enumConstants[0], "enum", {values: classData.enumConstants});
         node.onPropertyChanged = function (property, value) {
             this.outputs[i].label = "[" + value + "]";
             this.outputs[i].enumName = value;
