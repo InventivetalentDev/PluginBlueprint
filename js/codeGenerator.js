@@ -44,7 +44,7 @@ function generateClassCode(graph, projectInfo) {
                     }
                 } else if (graph._nodes[i].nodeType === "BukkitMethodNode") {
                     let classData = classStore.getClass(graph._nodes[i].className);
-                    let methodData = classStore.getMethod(graph._nodes[i].className, graph._nodes[i].methodSignature)
+                    let methodData = classStore.getMethod(graph._nodes[i].className, graph._nodes[i].methodSignature);
                     generateCodeForMethodNode(graph, i, graph._nodes[i], classData, methodData);
                 } else {
                     if (graph._nodes[i].classType === "native") {
