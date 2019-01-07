@@ -11,7 +11,6 @@ function drawFontAwesomeIcon(node, ctx, iconName, x, y, size, color = "white", p
             // can't use scale here, as that apparently only affects CSS not the actual path data
         }
     });
-    console.log(icn);
     ctx.fillStyle = color;
     let path = new Path2D(icn.icon[4]);
     // path.moveTo(x, y);
