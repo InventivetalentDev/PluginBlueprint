@@ -2,6 +2,7 @@ module.exports = {
     EVENT: "#800080",
     OBJECT: "#7c372a",
     FUNCTION: "#286674",
+    CONSTRUCTOR: "#12a21d",
 
     BOOLEAN_OFF: "#b95f1d",
     BOOLEAN_ON: "#ff8c25",

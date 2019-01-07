@@ -52,7 +52,7 @@ function ClassDataStore() {
 
                         constr.fullSignature = constr.name + constr.signature;
                         constr.fullFlatSignature = constr.name + constr.flatSignature;
-                        clazz.constructorsBySignature[constr.fillSignature] = constr;
+                        clazz.constructorsBySignature[constr.fullSignature] = constr;
                     }
 
                     this.classStore[clazz.qualifiedName.toLowerCase()] = clazz;

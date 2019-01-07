@@ -300,6 +300,10 @@ function init() {
                     let method = clazz.methodsBySignature[m];
                     getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
                 }
+                for (let c in clazz.constructorsBySignature) {
+                    let constructor = clazz.constructorsBySignature[c];
+                    getOrCreateBukkitConstructorNode(clazz.qualifiedName, constructor.fullSignature);
+                }
             }
             resolve();
         });
@@ -417,22 +421,23 @@ function addClassIO(node, classData, isChildCall) {
     //     let en = classData.enumConstants[f];
     //     addNodeOutput(node, en, classData.name, {linkType: "enum", enumData: en, color_off: Colors.ENUM_OFF, color_on: Colors.ENUM_ON});
     // }
-
-    if (!classData.isInterface && !classData.isAbstract) {
-        for (let c = 0; c < classData.constructors.length; c++) {
-            let constructor = classData.constructors[c];
-            for (let i = 0; i < constructor.parameters.length; i++) {
-                let param = constructor.parameters[i];
-                addNodeInput(node, param.name, param.type.qualifiedName, shapeAndColorsForSlotType(param.type.qualifiedName, {
-                    linkType: "constructorParam",
-                    constructorName: constructor.name,
-                    paramType: param.type.qualifiedName,
-                    paramName: param.name,
-                    paramIndex: i
-                }), true)
-            }
-        }
-    }
+    //
+    // // TODO: add a separate constructor node-type instead of handling constructor parameters in class nodes
+    // if (!classData.isInterface && !classData.isAbstract) {
+    //     for (let c = 0; c < classData.constructors.length; c++) {
+    //         let constructor = classData.constructors[c];
+    //         for (let i = 0; i < constructor.parameters.length; i++) {
+    //             let param = constructor.parameters[i];
+    //             addNodeInput(node, param.name, param.type.qualifiedName, shapeAndColorsForSlotType(param.type.qualifiedName, {
+    //                 linkType: "constructorParam",
+    //                 constructorName: constructor.name,
+    //                 paramType: param.type.qualifiedName,
+    //                 paramName: param.name,
+    //                 paramIndex: i
+    //             }), true)
+    //         }
+    //     }
+    // }
 
 
     for (let m in classData.methodsBySignature) {
@@ -586,7 +591,7 @@ function addMethodIO(node, classData, methodData) {
 
             addNodeOutput(node, param.name, paramType + param.type.dimension, shapeAndColorsForSlotType(paramType, {
                 paramName: param.name,
-                paramType:param.type.qualifiedName,
+                paramType: param.type.qualifiedName,
                 paramIndex: p
             }));
         }
@@ -599,7 +604,7 @@ function addMethodIO(node, classData, methodData) {
             let param = methodData.parameters[p];
             addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {
                 paramName: param.name,
-                paramType:param.type.qualifiedName,
+                paramType: param.type.qualifiedName,
                 paramIndex: p
             }));
         }
@@ -608,6 +613,85 @@ function addMethodIO(node, classData, methodData) {
             addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
         }
     }
+}
+
+function getOrCreateBukkitConstructorNode(className, constructorSignature) {
+
+    let classData = classStore.getClass(className);
+    if (!classData) {
+        console.warn("Class " + className + " does not exist or isn't loaded");
+        return null;
+    }
+    let constructorData = classStore.getConstructor(className, constructorSignature);
+    if (!constructorData) {
+        console.warn("Missing constructor data for " + constructorSignature + " in " + className);
+        return null;
+    }
+
+    let categoryName = className + "#" + constructorSignature;
+
+    if (LiteGraph.registered_node_types.hasOwnProperty(categoryName)) {
+        return categoryName;
+    }
+
+    function BukkitConstructorNode() {
+        addConstructorIO(this, classData, constructorData);
+        this.nodeType = "BukkitConstructorNode";
+        this.className = classData.name;
+        this.constructorName = constructorData.name;
+        this.constructorSignature = constructorData.fullSignature;
+    }
+
+    BukkitConstructorNode.title = constructorData.fullFlatSignature;
+
+    BukkitConstructorNode.prototype.color = Colors.CONSTRUCTOR;
+
+    BukkitConstructorNode.prototype.getMenuOptions = function () {
+        return [
+            {content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
+            {content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
+            null
+        ];
+    };
+    BukkitConstructorNode.prototype.onConfigure = function () {
+        this.size = this.computeSize();
+    };
+
+    BukkitConstructorNode.prototype.onOutputDblClick = function (i, e) {
+        handleSlotDoubleClick(this, i, e);
+    };
+    BukkitConstructorNode.prototype.onDblClick = function () {
+        console.log(this);
+    };
+
+    LiteGraph.registerNodeType(categoryName, BukkitConstructorNode);
+
+    return categoryName;
+}
+
+function addConstructorIO(node, classData, constructorData) {
+    let isLambda = checkLambda(classData, constructorData);
+
+    if (!isLambda)
+        addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+
+    addNodeOutput(node, "THIS", classData.name, shapeAndColorsForSlotType("THIS", {linkType: "this"}));
+
+    if (!classData.isInterface && !classData.isAbstract) {
+        for (let i = 0; i < constructorData.parameters.length; i++) {
+            let param = constructorData.parameters[i];
+            addNodeInput(node, param.name, param.type.qualifiedName, shapeAndColorsForSlotType(param.type.qualifiedName, {
+                linkType: "constructorParam",
+                constructorName: constructor.name,
+                paramType: param.type.qualifiedName,
+                paramName: param.name,
+                paramIndex: i
+            }))
+        }
+    }
+
+
 }
 
 function checkLambda(classData, methodData) {

@@ -13,6 +13,7 @@ const eventListenerMethods = [];
 const objectMethods = [];
 const enumMethods = [];
 const generatedMethods = [];
+const constructorCalls = [];
 const methodCalls = [];
 const nativeCalls = [];
 
@@ -46,6 +47,10 @@ function generateClassCode(graph, projectInfo) {
                     let classData = classStore.getClass(graph._nodes[i].className);
                     let methodData = classStore.getMethod(graph._nodes[i].className, graph._nodes[i].methodSignature);
                     generateCodeForMethodNode(graph, i, graph._nodes[i], classData, methodData);
+                } else if (graph._nodes[i].nodeType === "BukkitConstructorNode") {
+                    let classData = classStore.getClass(graph._nodes[i].className);
+                    let constructorData = classStore.getConstructor(graph._nodes[i].className, graph._nodes[i].constructorSignature);
+                    generateCodeForConstructorNode(graph, i, graph._nodes[i], classData, constructorData);
                 } else {
                     if (graph._nodes[i].classType === "native") {
                         generateCodeForNativeNode(graph, i, graph._nodes[i]);
@@ -119,6 +124,10 @@ function generateClassCode(graph, projectInfo) {
                 generatedMethods.join("\n") +
                 "\n/*** End Generated Methods ***/\n" +
                 "\n" +
+                "\n/*** Start Constructor Calls ***/\n" +
+                constructorCalls.join("\n") +
+                "\n/*** End Constructor Calls ***/\n" +
+                "\n" +
                 "\n/*** Start Method Calls ***/\n" +
                 methodCalls.join("\n") +
                 "\n/*** End Method Calls ***/\n" +
@@ -143,6 +152,7 @@ function generateClassCode(graph, projectInfo) {
             generatedMethods.splice(0, generatedMethods.length);
             objectMethods.splice(0, objectMethods.length);
             enumMethods.splice(0, objectMethods.length);
+            constructorCalls.splice(0, constructorCalls.length);
             methodCalls.splice(0, methodCalls.length);
             nativeCalls.splice(0, nativeCalls.length);
 
@@ -516,6 +526,68 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
     methodCalls.push(code);
 
 
+}
+
+function generateCodeForConstructorNode(graph, n, node, classData, constructorData) {
+    let code = "// CONSTRUCTOR EXECUTION for " + constructorData.fullSignature + "\n" +
+        "private void node_" + node.id + "_exec() {\n" + debugCall(node.id);
+
+    let execCode = "";
+    for (let o = 0; o < node.outputs.length; o++) {
+        let output = node.outputs[o];
+        if (!output) continue;
+        if (!output.links) continue;
+        if (output.links.length > 0) {
+            if (output.name === "THIS") {
+                fields.push("private " +classData.qualifiedName + nodeOutput(node.id, o) + ";");
+                fields.push("private " + classData.qualifiedName + " " + nodeV(node.id) + ";");
+                code += nodeOutput(node.id, o) + " =";
+                break;
+            } else if (output.type === "@EXEC") {
+                for (let l = 0; l < output.links.length; l++) {
+                    let linkInfo = graph.links[output.links[l]];
+                    if (!linkInfo) continue;
+                    execCode += nodeExec(linkInfo.target_id) + ";\n";
+                }
+            }
+        }
+    }
+
+    code += nodeV(node.id) + " = new " + classData.name + "(";
+
+    let params = [];
+    if (node.inputs) {
+        for (let i = 0; i < node.inputs.length; i++) {
+            let input = node.inputs[i];
+            if (!input) continue;
+            if (input.type === "@EXEC") continue;
+            let linkInfo = graph.links[input.link];
+
+
+            if (input.linkType === "constructorParam") {
+                if (!input.link || !linkInfo) {
+                    params[input.paramIndex] = getNullForType(input.paramType || input.name);
+                    continue;
+                }
+
+
+                if (input.hasOwnProperty("paramIndex")) {
+                    params[input.paramIndex] = nodeOutput(linkInfo.origin_id, linkInfo.origin_slot);
+                } else {
+                    params.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
+                }
+            }
+        }
+    }
+
+    code += params.join(",");
+    code += ");\n";
+
+    code += execCode;
+
+    code += "}\n";
+
+    constructorCalls.push(code);
 }
 
 function generateCodeForNativeNode(graph, n, node) {
