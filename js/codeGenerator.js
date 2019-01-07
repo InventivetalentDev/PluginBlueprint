@@ -368,36 +368,6 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
             }
 
             initCode += "};\n";
-        } else {
-            initCode += nodeV(node.id) + " = new " + classData.name + "(";
-
-            let params = [];
-            if (node.inputs) {
-                for (let i = 0; i < node.inputs.length; i++) {
-                    let input = node.inputs[i];
-                    if (!input) continue;
-                    if (input.type === "@EXEC") continue;
-                    let linkInfo = graph.links[input.link];
-
-
-                    if (input.linkType === "constructorParam") {
-                        if (!input.link || !linkInfo) {
-                            params[input.paramIndex] = getNullForType(input.paramType || input.name);
-                            continue;
-                        }
-
-
-                        if (input.hasOwnProperty("paramIndex")) {
-                            params[input.paramIndex] = nodeOutput(linkInfo.origin_id, linkInfo.origin_slot);
-                        } else {
-                            params.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
-                        }
-                    }
-                }
-            }
-
-            initCode += params.join(",");
-            initCode += ");\n";
         }
     }
 
