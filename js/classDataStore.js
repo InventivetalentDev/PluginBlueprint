@@ -17,7 +17,6 @@ function ClassDataStore() {
 
                 for (let c = 0; c < data.classes.length; c++) {
                     let clazz = Object.assign({}, data.classes[c]);
-                    clazz.name = clazz.qualifiedName;
                     clazz.fieldsByName = {};
                     clazz.methodsBySignature = {};
                     clazz.constructorsBySignature = {};

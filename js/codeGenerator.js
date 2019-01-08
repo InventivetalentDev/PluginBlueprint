@@ -329,14 +329,14 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
         }
     }
 
-    if (classData.name === "org.bukkit.plugin.java.JavaPlugin") {
+    if (classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin") {
         initCode += "  node_" + node.id + " = this;\n";
         hasRef = true;
     }
 
     if (!hasRef) {
         if (abstractMethods > 0) {
-            initCode += nodeV(node.id) + " = new " + classData.name + "() {\n"
+            initCode += nodeV(node.id) + " = new " + classData.qualifiedName + "() {\n"
             for (let o = 0; o < node.outputs.length; o++) {
                 let output = node.outputs[o];
                 if (!output) continue;
@@ -378,7 +378,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
 
     objectMethods.push(code);
 
-    if (classData.name === "org.bukkit.plugin.java.JavaPlugin") {
+    if (classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin") {
         javaPluginMethods.push(nodeExec(node.id) + ";\n");
     }
 
@@ -394,13 +394,13 @@ function generateCodeForEnumClassNode(graph, n, node, classData) {
         if (output.links.length > 0) {
             if (output.linkType === "method") continue;
 
-            fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + classData.name + "." + output.enumName + ";");
+            fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + classData.qualifiedName + "." + output.enumName + ";");
         }
     }
 }
 
 function generateCodeForMethodNode(graph, n, node, classData, methodData) {
-    let code = "// METHOD EXECUTION for " + classData.name + "#" + methodData.name + "\n" +
+    let code = "// METHOD EXECUTION for " + classData.qualifiedName + "#" + methodData.name + "\n" +
         "private void node_" + node.id + "_exec() {\n" + debugCall(node.id);
 
     let execCode = "";
@@ -443,7 +443,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             if (i === 1) {// REF | param opening bracket
                 // code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
                 if (sourceNode.classType === "enum" || methodData.isStatic) {
-                    code += " " + classData.name + "." + methodData.name.split("(")[0] + "(";
+                    code += " " + classData.qualifiedName + "." + methodData.name.split("(")[0] + "(";
                 } else if (!node.isAbstractMethod) {
                     code += nodeV(linkInfo.origin_id) + "." + methodData.name.split("(")[0] + "(";
                 }
@@ -462,7 +462,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
     if (!node.isAbstractMethod) {
         code += params.join(",");
         code += ");\n";
-    } else if (classData.name === "org.bukkit.plugin.java.JavaPlugin") {
+    } else if (classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin") {
         if (methodData.name === "onLoad") {
             onLoadMethods.push(nodeExec(node.id) + ";\n")
         }
@@ -523,7 +523,7 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
         }
     }
 
-    code += nodeV(node.id) + " = new " + classData.name + "(";
+    code += nodeV(node.id) + " = new " + classData.qualifiedName + "(";
 
     let params = [];
     if (node.inputs) {

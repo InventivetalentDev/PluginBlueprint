@@ -70,11 +70,9 @@ function onEventAdd(node, options, e, prevMenu) {
         if (!c.startsWith("org.bukkit")) continue;
         let clazz = classesByName[c];
         if (!clazz.isEvent) continue;
-        let v = clazz.name.substr("org.".length).split(".");
-        v.pop();
-        let v1 = v.join(".");
+        let v1 = clazz.package;
         if (existingCategories.indexOf(v1) === -1) {
-            entries.push({value: v1, content: v1, has_submenu: v.length >= 2})
+            entries.push({value: v1, content: v1, has_submenu: true})
             existingCategories.push(v1);
         }
     }
@@ -87,12 +85,10 @@ function onEventAdd(node, options, e, prevMenu) {
             if (!c.startsWith("org.bukkit")) continue;
             let clazz = classesByName[c];
             if (!clazz.isEvent) continue;
-            let v0 = clazz.name.substr("org.".length).split(".");
-            v0.pop();
-            let v1 = v0.join(".");
+            let v1 = clazz.package;
             if (v.value === v1) {
-                let v2 = clazz.name.substr("org.".length).split(".");
-                values.push({content: v2[v2.length - 1], value: clazz.name});
+                let v2 = clazz.name;
+                values.push({content: v2, value: clazz.qualifiedName});
             }
         }
 
@@ -118,12 +114,10 @@ function onObjectAdd(node, options, e, prevMenu) {
     for (let c in classesByName) {
         if (!c.startsWith("org.bukkit")) continue;
         let clazz = classesByName[c];
-        if (!clazz.isObject) continue;
-        let v = clazz.name.substr("org.".length).split(".");
-        v.pop();
-        let v1 = v.join(".");
+        if (clazz.isEvent || (!clazz.isObject && !clazz.isEnum)) continue;
+        let v1 = clazz.package;
         if (existingCategories.indexOf(v1) === -1) {
-            entries.push({value: v1, content: v1, has_submenu: v.length >= 2})
+            entries.push({value: v1, content: v1, has_submenu: true})
             existingCategories.push(v1);
         }
     }
@@ -136,12 +130,10 @@ function onObjectAdd(node, options, e, prevMenu) {
             if (!c.startsWith("org.bukkit")) continue;
             let clazz = classesByName[c];
             if (!clazz.isObject) continue;
-            let v0 = clazz.name.substr("org.".length).split(".");
-            v0.pop();
-            let v1 = v0.join(".");
+            let v1 = clazz.package;
             if (v.value === v1) {
-                let v2 = clazz.name.substr("org.".length).split(".");
-                values.push({content: v2[v2.length - 1], value: clazz.name});
+                let v2 = clazz.name;
+                values.push({content: v2, value: clazz.qualifiedName});
             }
         }
 
@@ -168,10 +160,7 @@ function onMethodAdd(node, options, e, prevMenu) {
         if (!c.startsWith("org.bukkit")) continue;
         let clazz = classesByName[c];
 
-        let v = clazz.name.substr("org.".length).split(".");
-        v.pop();
-        let v1 = v.join(".");
-        console.log(v1)
+        let v1 = clazz.package;
         if (existingCategories.indexOf(v1) === -1) {
             entries.push({value: v1, content: v1, has_submenu: true})
             existingCategories.push(v1);
@@ -188,12 +177,10 @@ function onMethodAdd(node, options, e, prevMenu) {
             if (!c.startsWith("org.bukkit")) continue;
             let clazz = classesByName[c];
 
-            let split = clazz.name.substr("org.".length).split(".");
-            let lastSplit = split.pop();
-            if (v.value === split.join(".")) {
+            if (v.value === clazz.package) {
                 let simpleName = clazz.name;
                 if (existingCategories.indexOf(simpleName) === -1) {
-                    values.push({content: lastSplit, value: simpleName, has_submenu: true});
+                    values.push({content: simpleName, value: clazz.qualifiedName, has_submenu: true});
                     existingCategories.push(simpleName)
                 }
             }
@@ -209,11 +196,11 @@ function onMethodAdd(node, options, e, prevMenu) {
         for (let c in classesByName) {
             if (!c.startsWith("org.bukkit")) continue;
             let clazz = classesByName[c];
-            if (v.value === clazz.name) {
+            if (v.value === clazz.qualifiedName) {
                 for (let m in clazz.methodsBySignature) {
                     let method = clazz.methodsBySignature[m];
                     if (existingCategories.indexOf(m) === -1) {
-                        values.push({content: method.fullFlatSignature, value: {class: clazz.name, method: method.fullSignature}, has_submenu: false});
+                        values.push({content: method.fullFlatSignature, value: {class: clazz.qualifiedName, method: method.fullSignature}, has_submenu: false});
                         existingCategories.push(m);
                     }
                 }
@@ -245,10 +232,12 @@ function init() {
 
         LGraphCanvas.prototype.getMenuOptions = function () {
             return [
-                {content: "Add Node", has_submenu: true, callback: LGraphCanvas.onMenuAdd},
+                {content: "Add Generic Node", has_submenu: true, callback: LGraphCanvas.onMenuAdd},
+                null,
                 {content: "Add Bukkit Event", has_submenu: true, callback: onEventAdd},
                 {content: "Add Bukkit Object", has_submenu: true, callback: onObjectAdd},
                 {content: "Add Bukkit Method", has_submenu: true, callback: onMethodAdd},
+                null,
                 {content: "Add Group", callback: LGraphCanvas.onGroupAdd}
             ]
         };
@@ -295,7 +284,7 @@ function init() {
             let classesByName = classStore.getClassesByName();
             for (let n in classesByName) {
                 let clazz = classesByName[n];
-                getOrCreateBukkitClassNode(clazz.name);
+                getOrCreateBukkitClassNode(clazz.qualifiedName);
                 for (let m in clazz.methodsBySignature) {
                     let method = clazz.methodsBySignature[m];
                     getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
@@ -357,7 +346,7 @@ function getOrCreateBukkitClassNode(className) {
             this.color = Colors.OBJECT;
         }
 
-        this.className = classData.name;
+        this.className = classData.qualifiedName;
     }
 
     BukkitClassNode.title = simpleClassName;
@@ -397,17 +386,17 @@ function addClassIO(node, classData, isChildCall) {
     }
 
     if (!isChildCall && classData.isObject && classData.qualifiedName !== "org.bukkit.plugin.java.JavaPlugin") {
-        addNodeInput(node, "REF", classData.name, shapeAndColorsForSlotType("REF", {linkType: "ref"}))
+        addNodeInput(node, "REF", classData.qualifiedName, shapeAndColorsForSlotType("REF", {linkType: "ref"}))
     }
     if (!isChildCall && !classData.isEnum) {
-        addNodeOutput(node, "THIS", classData.name, shapeAndColorsForSlotType("THIS", {linkType: "this"}))
+        addNodeOutput(node, "THIS", classData.qualifiedName, shapeAndColorsForSlotType("THIS", {linkType: "this"}))
     }
 
 
     if (classData.isEnum && classData.enumConstants.length > 0) {
-        let i = addNodeOutput(node, classData.enumConstants[0], classData.name, shapeAndColorsForSlotType("enum", {
+        let i = addNodeOutput(node, classData.enumConstants[0], classData.qualifiedName, shapeAndColorsForSlotType("enum", {
             linkType: "enum",
-            className: classData.name,
+            className: classData.qualifiedName,
             enumName: classData.enumConstants[0]
         }));
         node.addProperty("en", classData.enumConstants[0], "enum", {values: classData.enumConstants});
@@ -450,9 +439,9 @@ function addClassIO(node, classData, isChildCall) {
         let isLambda = checkLambda(classData, method);
 
         if (method.returnType.qualifiedName === "void") {// Regular void or abstract Method
-            addNodeOutput(node, method.fullFlatSignature, classData.name + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
                 linkType: isLambda ? "abstractMethod" : "method",
-                className: classData.name,
+                className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
             }), true);
@@ -476,14 +465,14 @@ function addClassIO(node, classData, isChildCall) {
             addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, shapeAndColorsForSlotType(extraDataType, {
                 linkType: linkType,
                 returnType: method.returnType.qualifiedName,
-                className: classData.name,
+                className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
             }), true);
         } else {// fallback to abstract/regular method
-            addNodeOutput(node, method.fullFlatSignature, classData.name + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
                 linkType: isLambda ? "abstractMethod" : "method",
-                className: classData.name,
+                className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
             }), true);
@@ -537,7 +526,7 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
     function BukkitMethodNode() {
         addMethodIO(this, classData, methodData);
         this.nodeType = "BukkitMethodNode";
-        this.className = classData.name;
+        this.className = classData.qualifiedName;
         this.methodName = methodData.name;
         this.methodSignature = methodData.fullSignature;
     }
@@ -575,14 +564,14 @@ function addMethodIO(node, classData, methodData) {
 
     let isLambda = checkLambda(classData, methodData);
 
-    if (!isLambda && !(classData.name === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete")))
+    if (!isLambda && !(classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete")))
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
-    addNodeInput(node, "REF", classData.name + "#" + methodSignature, shapeAndColorsForSlotType("REF"));
+    addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("REF"));
 
 
-    if (isLambda && methodData.returnType.qualifiedName === "void" || (classData.name === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete"))) {
+    if (isLambda && methodData.returnType.qualifiedName === "void" || (classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete"))) {
         node.isAbstractMethod = true;
         node.color = Colors.ABSTRACT_FUNCTION_OFF;
         for (let p = 0; p < methodData.parameters.length; p++) {
@@ -637,7 +626,7 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
     function BukkitConstructorNode() {
         addConstructorIO(this, classData, constructorData);
         this.nodeType = "BukkitConstructorNode";
-        this.className = classData.name;
+        this.className = classData.qualifiedName;
         this.constructorName = constructorData.name;
         this.constructorSignature = constructorData.fullSignature;
     }
@@ -676,7 +665,7 @@ function addConstructorIO(node, classData, constructorData) {
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
-    addNodeOutput(node, "THIS", classData.name, shapeAndColorsForSlotType("THIS", {linkType: "this"}));
+    addNodeOutput(node, "THIS", classData.qualifiedName, shapeAndColorsForSlotType("THIS", {linkType: "this"}));
 
     if (!classData.isInterface && !classData.isAbstract) {
         for (let i = 0; i < constructorData.parameters.length; i++) {
@@ -779,7 +768,7 @@ function handleSlotDoubleClick(node, i, e) {
         n.pos = [e.canvasX + 40, e.canvasY - 10];
         canvas.graph.add(n);
 
-        if(n.inputs) {
+        if (n.inputs) {
             if (n.inputs[0].name === "REF") {// special case for abstract methods
                 node.connect(i, n, 0);// 0 = REF
             } else {// default case
