@@ -78,7 +78,7 @@
         <canvas id='mycanvas' width='1920' height='1080'></canvas>
         <script>
             const {ipcRenderer} = require("electron");
-            const {Menu, getCurrentWindow, getGlobal} = require("electron").remote;
+            const {app, Menu, getCurrentWindow, getGlobal} = require("electron").remote;
             const {LiteGraph, LGraph, LGraphCanvas} = require("../node_modules/litegraph.js/build/litegraph");
             const NodeGenerator = require("../js/nodeGenerator");
             const CodeGenerator = require("../js/codeGenerator");
@@ -93,9 +93,12 @@
             let history = new History();
             history.pause();
 
+            app.unsavedChanges = 0;
+
             var graph = new LGraph();
             graph.onNodeAdded = function (n) {
                 console.debug("[HISTORY] onNodeAdded");
+                app.unsavedChanges++;
                 if (n) {
                     n.size = n.computeSize();
                 }
@@ -109,25 +112,29 @@
                         $("#helpBox").hide();
                     }
                 }
-
+                updateTitle();
                 analytics.event("Graph", "Add Node", n.type).send();
             };
             graph.onNodeRemoved = function (n) {
                 console.debug("[HISTORY] onNodeRemoved");
+                app.unsavedChanges++;
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
                     console.log(history)
                 }
+                updateTitle();
                 analytics.event("Graph", "Remove Node", n.type).send();
             };
             graph.onConnectionChange = function () {
                 console.debug("[HISTORY] onConnectionChange");
+                app.unsavedChanges++;
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
                     console.log(history)
                 }
+                updateTitle();
             };
 
             LGraphCanvas.search_filter = true;
@@ -414,7 +421,13 @@
             });
             ipcRenderer.on("graphDataSaved", function (event, arg) {
                 $("#overlay").fadeOut();
-            })
+                app.unsavedChanges = 0;
+                updateTitle();
+            });
+
+            function updateTitle() {
+                getCurrentWindow().setTitle("PluginBlueprint Editor ["+ projectInfo.name +  (app.unsavedChanges > 0 ? "*" : "") +"]");
+            }
 
             ipcRenderer.on("debugCall", function (event, arg) {
                 console.log("debugCall", arg);
@@ -461,7 +474,7 @@
 
                     analytics.event("Graph", "Highlight Node").send();
                 }
-            })
+            });
 
             // HelpBox timeout
             setTimeout(function () {

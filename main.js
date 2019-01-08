@@ -134,6 +134,7 @@ function init() {
 }
 
 function showWindow() {
+    app.unsavedChanges = 0;
 
     // and load the index.html of the app.
     win.loadFile('index.html');
@@ -152,17 +153,19 @@ function showWindow() {
     })
 
     win.on("close", function (e) {
-        let c = dialog.showMessageBox({
-            message: "Are you sure you want to exit?",
-            buttons: ["Yes", "No"],
-            icon: path.join(__dirname, 'assets/images/logo-x64.png')
-        })
-        if (c === 1) {
-            e.preventDefault();
-        } else {
-            serverStarter.killInstance();
-            logWin = null;
+        if (app.unsavedChanges > 0) {
+            let c = dialog.showMessageBox({
+                type: "question",
+                message: "You have " + app.unsavedChanges + " unsaved changes. Are you sure you want to exit?",
+                buttons: ["Yes", "No"],
+                icon: path.join(__dirname, 'assets/images/logo-x64.png')
+            })
+            if (c === 1) {
+                e.preventDefault();
+            }
         }
+        serverStarter.killInstance();
+        logWin = null;
     })
 
     // Emitted when the window is closed.
