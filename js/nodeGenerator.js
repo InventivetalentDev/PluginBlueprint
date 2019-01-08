@@ -779,8 +779,12 @@ function handleSlotDoubleClick(node, i, e) {
         n.pos = [e.canvasX + 40, e.canvasY - 10];
         canvas.graph.add(n);
 
-        node.connect(0, n, 0);// 0 = EXEC
-        node.connect(i, n, 1);// 1 = REF
+        if (n.inputs[0].name === "REF") {// special case for abstract methods
+            node.connect(i, n, 0);// 0 = REF
+        } else {// default case
+            node.connect(0, n, 0);// 0 = EXEC
+            node.connect(i, n, 1);// 1 = REF
+        }
     }
 }
 
