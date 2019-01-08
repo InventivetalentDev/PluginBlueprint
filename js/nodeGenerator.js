@@ -575,7 +575,7 @@ function addMethodIO(node, classData, methodData) {
 
     let isLambda = checkLambda(classData, methodData);
 
-    if (!isLambda)
+    if (!isLambda && !(classData.name === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete")))
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
