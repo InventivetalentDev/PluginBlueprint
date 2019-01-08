@@ -21,7 +21,7 @@ function ClassDataStore() {
                     clazz.fieldsByName = {};
                     clazz.methodsBySignature = {};
                     clazz.constructorsBySignature = {};
-                    clazz.isEvent = clazz.qualifiedName.indexOf("Event") !== -1;
+                    clazz.isEvent = clazz.qualifiedName.endsWith("Event");
                     clazz.isObject = !clazz.isEvent && !clazz.isEnum;
 
                     for (let f = 0; f < clazz.fields.length; f++) {
