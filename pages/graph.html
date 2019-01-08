@@ -88,6 +88,155 @@
             const Sentry = require("@sentry/electron");
             const KeyPics = require("key.pics");
 
+            let theMenu = Menu.buildFromTemplate([
+                {
+                    label: "File",
+                    submenu: [
+                        {
+                            label: "New", role: "new", click: () => {
+                                ipcRenderer.send("showCreateNewProject");
+                            }
+                        },
+                        {
+                            label: "Open", role: "open", click: () => {
+                                ipcRenderer.send("showOpenProject");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Save",
+                            role: "save",
+                            accelerator: "CommandOrControl+S",
+                            click: () => {
+                                saveGraph()
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Export Project",
+                            click: () => {
+                                ipcRenderer.send("showExportDialog");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            role: "toggledevtools"
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Close Project",
+                            click: () => {
+                                saveGraphAndClose();
+                            }
+                        }
+                    ]
+                },
+                {
+                    label: "Edit",
+                    submenu: [
+                        {
+                            id: "undo",
+                            label: "Undo",
+                            accelerator: "CommandOrControl+Z",
+                            enabled: false,
+                            click: () => undo()
+                        },
+                        {
+                            id: "redo",
+                            label: "Redo",
+                            accelerator: "CommandOrControl+Y",
+                            enabled: false,
+                            click: () => redo()
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Edit Project Information", click: () => {
+                                ipcRenderer.send("openProjectInfoEditor");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Close",
+                            click: () => {
+                                saveGraphAndClose();
+                            }
+                        }
+                    ]
+                },
+                {
+                    label: "Compile",
+                    submenu: [
+                        {
+                            label: "Generate Code, Compile, Package", click: () => {
+                                generateCodeCompilePackage();
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Open output directory", click: () => {
+                                ipcRenderer.send("openOutputDir");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Generate Code", click: () => {
+                                generateCode();
+                            }
+                        },
+                        {
+                            label: "Compile", click: () => {
+                                compile();
+                            }
+                        },
+                        {
+                            label: "Package", click: () => {
+                                pack();
+                            }
+                        }
+                    ]
+                },
+                {
+                    label: "Run",
+                    submenu: [
+                        {
+                            label: "Start Server", click: () => {
+                                ipcRenderer.send("startServer");
+                            }
+                        },
+                        {
+                            label: "Stop Server", click: () => {
+                                ipcRenderer.send("stopServer");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Reload Plugin", click: () => {
+                                ipcRenderer.send("reloadPlugin");
+                            }
+                        }
+                    ]
+                }
+            ]);
+            getCurrentWindow().setMenu(theMenu);
+
             let projectInfo = {};
 
             let history = new History();
@@ -113,6 +262,7 @@
                     }
                 }
                 updateTitle();
+                refreshHistoryState();
                 analytics.event("Graph", "Add Node", n.type).send();
             };
             graph.onNodeRemoved = function (n) {
@@ -124,6 +274,7 @@
                     console.log(history)
                 }
                 updateTitle();
+                refreshHistoryState();
                 analytics.event("Graph", "Remove Node", n.type).send();
             };
             graph.onConnectionChange = function () {
@@ -135,6 +286,7 @@
                     console.log(history)
                 }
                 updateTitle();
+                refreshHistoryState();
             };
 
             LGraphCanvas.search_filter = true;
@@ -235,7 +387,9 @@
                     graph.configure(JSON.parse(undone))
                 }
                 history.unpause();
-                console.log(history)
+                console.log(history);
+
+                refreshHistoryState();
             }
 
             function redo() {
@@ -247,152 +401,15 @@
                     graph.configure(JSON.parse(redone));
                 }
                 history.unpause();
-                console.log(history)
+                console.log(history);
+
+                refreshHistoryState();
             }
 
-            getCurrentWindow().setMenu(Menu.buildFromTemplate([
-                {
-                    label: "File",
-                    submenu: [
-                        {
-                            label: "New", role: "new", click: () => {
-                                ipcRenderer.send("showCreateNewProject");
-                            }
-                        },
-                        {
-                            label: "Open", role: "open", click: () => {
-                                ipcRenderer.send("showOpenProject");
-                            }
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            label: "Save",
-                            role: "save",
-                            accelerator: "CommandOrControl+S",
-                            click: () => {
-                                saveGraph()
-                            }
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            label: "Export Project",
-                            click: () => {
-                                ipcRenderer.send("showExportDialog");
-                            }
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            role: "toggledevtools"
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            label: "Close Project",
-                            click: () => {
-                                saveGraphAndClose();
-                            }
-                        }
-                    ]
-                },
-                {
-                    label: "Edit",
-                    submenu: [
-                        {
-                            label: "Undo",
-                            accelerator: "CommandOrControl+Z",
-                            click: () => undo()
-                        },
-                        {
-                            label: "Redo",
-                            accelerator: "CommandOrControl+Y",
-                            click: () => redo()
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            label: "Edit Project Information", click: () => {
-                                ipcRenderer.send("openProjectInfoEditor");
-                            }
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            label: "Close",
-                            click: () => {
-                                saveGraphAndClose();
-                            }
-                        }
-                    ]
-                },
-                {
-                    label: "Compile",
-                    submenu: [
-                        {
-                            label: "Generate Code, Compile, Package", click: () => {
-                                generateCodeCompilePackage();
-                            }
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            label: "Open output directory", click: () => {
-                                ipcRenderer.send("openOutputDir");
-                            }
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            label: "Generate Code", click: () => {
-                                generateCode();
-                            }
-                        },
-                        {
-                            label: "Compile", click: () => {
-                                compile();
-                            }
-                        },
-                        {
-                            label: "Package", click: () => {
-                                pack();
-                            }
-                        }
-                    ]
-                },
-                {
-                    label: "Run",
-                    submenu: [
-                        {
-                            label: "Start Server", click: () => {
-                                ipcRenderer.send("startServer");
-                            }
-                        },
-                        {
-                            label: "Stop Server", click: () => {
-                                ipcRenderer.send("stopServer");
-                            }
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            label: "Reload Plugin", click: () => {
-                                ipcRenderer.send("reloadPlugin");
-                            }
-                        }
-                    ]
-                }
-            ]))
+            function refreshHistoryState() {
+                theMenu.getMenuItemById("undo").enabled = history.canUndo();
+                theMenu.getMenuItemById("redo").enabled = history.canRedo();
+            }
 
             ipcRenderer.on("projectInfo", function (event, arg) {
                 projectInfo = arg;
@@ -426,7 +443,7 @@
             });
 
             function updateTitle() {
-                getCurrentWindow().setTitle("PluginBlueprint Editor ["+ projectInfo.name +  (app.unsavedChanges > 0 ? "*" : "") +"]");
+                getCurrentWindow().setTitle("PluginBlueprint Editor [" + projectInfo.name + (app.unsavedChanges > 0 ? "*" : "") + "]");
             }
 
             ipcRenderer.on("debugCall", function (event, arg) {
