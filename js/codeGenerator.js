@@ -425,33 +425,38 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
 
     let params = [];
     if (node.inputs) {
+        let paramOffset = 0;
         for (let i = 0; i < node.inputs.length; i++) {
             let input = node.inputs[i];
             if (!input) continue;
             // if (!input.link) continue;
             let linkInfo = input.link ? graph.links[input.link] : null;
             if (!linkInfo) {
-                if (i === 1) {// REF
-                    console.warn("Missing method reference for " + node.name);
+                if (node.inputs[i].name === "REF") {// REF
+                    console.warn("Missing method reference for " + node.className + " / " + node.title);
                     return;// can't continue -> no object to execute the method on
                 }
             }
             let sourceNode = linkInfo ? graph.getNodeById(linkInfo.origin_id) : null;
             let sourceOutput = sourceNode ? sourceNode.outputs[linkInfo.origin_slot] : null;
 
-            if (i === 0) continue;// EXEC
-            if (i === 1) {// REF | param opening bracket
+            if (node.inputs[i].type === "@EXEC") {
+                paramOffset++;
+                continue;// EXEC
+            }
+            if (node.inputs[i].name === "REF") {// REF | param opening bracket
                 // code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
                 if (sourceNode.classType === "enum" || methodData.isStatic) {
                     code += " " + classData.qualifiedName + "." + methodData.name.split("(")[0] + "(";
                 } else if (!node.isAbstractMethod) {
                     code += nodeV(linkInfo.origin_id) + "." + methodData.name.split("(")[0] + "(";
                 }
+                paramOffset++;
                 continue;
             }
 
             if (!linkInfo || !sourceNode) {
-                let param = methodData.parameters[i - 2];
+                let param = methodData.parameters[i - paramOffset];
                 params.push(getNullForType(param ? param.type : null));
             } else {// append param
                 params.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
@@ -459,10 +464,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
         }
     }
 
-    if (!node.isAbstractMethod) {
-        code += params.join(",");
-        code += ");\n";
-    } else if (classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin") {
+    if (classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin") {
         if (methodData.name === "onLoad") {
             onLoadMethods.push(nodeExec(node.id) + ";\n")
         }
@@ -487,6 +489,9 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
         if (methodData.name === "onTabComplete") {
             onTabCompleteMethods.push(nodeExec(node.id) + ";\n")
         }
+    } else if (!node.isAbstractMethod) {
+        code += params.join(",");
+        code += ");\n";
     }
 
     code += execCode;
@@ -509,7 +514,7 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
         if (!output.links) continue;
         if (output.links.length > 0) {
             if (output.name === "THIS") {
-                fields.push("private " +classData.qualifiedName + nodeOutput(node.id, o) + ";");
+                fields.push("private " + classData.qualifiedName + nodeOutput(node.id, o) + ";");
                 fields.push("private " + classData.qualifiedName + " " + nodeV(node.id) + ";");
                 code += nodeOutput(node.id, o) + " =";
                 break;
