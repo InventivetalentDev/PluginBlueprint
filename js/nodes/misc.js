@@ -28,6 +28,34 @@ Cast.prototype.getExecAfter = function (exec) {
 };
 
 
+// InstanceOf
+
+function InstanceOf() {
+    this.classType = "native";
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+
+    this.addInput("", null, shapeAndColorsForSlotType("object"));
+
+    this.addOutput("instanceof java.lang.Object", "boolean", shapeAndColorsForSlotType("boolean"));
+
+    this.addProperty("type", "java.lang.Object", "string");
+}
+
+InstanceOf.title = "InstanceOf";
+InstanceOf.prototype.onDrawBackground = function () {
+    this.outputs[1].label = "instanceof " + this.properties.type;
+};
+InstanceOf.prototype.getFields = function (output) {
+    return ["boolean " + output[1]];
+}
+InstanceOf.prototype.getMethodBody = function (input, output) {
+    return output[1] + " = " + input[1] + " instanceof " + this.properties.type + ";";
+};
+InstanceOf.prototype.getExecAfter = function (exec) {
+    return exec[0].join("\n");
+};
+
 // String formatting
 
 function StringFormat() {
@@ -80,6 +108,7 @@ ConsoleLog.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDraw
 
 module.exports = [
     Cast,
+    InstanceOf,
 
     StringFormat,
 
