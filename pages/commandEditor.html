@@ -66,6 +66,12 @@
                             <label for="usage">Usage</label>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input value="" id="aliases" type="text">
+                            <label for="aliases">Aliases (comma-separated)</label>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="row">
@@ -109,6 +115,14 @@
                 commandInfo.description = $("#description").val();
                 commandInfo.usage = $("#usage").val();
 
+                let aliases = [];
+                let aliasSplit = $("#aliases").val().split(",");
+                for (let i = 0; i < aliasSplit.length; i++) {
+                    aliases.push(aliasSplit[i].trim());
+                }
+                commandInfo.aliases = aliases || [];
+
+
                 ipcRenderer.send("saveCommand", {
                     command: commandInfo,
                     isNew: isNew,
@@ -124,6 +138,8 @@
                     $("#description").val(commandInfo.description);
                 if (commandInfo.usage)
                     $("#usage").val(commandInfo.usage);
+                if (commandInfo.aliases)
+                    $("#aliases").val(commandInfo.aliases.join(","));
 
 
                 M.updateTextFields();
