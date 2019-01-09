@@ -15,6 +15,7 @@ const Sentry = require("@sentry/electron");
 const ProgressBar = require('electron-progressbar');
 const {copyFile} = require("./js/util");
 const AdmZip = require("adm-zip");
+const RPC = require("discord-rich-presence");
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
 
@@ -25,6 +26,8 @@ let logWin;
 let errWin;
 let editorWin;
 let commandWin;
+
+let richPresence;
 
 let debug = false;
 
@@ -149,6 +152,7 @@ function showWindow() {
         }
 
         checkFileAssociation();
+        updateRichPresence();
         global.analytics.screenview("Home", app.getName(), app.getVersion()).send();
     })
 
@@ -177,6 +181,9 @@ function showWindow() {
     })
 
     readRecentProjects();
+
+    // Init Discord Rich Presence
+    richPresence = RPC("532503320108072960");
 }
 
 
@@ -273,7 +280,26 @@ function writeRecentProjects() {
 
 ipcMain.on("getRecentProjects", function (event, arg) {
     event.sender.send("recentProjects", recentProjects || []);
-})
+});
+
+function updateRichPresence() {
+    if (richPresence) {
+        if (currentProjectPath && currentProject) {
+            richPresence.updatePresence({
+                state: "Blueprinting",
+                details: "Editing " + currentProject.name,
+                largeImageKey: "large_default",
+                startTimestamp: Date.now(),// TODO: probably inaccurate to always use the current time
+            })
+        } else {
+            richPresence.updatePresence({
+                state: "In Project Selection",
+                largeImageKey: "large_gray",
+                startTimestamp: Date.now(),// TODO: probably inaccurate to always use the current time
+            })
+        }
+    }
+}
 
 ipcMain.on("openGraph", function (event, arg) {
     if (win) {
@@ -410,6 +436,7 @@ function createNewProject(arg, lib) {
                     win.loadFile('pages/graph.html');
                     win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
                 }
+                updateRichPresence();
                 global.analytics.event("Project", "New created").send();
             })
         });
@@ -494,6 +521,8 @@ function openProject(arg) {
             win.loadFile('pages/graph.html');
             win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
         }
+        updateRichPresence();
+        global.analytics.event("Project", "Open Project").send();
     })
 }
 
@@ -520,6 +549,7 @@ ipcMain.on("updateProjectInfo", function (event, arg) {
             console.error(err);
             return;
         }
+        updateRichPresence();
     })
 });
 
@@ -580,6 +610,8 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
         win.setTitle(DEFAULT_TITLE);
         currentProject = null;
         currentProjectPath = null;
+
+        updateRichPresence();
     });
 });
 
