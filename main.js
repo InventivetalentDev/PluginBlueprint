@@ -18,6 +18,7 @@ const AdmZip = require("adm-zip");
 const RPC = require("discord-rich-presence");
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
+const APP_MODEL_ID = "inventivetalent.PluginBlueprint";
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -218,6 +219,7 @@ process.on('uncaughtException', function (error) {
 // code. You can also put them in separate files and require them here.
 
 function checkFileAssociation() {
+    app.setAppUserModelId(APP_MODEL_ID);
     if (process.platform === 'win32' && process.argv.length >= 2) {
         let p = process.argv[1];
         if (p && p.length > 1) {
@@ -259,6 +261,7 @@ function readRecentProjects() {
             if (win) {
                 win.webContents.send("recentProjects", recentProjects);
             }
+            updateJumpList();
         })
     })
 }
@@ -281,6 +284,26 @@ function writeRecentProjects() {
 ipcMain.on("getRecentProjects", function (event, arg) {
     event.sender.send("recentProjects", recentProjects || []);
 });
+
+function updateJumpList() {
+    let recentProjectItems = [];
+    for (let i = 0; i < recentProjects.length; i++) {
+        recentProjectItems.push({
+            type: "file",
+            path: path.join(recentProjects[i].path, recentProjects[i].name + ".pbp")
+        })
+    }
+    app.setJumpList([
+        {
+            type: "custom",
+            name: "Recent Projects",
+            items: recentProjectItems
+        },
+        {
+            type: "frequent"
+        }
+    ])
+}
 
 function updateRichPresence() {
     if (richPresence) {
@@ -409,6 +432,10 @@ function createNewProject(arg, lib) {
         currentProjectPath = arg.path;
         currentProject = projectInfo;
 
+        // Create dummy file with project name
+        // (symlink would be nicer but requires admin perms)
+        fs.writeFileSync(path.join(currentProjectPath, currentProject.name + ".pbp"), projectFilePath, "utf-8");
+
         fs.mkdirSync(path.join(arg.path, "src"));
         fs.mkdirSync(path.join(arg.path, "classes"));
         fs.mkdirSync(path.join(arg.path, "output"));
@@ -430,7 +457,8 @@ function createNewProject(arg, lib) {
                 });
                 writeRecentProjects();
 
-                app.addRecentDocument(path.join(currentProjectPath, "project.pbp"));
+                app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
+                updateJumpList();
 
                 if (win) {
                     win.loadFile('pages/graph.html');
@@ -515,7 +543,8 @@ function openProject(arg) {
         });
         writeRecentProjects();
 
-        app.addRecentDocument(path.join(currentProjectPath, "project.pbp"));
+        app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
+        updateJumpList();
 
         if (win) {
             win.loadFile('pages/graph.html');
