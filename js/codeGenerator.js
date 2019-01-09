@@ -105,7 +105,7 @@ function generateClassCode(graph, projectInfo) {
                 "@java.lang.Override\n" +
                 "public boolean onCommand(org.bukkit.command.CommandSender sender, org.bukkit.command.Command command, java.lang.String label, java.lang.String[] args) {\n" +
                 onCommandMethods.join("\n") +
-                "return false;\n" +// TODO: variable return
+                "return true;\n" +// TODO: variable return
                 "}\n" +
                 "\n" +
                 "\n/*** Start Event Listeners ***/\n" +
