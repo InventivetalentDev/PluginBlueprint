@@ -578,6 +578,8 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
     saveGraphData(arg, function () {
         win.loadFile('index.html');
         win.setTitle(DEFAULT_TITLE);
+        currentProject = null;
+        currentProjectPath = null;
     });
 });
 
