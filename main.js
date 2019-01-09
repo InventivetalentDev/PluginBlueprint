@@ -286,11 +286,15 @@ ipcMain.on("getRecentProjects", function (event, arg) {
 });
 
 function updateJumpList() {
+    if (!app.isPackaged) return;// Won't recent projects won't work properly if the app is running from the electron.exe wrapper
     let recentProjectItems = [];
     for (let i = 0; i < recentProjects.length; i++) {
         recentProjectItems.push({
-            type: "file",
-            path: path.join(recentProjects[i].path, recentProjects[i].name + ".pbp")
+            type: "task",
+            title: recentProjects[i].name,
+            description: "Open " + recentProjects[i].name,
+            program: process.execPath,
+            args: path.join(recentProjects[i].path, "project.pbp")
         })
     }
     app.setJumpList([
@@ -298,9 +302,6 @@ function updateJumpList() {
             type: "custom",
             name: "Recent Projects",
             items: recentProjectItems
-        },
-        {
-            type: "frequent"
         }
     ])
 }
