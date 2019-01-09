@@ -44,9 +44,9 @@ describe("ClassStore", function () {
             it("should have a 'name' property", function () {
                 assert.equal(classStore.getClass("java.lang.String").hasOwnProperty("name"), true);
             });
-            describe(".name", function () {
+            describe(".qualifiedName", function () {
                 it("should equal java.lang.String", function () {
-                    assert.equal(classStore.getClass("java.lang.String").name, "java.lang.String");
+                    assert.equal(classStore.getClass("java.lang.String").qualifiedName, "java.lang.String");
                 })
             })
         })
