@@ -139,6 +139,7 @@ function init() {
 
 function showWindow() {
     app.unsavedChanges = 0;
+    app.uncompiledChanges = 0;
 
     // and load the index.html of the app.
     win.loadFile('index.html');

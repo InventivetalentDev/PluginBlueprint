@@ -245,11 +245,13 @@
             history.pause();
 
             app.unsavedChanges = 0;
+            app.uncompiledChanges = 0;
 
             var graph = new LGraph();
             graph.onNodeAdded = function (n) {
                 console.debug("[HISTORY] onNodeAdded");
                 app.unsavedChanges++;
+                app.uncompiledChanges++;
                 if (n) {
                     n.size = n.computeSize();
                 }
@@ -270,6 +272,7 @@
             graph.onNodeRemoved = function (n) {
                 console.debug("[HISTORY] onNodeRemoved");
                 app.unsavedChanges++;
+                app.uncompiledChanges++;
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
@@ -282,6 +285,7 @@
             graph.onConnectionChange = function () {
                 console.debug("[HISTORY] onConnectionChange");
                 app.unsavedChanges++;
+                app.uncompiledChanges++;
                 if (history) {
                     history.track(JSON.stringify(graph.serialize()));
 
@@ -433,6 +437,7 @@
             })
             ipcRenderer.on("generateDone", function (event, arg) {
                 $("#overlay").fadeOut();
+                app.uncompiledChanges = 0;
             })
             ipcRenderer.on("generateError", function (event, arg) {
                 $("#overlay").fadeOut();
@@ -445,7 +450,7 @@
             });
 
             function updateTitle() {
-                getCurrentWindow().setTitle("PluginBlueprint Editor [" + projectInfo.name + (app.unsavedChanges > 0 ? "*" : "") + "]");
+                getCurrentWindow().setTitle("PluginBlueprint Editor [" + projectInfo.name + (app.unsavedChanges > 0 && app.uncompiledChanges > 0 ? "**" : (app.unsavedChanges > 0 || app.uncompiledChanges > 0 ? "*" : "")) + "]");
             }
 
             ipcRenderer.on("debugCall", function (event, arg) {
