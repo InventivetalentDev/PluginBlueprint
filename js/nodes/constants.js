@@ -17,6 +17,9 @@ StringConstant.prototype.onDrawBackground = function () {
 StringConstant.prototype.getFields = function (output) {
     return ["java.lang.String " + output[0] + " = \"" + this.properties.string + "\""];
 };
+StringConstant.prototype.onPropertyChanged = function (k, p) {
+    this.size = this.computeSize();
+};
 StringConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 // Number Constant
