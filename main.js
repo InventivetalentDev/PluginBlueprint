@@ -1049,6 +1049,37 @@ function exportProject(output) {
     global.analytics.event("Project", "Export").send();
 }
 
+ipcMain.on("exportSnippet", function (event, arg) {
+    dialog.showSaveDialog(win, {
+        defaultPath: path.join(currentProjectPath, currentProject.name + ".pbs"),
+        filters: [{
+            name: "PluginBlueprint Snippet",
+            extensions: ["pbs"]
+        }]
+    }, (file) => {
+        if (!file) return;
+        fs.writeFile(file, JSON.stringify(arg), function (err) {
+            if (err) throw err;
+        })
+    })
+});
+
+ipcMain.on("showImportSnippet", function (event, arg) {
+    dialog.showOpenDialog(win, {
+        defaultPath: currentProjectPath,
+        filters: [{
+            name: "PluginBlueprint Snippet",
+            extensions: ["pbs"]
+        }]
+    },(files)=>{
+        if(!files||files.length===0)return;
+       fs.readFile(files[0],function (err,data) {
+           if(err)throw err;
+           event.sender.send("importSnippet", JSON.parse(data));
+       })
+    });
+});
+
 ipcMain.on("checkUpdate", function (event) {
     checkUpdate().then(u => {
         event.sender.send("updateInfo", u);

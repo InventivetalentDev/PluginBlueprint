@@ -128,6 +128,21 @@
                             type: "separator"
                         },
                         {
+                            label: "Export Selection (Snippet)",
+                            click: () => {
+                                ipcRenderer.send("exportSnippet", serializeSnippet());
+                            }
+                        },
+                        {
+                            label: "Import Snippet",
+                            click: () => {
+                                ipcRenderer.send("showImportSnippet");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
                             role: "toggledevtools"
                         },
                         {
@@ -417,6 +432,141 @@
                 theMenu.getMenuItemById("redo").enabled = history.canRedo();
             }
 
+            function serializeSnippet() {
+                let nodeIds = [];
+                let nodePositions = [];
+                let nodes = [];
+                let links = [];
+                for (let i = 0; i < graph._nodes.length; i++) {
+                    if (graph._nodes[i].selected) {
+                        let n = LiteGraph.cloneObject(graph._nodes[i].serialize());
+
+                        n.pos[0] -= canvas.visible_area[0];
+                        n.pos[1] -= canvas.visible_area[1];
+
+                        nodeIds.push(n.id);
+                        nodePositions.push(n.pos);
+                        nodes.push(n);
+                    }
+                }
+                for (let l in graph.links) {
+                    let link = graph.links[l];
+                    if (nodeIds.indexOf(link.origin_id) >= 0 || nodeIds.indexOf(link.target_id) >= 0) {
+                        links.push({
+                            id: link.id,
+                            oId: link.origin_id,
+                            oSlot: link.origin_slot,
+                            tId: link.target_id,
+                            tSlot: link.target_slot,
+                            type: link.type
+                        })
+                    }
+                }
+
+                let groups = [];
+                for (let i = 0; i < graph._groups.length; i++) {
+                    let g = graph._groups[i];
+                    let include = false;
+                    for (let j = 0; j < nodePositions.length; j++) {
+                        if (g.isPointInside(nodePositions[j][0], nodePositions[j][1])) {
+                            include = true;
+                            break;
+                        }
+                    }
+                    if (include) {
+                        let serialized = LiteGraph.cloneObject(g.serialize());
+                        serialized.bounding[0] -= canvas.visible_area[0];
+                        serialized.bounding[1] -= canvas.visible_area[1];
+                        groups.push(serialized);
+                    }
+                }
+
+                return {
+                    nodes: nodes,
+                    links: links,
+                    groups: groups
+                }
+            }
+
+            function configureSnippet(data) {
+                let newNodeIdMap = {};
+                let newLinkIdMap = {};
+                for (let i = 0; i < data.nodes.length; i++) {
+                    let n = data.nodes[i];
+
+                    let newId = ++graph.last_node_id;
+                    newNodeIdMap[n.id] = newId;
+                    n.id = newId;
+
+                    let node = LiteGraph.createNode(n.type, n.title);
+                    if (!node) {
+                        console.warn("Unknown node: " + n.type)
+                        continue;
+                    }
+                    node.id = newId;
+
+                    console.log(node)
+                    graph.add(node, true);
+                }
+                for (let j = 0; j < data.links.length; j++) {
+                    let l = data.links[j];
+
+                    let newId = ++graph.last_link_id;
+                    newLinkIdMap[l.id] = newId;
+                    graph.links[newId] = {
+                        id: newId,
+                        origin_id: newNodeIdMap[l.oId],
+                        origin_slot: l.oSlot,
+                        target_id: newNodeIdMap[l.tId],
+                        target_slot: l.tSlot,
+                        type: l.type
+                    }
+                }
+                for (let i = 0; i < data.nodes.length; i++) {
+                    let n = data.nodes[i];
+                    if (n.inputs) {
+                        for (let j = 0; j < n.inputs.length; j++) {
+                            if (n.inputs[j].link) {
+                                n.inputs[j].link = newLinkIdMap[n.inputs[j].link];
+                            }
+                        }
+                    }
+                    if (n.outputs) {
+                        for (let j = 0; j < n.outputs.length; j++) {
+                            if (n.outputs[j].links) {
+                                for (let k = 0; k < n.outputs[j].links.length; k++) {
+                                    n.outputs[j].links[k] = newLinkIdMap[n.outputs[j].links[k]]
+                                }
+                            }
+                        }
+                    }
+
+                    if (n.pos) {
+                        n.pos[0] += canvas.visible_area[0];
+                        n.pos[1] += canvas.visible_area[1];
+                    }
+
+                    let node = graph.getNodeById(n.id);
+                    if (node)
+                        node.configure(n);
+                }
+
+                for (let i = 0; i < data.groups.length; i++) {
+                    let g = data.groups[i];
+                    if (g.bounding) {
+                        g.bounding[0] += canvas.visible_area[0];
+                        g.bounding[1] += canvas.visible_area[1];
+                    }
+                    let group = new LiteGraph.LGraphGroup();
+                    group.configure(g);
+                    graph.add(group);
+                }
+
+                graph.updateExecutionOrder();
+                graph._version++;
+                graph.setDirtyCanvas(true, true);
+            }
+
             ipcRenderer.on("projectInfo", function (event, arg) {
                 projectInfo = arg;
                 console.log("Project:")
@@ -448,6 +598,13 @@
                 app.unsavedChanges = 0;
                 updateTitle();
             });
+
+            ipcRenderer.on("importSnippet", function (event, arg) {
+                if (history) {
+                    history.track(JSON.stringify(graph.serialize()));
+                }
+                configureSnippet(arg);
+            })
 
             function updateTitle() {
                 getCurrentWindow().setTitle("PluginBlueprint Editor [" + projectInfo.name + (app.unsavedChanges > 0 && app.uncompiledChanges > 0 ? "**" : (app.unsavedChanges > 0 || app.uncompiledChanges > 0 ? "*" : "")) + "]");

@@ -55,6 +55,12 @@
         "name": "PluginBlueprint Graph",
         "description": "PluginBlueprint Graph",
         "icon": "build/icon-gray.ico"
+      },
+      {
+        "ext": "pbs",
+        "name": "PluginBlueprint Snippet",
+        "description": "PluginBlueprint Snippet",
+        "icon": "build/icon-gray.ico"
       }
     ]
   },
