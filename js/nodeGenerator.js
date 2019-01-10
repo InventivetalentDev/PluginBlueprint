@@ -714,6 +714,15 @@ function addNodeInput(node, name, type, options, optional) {
     if (!options) options = {};
     if (!options.locked) options.locked = !optional;
     options.nameLocked = true;
+
+    if (type) {
+        let implementingAndExtending = classStore.getAllImplementingAndExtendingClasses(type);
+        console.log(implementingAndExtending);
+        if(implementingAndExtending.length>0) {
+            type = implementingAndExtending.join(",");
+        }
+    }
+
     if (optional) {
         node.optional_inputs.push([name, type, options]);
     } else {

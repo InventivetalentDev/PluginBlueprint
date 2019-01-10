@@ -153,21 +153,19 @@ ClassDataStore.prototype.getAllImplementingAndExtendingClasses = function (rootC
 
 function getImplementingAndExtendingClasses(classStore, className, target) {
     console.log("getImplementingAndExtendingClasses", className);
+    if (target.indexOf(className) === -1)
+        target.push(className);
     let clazz = classStore[className.toLowerCase()];
     if (!clazz || ((!clazz.subInterfaces || clazz.subInterfaces.length === 0)&&(!clazz.subClasses || clazz.subClasses.length === 0))) return target;
     if(clazz.subInterfaces) {
         for (let i = 0; i < clazz.subInterfaces.length; i++) {
             let cl = clazz.subInterfaces[i];
-            if (target.indexOf(cl) === -1)
-                target.push(cl);
             getImplementingAndExtendingClasses(classStore, cl, target);
         }
     }
     if(clazz.subClasses) {
         for (let i = 0; i < clazz.subClasses.length; i++) {
             let cl = clazz.subClasses[i];
-            if (target.indexOf(cl) === -1)
-                target.push(cl);
             getImplementingAndExtendingClasses(classStore, cl, target);
         }
     }
@@ -178,11 +176,11 @@ function getImplementingAndExtendingClasses(classStore, className, target) {
 function getImplementingClasses(classStore, className, target) {
     console.log("getImplementingClasses", className);
     let clazz = classStore[className.toLowerCase()];
+    if (target.indexOf(className) === -1)
+        target.push(className);
     if (!clazz || !clazz.subInterfaces || clazz.subInterfaces.length === 0) return target;
     for (let i = 0; i < clazz.subInterfaces.length; i++) {
         let cl = clazz.subInterfaces[i];
-        if (target.indexOf(cl) === -1)
-            target.push(cl);
         getImplementingClasses(classStore, cl, target);
     }
     return target;
@@ -191,11 +189,11 @@ function getImplementingClasses(classStore, className, target) {
 
 function getExtendingClasses(classStore, className, target) {
     let clazz = classStore[className.toLowerCase()];
+    if (target.indexOf(className) === -1)
+        target.push(className);
     if (!clazz || !clazz.subClasses || clazz.subClasses.length === 0) return target;
     for (let i = 0; i < clazz.subClasses.length; i++) {
         let cl = clazz.subClasses[i];
-        if (target.indexOf(cl) === -1)
-            target.push(cl);
         getExtendingClasses(classStore, cl, target);
     }
     return target;
