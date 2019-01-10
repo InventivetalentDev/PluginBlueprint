@@ -343,22 +343,26 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                 if (!output.links) continue;
                 if (output.links.length > 0) {
                     if (output.linkType === "abstractMethod") {
-                        let methodData = classStore.getMethod(classData.name, output.methodSignature);
+                        let methodData = classStore.getMethod(classData.qualifiedName, output.methodSignature);
                         let params = [];
-                        for (let p = 0; p < methodData.parameters.length; p++) {
-                            let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
-                            console.log(methodData.parameters[p]);
-                            console.log(pType)
-                            params.push(pType + " " + methodData.parameters[p].name);
+                        if(methodData.parameters) {
+                            for (let p = 0; p < methodData.parameters.length; p++) {
+                                let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
+                                console.log(methodData.parameters[p]);
+                                console.log(pType)
+                                params.push(pType + " " + methodData.parameters[p].name);
+                            }
                         }
                         initCode += "    public void " + methodData.name + "(" + params.join(",") + ") {\n";
                         for (let l = 0; l < output.links.length; l++) {
                             let linkInfo = graph.links[output.links[l]];
                             if (!linkInfo) continue;
-                            for (let p = 0; p < methodData.parameters.length; p++) {
-                                let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
-                                fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
-                                initCode += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
+                            if(methodData.parameters) {
+                                for (let p = 0; p < methodData.parameters.length; p++) {
+                                    let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
+                                    fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
+                                    initCode += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
+                                }
                             }
                             initCode += nodeExec(linkInfo.target_id) + ";\n"
                         }
