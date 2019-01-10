@@ -269,7 +269,7 @@
                     n.size = n.computeSize();
                 }
                 if (history) {
-                    if(!history.paused){
+                    if (!history.paused) {
                         app.unsavedChanges++;
                         app.uncompiledChanges++;
                     }
@@ -289,7 +289,7 @@
             graph.onNodeRemoved = function (n) {
                 console.debug("[HISTORY] onNodeRemoved");
                 if (history) {
-                    if(!history.paused){
+                    if (!history.paused) {
                         app.unsavedChanges++;
                         app.uncompiledChanges++;
                     }
@@ -304,7 +304,7 @@
             graph.onConnectionChange = function () {
                 console.debug("[HISTORY] onConnectionChange");
                 if (history) {
-                    if(!history.paused){
+                    if (!history.paused) {
                         app.unsavedChanges++;
                         app.uncompiledChanges++;
                     }
@@ -314,6 +314,19 @@
                 }
                 updateTitle();
                 refreshHistoryState();
+            };
+
+            graph.onNodeConnectionChange = function (slotType, node, slot) {
+                if (slotType === LiteGraph.OUTPUT) {
+                    let out = node.outputs[slot];
+                    if (out) {
+                        for (let i = 0; i < out.links.length; i++) {
+                            let color=LGraphCanvas.link_type_colors[out.type]||LGraphCanvas.link_type_colors[out.linkType];
+                            if (color)
+                                graph.links[out.links[i]].color = color;
+                        }
+                    }
+                }
             };
 
             LGraphCanvas.search_filter = true;

@@ -253,7 +253,13 @@ function init() {
             "int": Colors.NUMBER_OFF,
             "long": Colors.NUMBER_OFF,
             "float": Colors.NUMBER_OFF,
-            "double": Colors.NUMBER_OFF
+            "double": Colors.NUMBER_OFF,
+            "method":Colors.FUNCTION_OFF,
+            "abstractMethod":Colors.ABSTRACT_FUNCTION_OFF,
+            "object":Colors.OBJECT_OFF,
+            "this":Colors.OBJECT_OFF,
+            "enum":Colors.ENUM_OFF,
+
         })
 
         for (let n = 0; n < miscNodes.length; n++) {
