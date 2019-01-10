@@ -1051,7 +1051,7 @@ function exportProject(output) {
 
 ipcMain.on("exportSnippet", function (event, arg) {
     dialog.showSaveDialog(win, {
-        defaultPath: path.join(currentProjectPath, currentProject.name + ".pbs"),
+        defaultPath: path.join(currentProjectPath, currentProject.name + "-snippet.pbs"),
         filters: [{
             name: "PluginBlueprint Snippet",
             extensions: ["pbs"]
