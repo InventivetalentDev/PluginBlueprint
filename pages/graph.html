@@ -495,6 +495,8 @@
             }
 
             function configureSnippet(data) {
+                history.pause();
+
                 let newNodeIdMap = {};
                 let newLinkIdMap = {};
                 for (let i = 0; i < data.nodes.length; i++) {
@@ -571,6 +573,8 @@
                 graph.updateExecutionOrder();
                 graph._version++;
                 graph.setDirtyCanvas(true, true);
+
+                history.unpause();
             }
 
             ipcRenderer.on("projectInfo", function (event, arg) {
