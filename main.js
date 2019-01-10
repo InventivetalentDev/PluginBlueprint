@@ -49,7 +49,10 @@ function init() {
         submitURL: "https://submit.backtrace.io/inventivetalent/194573923afb55a5b91ad7cda2868bbefaf0df605ae377a7067af7bd44f88e27/minidump",
         uploadToServer: true
     });
-    Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+    Sentry.init({
+        release: "PluginBlueprint@" + app.getVersion(),
+        dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'
+    });
 
     console.log(process.argv)
     process.argv.forEach((val, index) => {
@@ -1071,12 +1074,12 @@ ipcMain.on("showImportSnippet", function (event, arg) {
             name: "PluginBlueprint Snippet",
             extensions: ["pbs"]
         }]
-    },(files)=>{
-        if(!files||files.length===0)return;
-       fs.readFile(files[0],function (err,data) {
-           if(err)throw err;
-           event.sender.send("importSnippet", JSON.parse(data));
-       })
+    }, (files) => {
+        if (!files || files.length === 0) return;
+        fs.readFile(files[0], function (err, data) {
+            if (err) throw err;
+            event.sender.send("importSnippet", JSON.parse(data));
+        })
     });
 });
 
