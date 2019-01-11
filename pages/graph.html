@@ -495,7 +495,8 @@
                 return {
                     nodes: nodes,
                     links: links,
-                    groups: groups
+                    groups: groups,
+                    zoom: canvas.scale
                 }
             }
 
@@ -503,6 +504,10 @@
                 history.track(JSON.stringify(graph.serialize()));
                 history.pause();
                 canvas.deselectAllNodes();
+
+                if (data.zoom) {
+                    canvas.setZoom(data.zoom);
+                }
 
                 let newNodeIdMap = {};
                 let newLinkIdMap = {};
