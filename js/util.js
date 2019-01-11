@@ -77,7 +77,7 @@ function shapeAndColorsForSlotType(slotType, extraInfo) {
             color_off: Colors.ENUM_OFF
         }, extraInfo);
     }
-    if (slotType === "REF"||slotType === "THIS"||slotType === "object") {
+    if (slotType === "REF" || slotType === "THIS" || slotType === "object") {
         return Object.assign({}, {
             shape: LiteGraph.BOX_SHAPE,
             color_on: Colors.OBJECT_ON,
@@ -138,9 +138,13 @@ function updateLinkColors(slotType, node, slot) {
         let out = node.outputs[slot];
         if (out && out.links) {
             for (let i = 0; i < out.links.length; i++) {
-                let color=LGraphCanvas.link_type_colors[out.type]||LGraphCanvas.link_type_colors[out.linkType];
-                if (color)
-                    graph.links[out.links[i]].color = color;
+                let color = LGraphCanvas.link_type_colors[out.type] || LGraphCanvas.link_type_colors[out.linkType];
+                if (color) {
+                    let link = graph.links[out.links[i]];
+                    if (link) {
+                        link.color = color;
+                    }
+                }
             }
         }
     }
