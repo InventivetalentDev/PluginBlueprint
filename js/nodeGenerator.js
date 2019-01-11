@@ -560,12 +560,10 @@ function addMethodIO(node, classData, methodData) {
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
-    addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("REF"));
-
-
     if (isLambda && methodData.returnType.qualifiedName === "void" || (classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete"))) {
         node.isAbstractMethod = true;
         node.color = Colors.ABSTRACT_FUNCTION_OFF;
+        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("abstractMethod"));
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
             let paramType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : param.type.qualifiedName;
@@ -581,6 +579,7 @@ function addMethodIO(node, classData, methodData) {
             addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
         }
     } else {
+        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("method"));
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
             addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {
