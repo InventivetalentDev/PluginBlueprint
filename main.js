@@ -644,6 +644,8 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
         win.setTitle(DEFAULT_TITLE);
         currentProject = null;
         currentProjectPath = null;
+        app.unsavedChanges = 0;
+        app.uncompiledChanges = 0;
 
         updateRichPresence();
     });
