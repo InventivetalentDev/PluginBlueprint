@@ -244,21 +244,21 @@ function init() {
 
 
         LGraphCanvas.link_type_colors = Object.assign(LGraphCanvas.link_type_colors, {
-            "@EXEC": Colors.EXEC_OFF,
-            "boolean": Colors.BOOLEAN_OFF,
-            "java.lang.String": Colors.STRING_OFF,
-            "byte": Colors.NUMBER_OFF,
-            "char": Colors.NUMBER_OFF,
-            "short": Colors.NUMBER_OFF,
-            "int": Colors.NUMBER_OFF,
-            "long": Colors.NUMBER_OFF,
-            "float": Colors.NUMBER_OFF,
-            "double": Colors.NUMBER_OFF,
-            "method":Colors.FUNCTION_OFF,
-            "abstractMethod":Colors.ABSTRACT_FUNCTION_OFF,
-            "object":Colors.OBJECT_OFF,
-            "this":Colors.OBJECT_OFF,
-            "enum":Colors.ENUM_OFF,
+            "@EXEC": Colors.EXEC_ON,
+            "boolean": Colors.BOOLEAN_ON,
+            "java.lang.String": Colors.STRING_ON,
+            "byte": Colors.NUMBER_ON,
+            "char": Colors.NUMBER_ON,
+            "short": Colors.NUMBER_ON,
+            "int": Colors.NUMBER_ON,
+            "long": Colors.NUMBER_ON,
+            "float": Colors.NUMBER_ON,
+            "double": Colors.NUMBER_ON,
+            "method":Colors.FUNCTION_ON,
+            "abstractMethod":Colors.ABSTRACT_FUNCTION_ON,
+            "object":Colors.OBJECT_ON,
+            "this":Colors.OBJECT_ON,
+            "enum":Colors.ENUM_ON,
 
         })
 
