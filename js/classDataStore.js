@@ -152,7 +152,6 @@ ClassDataStore.prototype.getAllImplementingAndExtendingClasses = function (rootC
 }
 
 function getImplementingAndExtendingClasses(classStore, className, target) {
-    console.log("getImplementingAndExtendingClasses", className);
     if (target.indexOf(className) === -1)
         target.push(className);
     let clazz = classStore[className.toLowerCase()];
@@ -174,7 +173,6 @@ function getImplementingAndExtendingClasses(classStore, className, target) {
 
 
 function getImplementingClasses(classStore, className, target) {
-    console.log("getImplementingClasses", className);
     let clazz = classStore[className.toLowerCase()];
     if (target.indexOf(className) === -1)
         target.push(className);
