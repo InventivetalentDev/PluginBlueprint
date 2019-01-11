@@ -136,7 +136,7 @@ function getNumberSuffix(type) {
 function updateLinkColors(slotType, node, slot) {
     if (slotType === LiteGraph.OUTPUT) {
         let out = node.outputs[slot];
-        if (out) {
+        if (out && out.links) {
             for (let i = 0; i < out.links.length; i++) {
                 let color=LGraphCanvas.link_type_colors[out.type]||LGraphCanvas.link_type_colors[out.linkType];
                 if (color)
@@ -147,5 +147,5 @@ function updateLinkColors(slotType, node, slot) {
 }
 
 
-module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType,getNumberSuffix, updateLinkColors};
+module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors};
 
