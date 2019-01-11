@@ -500,6 +500,7 @@
             }
 
             function configureSnippet(data) {
+                history.track(JSON.stringify(graph.serialize()));
                 history.pause();
                 canvas.deselectAllNodes();
 
