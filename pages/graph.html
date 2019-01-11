@@ -457,7 +457,6 @@
                         n.pos[1] -= canvas.visible_area[1];
 
                         nodeIds.push(n.id);
-                        nodePositions.push(n.pos);
                         nodes.push(n);
                     }
                 }
@@ -585,6 +584,8 @@
                 graph.setDirtyCanvas(true, true);
 
                 history.unpause();
+                history.track(JSON.stringify(graph.serialize()));
+                refreshHistoryState();
             }
 
             ipcRenderer.on("projectInfo", function (event, arg) {
