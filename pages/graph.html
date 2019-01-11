@@ -131,7 +131,9 @@
                         {
                             label: "Export Selection (Snippet)",
                             click: () => {
+                                $("#overlay").fadeIn();
                                 ipcRenderer.send("exportSnippet", serializeSnippet());
+                                $("#overlay").fadeOut();
                             }
                         },
                         {
@@ -501,6 +503,8 @@
             }
 
             function configureSnippet(data) {
+                $("#overlay").fadeIn();
+
                 history.track(JSON.stringify(graph.serialize()));
                 history.pause();
                 canvas.deselectAllNodes();
@@ -591,6 +595,8 @@
                 history.unpause();
                 history.track(JSON.stringify(graph.serialize()));
                 refreshHistoryState();
+
+                $("#overlay").fadeOut();
             }
 
             ipcRenderer.on("projectInfo", function (event, arg) {
