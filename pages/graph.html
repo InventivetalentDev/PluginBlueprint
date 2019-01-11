@@ -81,7 +81,7 @@
         <script>
             const {ipcRenderer} = require("electron");
             const {app, Menu, getCurrentWindow, getGlobal} = require("electron").remote;
-            const {LiteGraph, LGraph, LGraphCanvas} = require("../node_modules/litegraph.js/build/litegraph");
+            const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
             const NodeGenerator = require("../js/nodeGenerator");
             const CodeGenerator = require("../js/codeGenerator");
             const History = require("../js/history");
@@ -89,6 +89,7 @@
             const $ = require("jquery");
             const Sentry = require("@sentry/electron");
             const KeyPics = require("key.pics");
+            const {updateLinkColors} = require("../js/util");
 
             let theMenu = Menu.buildFromTemplate([
                 {
@@ -317,16 +318,7 @@
             };
 
             graph.onNodeConnectionChange = function (slotType, node, slot) {
-                if (slotType === LiteGraph.OUTPUT) {
-                    let out = node.outputs[slot];
-                    if (out) {
-                        for (let i = 0; i < out.links.length; i++) {
-                            let color=LGraphCanvas.link_type_colors[out.type]||LGraphCanvas.link_type_colors[out.linkType];
-                            if (color)
-                                graph.links[out.links[i]].color = color;
-                        }
-                    }
-                }
+                updateLinkColors(slotType, node, slot);
             };
 
             LGraphCanvas.search_filter = true;

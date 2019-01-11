@@ -133,7 +133,19 @@ function getNumberSuffix(type) {
     return "";
 }
 
+function updateLinkColors(slotType, node, slot) {
+    if (slotType === LiteGraph.OUTPUT) {
+        let out = node.outputs[slot];
+        if (out) {
+            for (let i = 0; i < out.links.length; i++) {
+                let color=LGraphCanvas.link_type_colors[out.type]||LGraphCanvas.link_type_colors[out.linkType];
+                if (color)
+                    graph.links[out.links[i]].color = color;
+            }
+        }
+    }
+}
 
 
-module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType,getNumberSuffix};
+module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType,getNumberSuffix, updateLinkColors};
 

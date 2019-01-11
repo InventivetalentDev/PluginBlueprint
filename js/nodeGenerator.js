@@ -1,9 +1,9 @@
 const fs = require("fs");
 const path = require("path");
-const {LiteGraph} = require("../node_modules/litegraph.js/build/litegraph");
+const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
-const {shapeAndColorsForSlotType, isPrimitiveType} = require("./util");
+const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors} = require("./util");
 
 const miscNodes = require("./nodes/misc");
 const constantNodes = require("./nodes/constants");
@@ -254,13 +254,34 @@ function init() {
             "long": Colors.NUMBER_ON,
             "float": Colors.NUMBER_ON,
             "double": Colors.NUMBER_ON,
-            "method":Colors.FUNCTION_ON,
-            "abstractMethod":Colors.ABSTRACT_FUNCTION_ON,
-            "object":Colors.OBJECT_ON,
-            "this":Colors.OBJECT_ON,
-            "enum":Colors.ENUM_ON,
+            "method": Colors.FUNCTION_ON,
+            "abstractMethod": Colors.ABSTRACT_FUNCTION_ON,
+            "object": Colors.OBJECT_ON,
+            "this": Colors.OBJECT_ON,
+            "enum": Colors.ENUM_ON,
 
-        })
+        });
+
+        LGraphNode.prototype.onConnectionsChange = function (slotType, slot) {
+            updateLinkColors(slotType, this, slot);
+        };
+        LGraphNode.prototype.getMenuOptions = function () {
+            return [
+                {content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
+                {content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
+                null,
+                {content: "Properties", has_submenu: true, disabled: !this.properties || Object.keys(this.properties).length === 0, callback: LGraphCanvas.onShowMenuNodeProperties}
+            ];
+        };
+        LGraphNode.prototype.onConfigure = function () {
+            this.size = this.computeSize();
+        };
+        LGraphNode.prototype.onOutputDblClick = function (i, e) {
+            handleSlotDoubleClick(this, i, e);
+        };
+        LGraphNode.prototype.onDblClick = function () {
+            console.log(this);
+        };
 
         for (let n = 0; n < miscNodes.length; n++) {
             let nativeNode = miscNodes[n];
@@ -357,24 +378,6 @@ function getOrCreateBukkitClassNode(className) {
 
     BukkitClassNode.title = simpleClassName;
 
-    BukkitClassNode.prototype.getMenuOptions = function () {
-        return [
-            {content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
-            {content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
-            null,
-            {content: "Properties", has_submenu: true, disabled: !this.properties || Object.keys(this.properties).length === 0, callback: LGraphCanvas.onShowMenuNodeProperties}
-        ];
-    };
-    BukkitClassNode.prototype.onConfigure = function () {
-        this.size = this.computeSize();
-    };
-
-    BukkitClassNode.prototype.onOutputDblClick = function (i, e) {
-        handleSlotDoubleClick(this, i, e);
-    };
-    BukkitClassNode.prototype.onDblClick = function () {
-        console.log(this);
-    };
 
     LiteGraph.registerNodeType(categoryName, BukkitClassNode);
 
@@ -541,23 +544,6 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
 
     BukkitMethodNode.prototype.color = Colors.FUNCTION;
 
-    BukkitMethodNode.prototype.getMenuOptions = function () {
-        return [
-            {content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
-            {content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
-            null
-        ];
-    };
-    BukkitMethodNode.prototype.onConfigure = function () {
-        this.size = this.computeSize();
-    };
-
-    BukkitMethodNode.prototype.onOutputDblClick = function (i, e) {
-        handleSlotDoubleClick(this, i, e);
-    };
-    BukkitMethodNode.prototype.onDblClick = function () {
-        console.log(this);
-    };
 
     LiteGraph.registerNodeType(categoryName, BukkitMethodNode);
 
@@ -641,23 +627,6 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
 
     BukkitConstructorNode.prototype.color = Colors.CONSTRUCTOR;
 
-    BukkitConstructorNode.prototype.getMenuOptions = function () {
-        return [
-            {content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
-            {content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
-            null
-        ];
-    };
-    BukkitConstructorNode.prototype.onConfigure = function () {
-        this.size = this.computeSize();
-    };
-
-    BukkitConstructorNode.prototype.onOutputDblClick = function (i, e) {
-        handleSlotDoubleClick(this, i, e);
-    };
-    BukkitConstructorNode.prototype.onDblClick = function () {
-        console.log(this);
-    };
 
     LiteGraph.registerNodeType(categoryName, BukkitConstructorNode);
 
@@ -724,7 +693,7 @@ function addNodeInput(node, name, type, options, optional) {
     if (type) {
         let implementingAndExtending = classStore.getAllImplementingAndExtendingClasses(type);
         console.log(implementingAndExtending);
-        if(implementingAndExtending.length>0) {
+        if (implementingAndExtending.length > 0) {
             type = implementingAndExtending.join(",");
         }
     }
