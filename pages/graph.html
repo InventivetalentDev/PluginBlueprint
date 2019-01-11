@@ -452,6 +452,7 @@
                     if (graph._nodes[i].selected) {
                         let n = LiteGraph.cloneObject(graph._nodes[i].serialize());
 
+                        nodePositions.push(n.pos);
                         n.pos[0] -= canvas.visible_area[0];
                         n.pos[1] -= canvas.visible_area[1];
 
