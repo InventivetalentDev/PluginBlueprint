@@ -129,7 +129,7 @@ function onObjectAdd(node, options, e, prevMenu) {
         for (let c in classesByName) {
             if (!c.startsWith("org.bukkit")) continue;
             let clazz = classesByName[c];
-            if (!clazz.isObject) continue;
+            if (clazz.isEvent || (!clazz.isObject && !clazz.isEnum)) continue;
             let v1 = clazz.package;
             if (v.value === v1) {
                 let v2 = clazz.name;
