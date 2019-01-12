@@ -3,7 +3,7 @@ const path = require("path");
 const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
-const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors} = require("./util");
+const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength} = require("./util");
 
 const miscNodes = require("./nodes/misc");
 const constantNodes = require("./nodes/constants");
@@ -137,7 +137,7 @@ function onObjectAdd(node, options, e, prevMenu) {
             }
         }
 
-        new LiteGraph.ContextMenu(values, {event: e, callback: inner_create, parentMenu: menu});
+        new LiteGraph.ContextMenu(values, {event: e, callback: inner_create, parentMenu: menu, scroll_speed: scrollSpeedForLength(values.length)});
         return false;
     }
 
@@ -207,7 +207,7 @@ function onMethodAdd(node, options, e, prevMenu) {
             }
         }
 
-        new LiteGraph.ContextMenu(values, {event: e, callback: inner_create, parentMenu: menu1});
+        new LiteGraph.ContextMenu(values, {event: e, callback: inner_create, parentMenu: menu1, scroll_speed: scrollSpeedForLength(values.length)});
         return false;
     }
 
@@ -222,6 +222,60 @@ function onMethodAdd(node, options, e, prevMenu) {
             canvas.graph.add(node);
         }
     }
+}
+
+function showOptionalSlotMenu(v, opts, e, prev_menu, node) {
+    if (!node)
+        return;
+
+    var canvas = LGraphCanvas.active_canvas;
+    var ref_window = canvas.getCanvasWindow();
+
+    var options = opts.type === LiteGraph.OUTPUT ? node.optional_outputs : node.optional_inputs;
+
+    var entries = [];
+    if (options)
+        for (var i in options) {
+            var entry = options[i];
+            if (!entry) //separator?
+            {
+                entries.push(null);
+                continue;
+            }
+
+            if (opts.skipDuplicates && node.findOutputSlot(entry[0]) != -1)
+                continue; //skip the ones already on
+            var label = entry[0];
+            if (entry[2] && entry[2].label)
+                label = entry[2].label;
+            var data = {content: label, value: entry};
+            entries.push(data);
+        }
+
+    if (!entries.length)
+        return;
+
+    var menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prev_menu, node: node, scroll_speed: scrollSpeedForLength(entries.length)}, ref_window);
+
+    function inner_clicked(v, e, prev) {
+        if (!node)
+            return;
+
+        if (v.callback)
+            v.callback.call(canvas, node, v, e, prev);
+
+        if (!v.value)
+            return;
+
+        if (opts.type === LiteGraph.OUTPUT) {
+            node.addOutput(v.value[0], v.value[1], v.value[2]);
+        } else {
+            node.addInput(v.value[0], v.value[1], v.value[2]);
+        }
+        node.setDirtyCanvas(true, true);
+    }
+
+    return false;
 }
 
 function init() {
@@ -267,8 +321,22 @@ function init() {
         };
         LGraphNode.prototype.getMenuOptions = function () {
             return [
-                {content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalInputs},
-                {content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: LGraphCanvas.showMenuNodeOptionalOutputs},
+                {
+                    content: "Inputs", has_submenu: true, disabled: !this.optional_inputs || this.optional_inputs.length === 0, callback: function (v, opts, e, prev_menu, node) {
+                        return showOptionalSlotMenu(v, Object.assign({}, opts, {
+                            skipDuplicates: true,
+                            type: LiteGraph.INPUT
+                        }), e, prev_menu, node)
+                    }
+                },
+                {
+                    content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: function (v, opts, e, prev_menu, node) {
+                        return showOptionalSlotMenu(v, Object.assign({}, opts, {
+                            skipDuplicates: true,
+                            type: LiteGraph.OUTPUT
+                        }), e, prev_menu, node)
+                    }
+                },
                 null,
                 {content: "Properties", has_submenu: true, disabled: !this.properties || Object.keys(this.properties).length === 0, callback: LGraphCanvas.onShowMenuNodeProperties}
             ];

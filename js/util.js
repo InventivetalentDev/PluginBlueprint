@@ -150,6 +150,14 @@ function updateLinkColors(slotType, node, slot) {
     }
 }
 
+function scrollSpeedForLength(length) {
+    let scrollSpeed = 0.1;
+    if (length > 20) scrollSpeed = 0.2;
+    if (length > 40) scrollSpeed = 0.3;
+    if (length > 60) scrollSpeed = 0.4;
+    return scrollSpeed;
+}
 
-module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors};
+
+module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors,scrollSpeedForLength};
 
