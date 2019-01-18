@@ -462,17 +462,15 @@
                 let nodePositions = [];
                 let nodes = [];
                 let links = [];
-                for (let i = 0; i < graph._nodes.length; i++) {
-                    if (graph._nodes[i].selected) {
-                        let n = LiteGraph.cloneObject(graph._nodes[i].serialize());
+                for (let i in canvas.selected_nodes) {
+                    let n = LiteGraph.cloneObject(canvas.selected_nodes[i].serialize());
 
-                        nodePositions.push([n.pos[0], n.pos[1]]);
-                        n.pos[0] -= canvas.visible_area[0];
-                        n.pos[1] -= canvas.visible_area[1];
+                    nodePositions.push([n.pos[0], n.pos[1]]);
+                    n.pos[0] -= canvas.visible_area[0];
+                    n.pos[1] -= canvas.visible_area[1];
 
-                        nodeIds.push(n.id);
-                        nodes.push(n);
-                    }
+                    nodeIds.push(n.id);
+                    nodes.push(n);
                 }
                 for (let l in graph.links) {
                     let link = graph.links[l];
@@ -505,6 +503,8 @@
                         groups.push(serialized);
                     }
                 }
+
+                console.debug("Exporting", nodes.length, "nodes,", groups.length, "groups and", links.length, "links");
 
                 return {
                     nodes: nodes,
