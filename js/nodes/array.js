@@ -38,7 +38,7 @@ MakeArray.prototype.getFields = function (output) {
 };
 MakeArray.prototype.getMethodBody = function (input, output) {
     let variableInputs = input.slice(1);
-    return output[1] + " = new "+this.properties.type+"[] {" + variableInputs.join(",") + "};";
+    return output[1] + " = new " + this.properties.type + "[] {" + variableInputs.join(",") + "};";
 };
 MakeArray.prototype.getExecAfter = function (exec) {
     return exec[0].join("\n");

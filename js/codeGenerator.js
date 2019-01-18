@@ -345,7 +345,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                     if (output.linkType === "abstractMethod") {
                         let methodData = classStore.getMethod(classData.qualifiedName, output.methodSignature);
                         let params = [];
-                        if(methodData.parameters) {
+                        if (methodData.parameters) {
                             for (let p = 0; p < methodData.parameters.length; p++) {
                                 let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
                                 console.log(methodData.parameters[p]);
@@ -357,7 +357,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                         for (let l = 0; l < output.links.length; l++) {
                             let linkInfo = graph.links[output.links[l]];
                             if (!linkInfo) continue;
-                            if(methodData.parameters) {
+                            if (methodData.parameters) {
                                 for (let p = 0; p < methodData.parameters.length; p++) {
                                     let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
                                     fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
@@ -450,7 +450,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             }
             if (node.inputs[i].name === "REF") {// REF | param opening bracket
                 // code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
-                if ( methodData.isStatic || sourceNode.classType === "enum") {
+                if (methodData.isStatic || sourceNode.classType === "enum") {
                     code += " " + classData.qualifiedName + "." + methodData.name.split("(")[0] + "(";
                 } else if (!node.isAbstractMethod) {
                     code += nodeV(linkInfo.origin_id) + "." + methodData.name.split("(")[0] + "(";

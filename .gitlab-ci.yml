@@ -10,7 +10,7 @@ stages:
 test:
   stage: test
   script: npm run test
-  
+
 dist_win:
   stage: package
   image: electronuserland/builder:wine
@@ -20,7 +20,7 @@ dist_win:
     paths:
       - LICENSE
       - dist/out/*.exe
-  
+
 dist_linux:
   stage: package
   image: electronuserland/builder:10

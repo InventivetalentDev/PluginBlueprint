@@ -159,5 +159,5 @@ function scrollSpeedForLength(length) {
 }
 
 
-module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors,scrollSpeedForLength};
+module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength};
 

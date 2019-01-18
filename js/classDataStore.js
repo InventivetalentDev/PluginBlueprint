@@ -155,14 +155,14 @@ function getImplementingAndExtendingClasses(classStore, className, target) {
     if (target.indexOf(className) === -1)
         target.push(className);
     let clazz = classStore[className.toLowerCase()];
-    if (!clazz || ((!clazz.subInterfaces || clazz.subInterfaces.length === 0)&&(!clazz.subClasses || clazz.subClasses.length === 0))) return target;
-    if(clazz.subInterfaces) {
+    if (!clazz || ((!clazz.subInterfaces || clazz.subInterfaces.length === 0) && (!clazz.subClasses || clazz.subClasses.length === 0))) return target;
+    if (clazz.subInterfaces) {
         for (let i = 0; i < clazz.subInterfaces.length; i++) {
             let cl = clazz.subInterfaces[i];
             getImplementingAndExtendingClasses(classStore, cl, target);
         }
     }
-    if(clazz.subClasses) {
+    if (clazz.subClasses) {
         for (let i = 0; i < clazz.subClasses.length; i++) {
             let cl = clazz.subClasses[i];
             getImplementingAndExtendingClasses(classStore, cl, target);

@@ -30,8 +30,8 @@ function compile(rootDir, projectInfo) {
             }
 
             // the *entire* stdout and stderr (buffered)
-            console.log(`stdout: ${stdout}`);
-            console.log(`stderr: ${stderr}`);
+            console.log(`stdout: ${ stdout }`);
+            console.log(`stderr: ${ stderr }`);
 
             resolve({
                 out: stdout,
@@ -53,8 +53,8 @@ function package(rootDir, projectInfo) {
             }
 
             // the *entire* stdout and stderr (buffered)
-            console.log(`stdout: ${stdout}`);
-            console.log(`stderr: ${stderr}`);
+            console.log(`stdout: ${ stdout }`);
+            console.log(`stderr: ${ stderr }`);
 
             resolve({
                 out: stdout,

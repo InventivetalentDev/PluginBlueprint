@@ -51,27 +51,27 @@ describe("ClassStore", function () {
             })
         })
     });
-    describe("#getAllImplementingAndExtendingClasses",function () {
-        describe("(org.bukkit.plugin.Plugin)",function () {
-            it("should not be null",function () {
+    describe("#getAllImplementingAndExtendingClasses", function () {
+        describe("(org.bukkit.plugin.Plugin)", function () {
+            it("should not be null", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin") !== null);
             });
-            it("should not be undefined",function () {
+            it("should not be undefined", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin") !== undefined);
             });
-            it("should be an Array",function () {
+            it("should be an Array", function () {
                 assert(Array.isArray(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin")));
             });
-            it("should have 3 elements",function () {
-                assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").length===3);
+            it("should have 3 elements", function () {
+                assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").length === 3);
             });
-            it("should contain org.bukkit.plugin.Plugin",function () {
+            it("should contain org.bukkit.plugin.Plugin", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").indexOf("org.bukkit.plugin.Plugin") !== -1);
             });
-            it("should contain org.bukkit.plugin.PluginBase",function () {
+            it("should contain org.bukkit.plugin.PluginBase", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").indexOf("org.bukkit.plugin.PluginBase") !== -1);
             });
-            it("should contain org.bukkit.plugin.java.JavaPlugin",function () {
+            it("should contain org.bukkit.plugin.java.JavaPlugin", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").indexOf("org.bukkit.plugin.java.JavaPlugin") !== -1);
             });
         })

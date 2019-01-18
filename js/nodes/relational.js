@@ -7,7 +7,7 @@ const RelationalOperator = function () {
 };
 
 RelationalOperator.prototype.init = function (booleanInputs) {
-    this.addInput("EXEC", "@EXEC",  shapeAndColorsForSlotType("@EXEC"));
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
     if (booleanInputs) {
