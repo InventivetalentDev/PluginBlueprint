@@ -72,7 +72,7 @@ function onEventAdd(node, options, e, prevMenu) {
         if (!clazz.isEvent) continue;
         let v1 = clazz.package;
         if (existingCategories.indexOf(v1) === -1) {
-            entries.push({value: v1, content: v1, has_submenu: true})
+            entries.push({value: v1, content: v1, has_submenu: true});
             existingCategories.push(v1);
         }
     }
@@ -117,7 +117,7 @@ function onObjectAdd(node, options, e, prevMenu) {
         if (clazz.isEvent || (!clazz.isObject && !clazz.isEnum)) continue;
         let v1 = clazz.package;
         if (existingCategories.indexOf(v1) === -1) {
-            entries.push({value: v1, content: v1, has_submenu: true})
+            entries.push({value: v1, content: v1, has_submenu: true});
             existingCategories.push(v1);
         }
     }
@@ -162,7 +162,7 @@ function onMethodAdd(node, options, e, prevMenu) {
 
         let v1 = clazz.package;
         if (existingCategories.indexOf(v1) === -1) {
-            entries.push({value: v1, content: v1, has_submenu: true})
+            entries.push({value: v1, content: v1, has_submenu: true});
             existingCategories.push(v1);
         }
     }
@@ -214,9 +214,9 @@ function onMethodAdd(node, options, e, prevMenu) {
     function inner_create(v, e) {
         var first_event = prevMenu.getFirstEvent();
         let nodeName = getOrCreateBukkitMethodNode(v.value.class, v.value.method);
-        console.log(nodeName)
+        console.log(nodeName);
         var node = LiteGraph.createNode(nodeName);
-        console.log(node)
+        console.log(node);
         if (node) {
             node.pos = canvas.convertEventToCanvas(first_event);
             canvas.graph.add(node);
@@ -814,7 +814,7 @@ function handleSlotDoubleClick(node, i, e) {
         nodeName = getOrCreateBukkitClassNode(slot.className || slot.type);
     }
     if (nodeName) {
-        console.log(nodeName)
+        console.log(nodeName);
         var n = LiteGraph.createNode(nodeName);
         n.pos = [e.canvasX + 40, e.canvasY - 10];
         canvas.graph.add(n);

@@ -30,7 +30,7 @@ function generateClassCode(graph, projectInfo) {
     return new Promise((resolve) => {
         debug = projectInfo.debug;
         classStore.init().then(() => {
-            console.log(graph)
+            console.log(graph);
             for (let i = 0; i < graph._nodes.length; i++) {
                 if (graph._nodes[i].nodeType === "BukkitClassNode") {
                     let classData = classStore.getClass(graph._nodes[i].className);
@@ -175,15 +175,15 @@ function generateCodeForEventClassNode(graph, n, node, classData) {
     if (node.outputs) {
         for (let o = 0; o < node.outputs.length; o++) {
             let output = node.outputs[o];
-            console.log(output)
+            console.log(output);
             if (!output) continue;
             if (!output.links) continue;
             if (output.links.length > 0) {
 
                 for (let l = 0; l < output.links.length; l++) {
                     let linkInfo = graph.links[output.links[l]];
-                    console.log(graph.links)
-                    console.log(linkInfo)
+                    console.log(graph.links);
+                    console.log(linkInfo);
                     if (!linkInfo) continue;
 
                     if (output.type === "@EXEC") {
@@ -261,7 +261,7 @@ function generateSetterMethodCall(methodName, targetNode, targetInput, inputInde
     let code = "// SETTER for " + targetNode.title + "#" + methodName + "\n" +
         "private void node_" + targetNode.id + "_in_" + inputIndex + "() {\n" +
         "  " + obj + "." + methodName + "(" + param + ");\n" +
-        "}\n"
+        "}\n";
 
     methodCalls.push(code);
     return "node_" + targetNode.id + "_in_" + inputIndex;
@@ -336,7 +336,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
 
     if (!hasRef) {
         if (abstractMethods > 0) {
-            initCode += nodeV(node.id) + " = new " + classData.qualifiedName + "() {\n"
+            initCode += nodeV(node.id) + " = new " + classData.qualifiedName + "() {\n";
             for (let o = 0; o < node.outputs.length; o++) {
                 let output = node.outputs[o];
                 if (!output) continue;
@@ -349,7 +349,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                             for (let p = 0; p < methodData.parameters.length; p++) {
                                 let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
                                 console.log(methodData.parameters[p]);
-                                console.log(pType)
+                                console.log(pType);
                                 params.push(pType + " " + methodData.parameters[p].name);
                             }
                         }

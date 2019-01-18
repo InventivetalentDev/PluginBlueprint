@@ -78,7 +78,7 @@ ClassDataStore.prototype.size = function () {
 };
 
 ClassDataStore.prototype.getClassesByName = function () {
-    console.log(this)
+    console.log(this);
     return this.classStore;
 };
 
@@ -149,7 +149,7 @@ ClassDataStore.prototype.getAllExtendingClasses = function (rootClass) {
 
 ClassDataStore.prototype.getAllImplementingAndExtendingClasses = function (rootClass) {
     return getImplementingAndExtendingClasses(this.classStore, rootClass, []);
-}
+};
 
 function getImplementingAndExtendingClasses(classStore, className, target) {
     if (target.indexOf(className) === -1)

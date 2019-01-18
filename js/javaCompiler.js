@@ -68,4 +68,4 @@ module.exports = {
     compile: compile,
     package: package,
     testForJavac: testForJavac
-}
+};

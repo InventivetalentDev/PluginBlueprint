@@ -16,7 +16,7 @@ Set.prototype.onDrawBackground = function () {
 };
 Set.prototype.getFields = function (output) {
     return [parseType(this.properties.type) + " " + this.properties.name];
-}
+};
 Set.prototype.getMethodBody = function (input, output) {
     return this.properties.name + " = " + input[1] + ";";
 };

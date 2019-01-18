@@ -19,7 +19,7 @@ Cast.prototype.onDrawBackground = function () {
 };
 Cast.prototype.getFields = function (output) {
     return [this.properties.castTo + " " + output[1]];
-}
+};
 Cast.prototype.getMethodBody = function (input, output) {
     return output[1] + " = (" + this.properties.castTo + ") " + input[1] + ";";
 };
@@ -48,7 +48,7 @@ InstanceOf.prototype.onDrawBackground = function () {
 };
 InstanceOf.prototype.getFields = function (output) {
     return ["boolean " + output[1]];
-}
+};
 InstanceOf.prototype.getMethodBody = function (input, output) {
     return output[1] + " = " + input[1] + " instanceof " + this.properties.type + ";";
 };
@@ -72,7 +72,7 @@ function StringFormat() {
 StringFormat.title = "StringFormat";
 StringFormat.prototype.getFields = function (output) {
     return ["java.lang.String " + output[1]];// Formatted
-}
+};
 StringFormat.prototype.getMethodBody = function (input, output) {
     let variableInputs = input.slice(2);
     return output[1] + " = java.lang.String.format(" + input[1] + ", " + variableInputs.join(",") + ");";
@@ -99,7 +99,7 @@ function ConsoleLog() {
 ConsoleLog.title = "ConsoleLog";
 ConsoleLog.prototype.getFields = function (output) {
     return [];
-}
+};
 ConsoleLog.prototype.getMethodBody = function (input, output) {
     return "java.lang.System.out.println(" + input[1] + ");";
 };

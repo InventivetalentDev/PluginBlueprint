@@ -64,4 +64,4 @@ function validate() {
 }
 
 
-module.exports = {activate, validate}
+module.exports = {activate, validate};

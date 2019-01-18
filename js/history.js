@@ -1,4 +1,4 @@
-const deepEqual = require('deep-equal')
+const deepEqual = require('deep-equal');
 
 /**
  * Class to handle undo/redo actions

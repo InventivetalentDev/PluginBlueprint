@@ -144,12 +144,12 @@
             $(".createNewProject").click(() => {
                 ipcRenderer.send("showCreateNewProject");
                 analytics.event("Home", "Create New Project").send();
-            })
+            });
 
             $("#openProject").click(() => {
                 ipcRenderer.send("showOpenProject");
                 analytics.event("Home", "Open Project").send();
-            })
+            });
 
             ipcRenderer.on("recentProjects", function (event, arg) {
                 for (let i = 0; i < arg.length; i++) {

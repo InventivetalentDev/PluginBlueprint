@@ -73,7 +73,7 @@ function GetIndex() {
 
 GetIndex.prototype.getFields = function (output) {
     return ["java.lang.Object " + output[1]];
-}
+};
 
 GetIndex.prototype.getMethodBody = function (input, output) {
     return output[1] + " = " + input[1] + "[" + input[2] + "];";
@@ -93,7 +93,7 @@ function Length() {
 
 Length.prototype.getFields = function (output) {
     return ["int " + output[1]];
-}
+};
 
 Length.prototype.getMethodBody = function (input, output) {
     return output[1] + " = " + input[1] + ".length;";
