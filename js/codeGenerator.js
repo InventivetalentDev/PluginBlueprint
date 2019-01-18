@@ -436,7 +436,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             // if (!input.link) continue;
             let linkInfo = input.link ? graph.links[input.link] : null;
             if (!linkInfo) {
-                if (node.inputs[i].name === "REF") {// REF
+                if (node.inputs[i].name === "REF" && !methodData.isStatic) {// REF
                     console.warn("Missing method reference for " + node.className + " / " + node.title);
                     return;// can't continue -> no object to execute the method on
                 }
@@ -450,7 +450,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             }
             if (node.inputs[i].name === "REF") {// REF | param opening bracket
                 // code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
-                if (sourceNode.classType === "enum" || methodData.isStatic) {
+                if ( methodData.isStatic || sourceNode.classType === "enum") {
                     code += " " + classData.qualifiedName + "." + methodData.name.split("(")[0] + "(";
                 } else if (!node.isAbstractMethod) {
                     code += nodeV(linkInfo.origin_id) + "." + methodData.name.split("(")[0] + "(";
