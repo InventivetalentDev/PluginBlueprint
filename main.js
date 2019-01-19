@@ -6,6 +6,7 @@ const javaCompiler = require("./js/javaCompiler");
 const serverStarter = require("./js/serverStarter");
 const licenseManager = require("./js/licenseManager");
 const googleAnalytics = require("./js/analytics");
+const versionControl = require("./js/versionControl");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
@@ -16,6 +17,7 @@ const ProgressBar = require('electron-progressbar');
 const {copyFile} = require("./js/util");
 const AdmZip = require("adm-zip");
 const RPC = require("discord-rich-presence");
+const Git = require("nodegit");
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
 const APP_MODEL_ID = "inventivetalent.PluginBlueprint";
@@ -465,12 +467,16 @@ function createNewProject(arg, lib) {
                 app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
                 updateJumpList();
 
-                if (win) {
-                    win.loadFile('pages/graph.html');
-                    win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
-                }
-                updateRichPresence();
-                global.analytics.event("Project", "New created").send();
+                versionControl.init(currentProjectPath).then(repo => {
+                    console.log(repo);
+
+                    if (win) {
+                        win.loadFile('pages/graph.html');
+                        win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                    }
+                    updateRichPresence();
+                    global.analytics.event("Project", "New created").send();
+                });
             })
         });
         rs.pipe(ws);
@@ -551,12 +557,16 @@ function openProject(arg) {
         app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
         updateJumpList();
 
-        if (win) {
-            win.loadFile('pages/graph.html');
-            win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
-        }
-        updateRichPresence();
-        global.analytics.event("Project", "Open Project").send();
+        versionControl.openOrInit(currentProjectPath).then(repo => {
+            console.log(repo);
+
+            if (win) {
+                win.loadFile('pages/graph.html');
+                win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+            }
+            updateRichPresence();
+            global.analytics.event("Project", "Open Project").send();
+        });
     })
 }
 
@@ -616,16 +626,20 @@ function saveGraphData(arg, cb) {
                 return;
             }
 
-            currentProject.lastSave = Date.now();
-            fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
-                if (err) {
-                    console.error("Failed to write project file");
-                    console.error(err);
-                    return;
-                }
-                if (cb) cb();
-            });
+            saveProject(cb);
         })
+    });
+}
+
+function saveProject(cb) {
+    currentProject.lastSave = Date.now();
+    fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
+        if (err) {
+            console.error("Failed to write project file");
+            console.error(err);
+            return;
+        }
+        if (cb) cb();
     });
 }
 
@@ -1083,6 +1097,105 @@ ipcMain.on("showImportSnippet", function (event, arg) {
             event.sender.send("importSnippet", JSON.parse(data));
         })
     });
+});
+
+ipcMain.on("gitAddAndCommit", function (event, arg) {
+    if (!currentProjectPath || !currentProject) return;
+    prompt({
+        title: "Enter a commit message",
+        label: "Commit Message",
+        height: 150,
+        value: "Update things!"
+    }).then((r) => {
+        if (r) {
+            versionControl.addAllAndCommit(currentProjectPath, r).then(repo => {
+                showNotification("Committed '" + r + "'");
+                event.sender.send("committed");
+            }).catch((err) => {
+                console.error(err);
+                dialog.showErrorBox("Error", err);
+                event.sender.send("committed");//TODO: might need a different channel
+            })
+        } else {
+            event.sender.send("committed");//TODO: might need a different channel
+        }
+    });
+});
+
+ipcMain.on("gitPush", function (event, arg) {
+    if (!currentProjectPath || !currentProject) return;
+    versionControl.openOrInit(currentProjectPath).then(repo => {
+        function gotRemote(remote) {
+            if (!remote) {
+                dialog.showErrorBox("Missing Remote", "Please configure a remote first");
+            } else {
+                versionControl.getOrRequestCredentials(currentProject, repo).then((cred) => {
+                    saveProject(()=>{
+                        remote.push(["refs/heads/master:refs/heads/master"], {
+                            callbacks: {
+                                credentials: function (url, userName) {
+                                    return cred;
+                                }
+                            }
+                        }).then(() => {
+                            showNotification("Pushed to " + remote.name());
+                            event.sender.send("pushed");//TODO: different event
+                        }).catch(err => {
+                            console.error(err);
+                            event.sender.send("pushed");//TODO: different event
+                        });
+                    })
+                }).catch((err) => {
+                    console.error(err);
+                    dialog.showErrorBox("Error", err);
+                    event.sender.send("pushed");//TODO: different event
+                })
+            }
+        }
+
+        repo.getRemote("origin").then(gotRemote).catch(() => gotRemote());
+    })
+});
+
+ipcMain.on("gitChangeRemote", function (event, arg) {
+    if (!currentProjectPath || !currentProject) return;
+    versionControl.openOrInit(currentProjectPath).then(repo => {
+        function gotRemote(remote) {
+            let existingRemote;
+            if (remote && remote.name()) {
+                existingRemote = remote.url();
+            }
+            prompt({
+                title: "Change Remote",
+                label: "Remote URL",
+                height: 150,
+                value: existingRemote
+            }).then((r) => {
+                if (r) {
+                    function remoteDeleted() {
+                        Git.Remote.create(repo, "origin", r).then(remote => {
+                            showNotification("Remote " + remote.name() + " changed to " + remote.url());
+                            event.sender.send("remoteChanged");
+                        }).catch((err) => {
+                            console.error(err);
+                            dialog.showErrorBox("Error", err);
+                            event.sender.send("remoteChanged");// TODO: different event
+                        })
+                    }
+
+                    if (existingRemote) {// delete existing remote
+                        Git.Remote.delete(repo, "origin").then(remoteDeleted);
+                    } else {// add new remote directly
+                        remoteDeleted();
+                    }
+                } else {
+                    event.sender.send("remoteChanged");
+                }
+            });
+        }
+
+        repo.getRemote("origin").then(gotRemote).catch(() => gotRemote());
+    }).catch(err => console.error(err));
 });
 
 ipcMain.on("checkUpdate", function (event) {
