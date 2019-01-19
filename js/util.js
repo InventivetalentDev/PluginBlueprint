@@ -1,6 +1,8 @@
 const Colors = require("./colors");
 const fs = require("fs");
 
+const typeSwitchEnum = ["string", "byte", "char", "short", "int", "long", "float", "double", "any"];
+
 function copyFile(src, dest) {
     return new Promise((resolve, reject) => {
         console.debug("copy ", src, "->", dest);
@@ -158,6 +160,15 @@ function scrollSpeedForLength(length) {
     return scrollSpeed;
 }
 
+function parseTypeSwitchEnum(type) {
+    if (!type || type === "any") {
+        type = "java.lang.Object"
+    } else if (type === "string") {
+        type = "java.lang.String";
+    }
+    return type;
+}
 
-module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength};
+
+module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength, typeSwitchEnum, parseTypeSwitchEnum};
 
