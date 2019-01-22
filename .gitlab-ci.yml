@@ -2,6 +2,7 @@ image: node:latest
 
 before_script:
   - npm install
+  - npm run rebuild
 
 stages:
   - test
