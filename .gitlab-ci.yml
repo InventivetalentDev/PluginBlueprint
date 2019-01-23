@@ -3,6 +3,7 @@ image: node:latest
 before_script:
   - apt-get update && apt-get install -y libsecret-1-dev libcurl4-gnutls-dev
   - npm install
+  - npm run rebuild
 
 stages:
   - test
