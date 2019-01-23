@@ -74,7 +74,7 @@
   "homepage": "https://inventivetalent.org",
   "license": "BSD-3-Clause",
   "devDependencies": {
-    "electron": "^3.0.13",
+    "electron": "3.0.13",
     "electron-builder": "^20.38.4",
     "electron-installer-windows": "^1.1.0",
     "electron-packager": "^12.2.0",
