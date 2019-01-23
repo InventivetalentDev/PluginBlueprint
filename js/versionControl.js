@@ -91,6 +91,10 @@ function addAllAndCommit(projectPath, msg) {
             })
             .then((parent) => {
                 let authorAndCommitter = Git.Signature.default(repository);
+                console.log(authorAndCommitter);
+                if (!authorAndCommitter || !authorAndCommitter.email) {
+                    authorAndCommitter = Git.Signature.now("PluginBlueprint", "github@pluginblueprint.net");
+                }
                 return repository.createCommit("HEAD", authorAndCommitter, authorAndCommitter, msg || "", oid, [parent]);
             })
             .then((commitId) => {
