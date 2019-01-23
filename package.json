@@ -12,7 +12,7 @@
     "dist:win": "electron-builder --win",
     "dist:linux": "electron-builder --linux snap deb",
     "dist:all": "electron-builder -wl",
-    "rebuild": "electron-rebuild --arch i32"
+    "rebuild": "electron-rebuild"
   },
   "files": [
     "**/*",
