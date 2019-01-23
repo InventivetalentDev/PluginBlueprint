@@ -9,10 +9,10 @@
     "build": "electron-packager . --out=dist/win --platform=win32 --arch=x64 --icon=assets/images/favicon.ico --asar=true --overwrite",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux snap deb",
-    "dist:all": "electron-builder -wl",
-    "rebuild": "electron-rebuild"
+    "dist:win": "electron-builder --win --ia32",
+    "dist:linux": "electron-builder --linux snap deb --ia32",
+    "dist:all": "electron-builder -wl --ia32",
+    "rebuild": "electron-rebuild --arch ia32"
   },
   "postinstall": "electron-builder install-app-deps",
   "files": [
