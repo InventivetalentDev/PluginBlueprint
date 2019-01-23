@@ -32,6 +32,10 @@ function init(projectPath) {
             })
             .then((oid) => {
                 let authorAndCommitter = Git.Signature.default(repository);
+                console.log(authorAndCommitter);
+                if (!authorAndCommitter || !authorAndCommitter.email) {
+                    authorAndCommitter = Git.Signature.now("PluginBlueprint", "github@pluginblueprint.net");
+                }
                 return repository.createCommit("HEAD", authorAndCommitter, authorAndCommitter, "Initial commit", oid, []);
             })
             .then((commitId) => {
