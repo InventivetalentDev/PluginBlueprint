@@ -291,7 +291,7 @@ ipcMain.on("getRecentProjects", function (event, arg) {
 });
 
 function updateJumpList() {
-    if (!app.isPackaged) return;// Won't recent projects won't work properly if the app is running from the electron.exe wrapper
+    if (!app.isPackaged || process.platform !== 'win32') return;// Won't recent projects won't work properly if the app is running from the electron.exe wrapper
     let recentProjectItems = [];
     for (let i = 0; i < recentProjects.length; i++) {
         recentProjectItems.push({
@@ -1113,7 +1113,7 @@ ipcMain.on("gitAddAndCommit", function (event, arg) {
                     event.sender.send("committed");
                 }).catch((err) => {
                     console.error(err);
-                    dialog.showErrorBox("Error", err?err.message:err);
+                    dialog.showErrorBox("Error", err ? err.message : err);
                     event.sender.send("committed");//TODO: might need a different channel
                 })
             } else {
@@ -1137,7 +1137,7 @@ ipcMain.on("gitPush", function (event, arg) {
                         event.sender.send("pushed");//TODO: different event
                     }).catch(err => {
                         console.error(err);
-                        dialog.showErrorBox("Error", err?err.message:err);
+                        dialog.showErrorBox("Error", err ? err.message : err);
                         event.sender.send("pushed");//TODO: different event
                     });
 
@@ -1163,7 +1163,7 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
                         event.sender.send("remoteChanged");
                     }).catch((err) => {
                         console.error(err);
-                        dialog.showErrorBox("Error", err?err.message:err);
+                        dialog.showErrorBox("Error", err ? err.message : err);
                         event.sender.send("remoteChanged");// TODO: different event
                     });
                 } else {
