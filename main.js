@@ -17,7 +17,6 @@ const ProgressBar = require('electron-progressbar');
 const {copyFile} = require("./js/util");
 const AdmZip = require("adm-zip");
 const RPC = require("discord-rich-presence");
-const Git = require("nodegit");
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
 const APP_MODEL_ID = "inventivetalent.PluginBlueprint";
@@ -1101,101 +1100,78 @@ ipcMain.on("showImportSnippet", function (event, arg) {
 
 ipcMain.on("gitAddAndCommit", function (event, arg) {
     if (!currentProjectPath || !currentProject) return;
-    prompt({
-        title: "Enter a commit message",
-        label: "Commit Message",
-        height: 150,
-        value: "Update things!"
-    }).then((r) => {
-        if (r) {
-            versionControl.addAllAndCommit(currentProjectPath, r).then(repo => {
-                showNotification("Committed '" + r + "'");
-                event.sender.send("committed");
-            }).catch((err) => {
-                console.error(err);
-                dialog.showErrorBox("Error", err);
+    versionControl.openOrInit(currentProjectPath).then(() => {
+        prompt({
+            title: "Enter a commit message",
+            label: "Commit Message",
+            height: 150,
+            value: "Update things!"
+        }).then((r) => {
+            if (r) {
+                versionControl.addAllAndCommit(currentProjectPath, currentProject, r).then(repo => {
+                    showNotification("Committed '" + r + "'");
+                    event.sender.send("committed");
+                }).catch((err) => {
+                    console.error(err);
+                    dialog.showErrorBox("Error", err?err.message:err);
+                    event.sender.send("committed");//TODO: might need a different channel
+                })
+            } else {
                 event.sender.send("committed");//TODO: might need a different channel
-            })
-        } else {
-            event.sender.send("committed");//TODO: might need a different channel
-        }
-    });
+            }
+        });
+    })
 });
 
 ipcMain.on("gitPush", function (event, arg) {
     if (!currentProjectPath || !currentProject) return;
-    versionControl.openOrInit(currentProjectPath).then(repo => {
-        function gotRemote(remote) {
-            if (!remote) {
+    versionControl.openOrInit(currentProjectPath).then(() => {
+        versionControl.listRemotes(currentProjectPath).then(remotes => {
+            if (!remotes || remotes.length === 0) {
                 dialog.showErrorBox("Missing Remote", "Please configure a remote first");
             } else {
-                versionControl.getOrRequestCredentials(currentProject, repo).then((cred) => {
-                    saveProject(()=>{
-                        remote.push(["refs/heads/master:refs/heads/master"], {
-                            callbacks: {
-                                credentials: function (url, userName) {
-                                    return cred;
-                                }
-                            }
-                        }).then(() => {
-                            showNotification("Pushed to " + remote.name());
-                            event.sender.send("pushed");//TODO: different event
-                        }).catch(err => {
-                            console.error(err);
-                            event.sender.send("pushed");//TODO: different event
-                        });
-                    })
-                }).catch((err) => {
-                    console.error(err);
-                    dialog.showErrorBox("Error", err);
-                    event.sender.send("pushed");//TODO: different event
+                saveProject(() => {
+                    versionControl.push(currentProjectPath, currentProject).then((pushResponse) => {
+                        console.log(pushResponse);
+                        showNotification("Pushed to origin");
+                        event.sender.send("pushed");//TODO: different event
+                    }).catch(err => {
+                        console.error(err);
+                        dialog.showErrorBox("Error", err?err.message:err);
+                        event.sender.send("pushed");//TODO: different event
+                    });
+
                 })
             }
-        }
-
-        repo.getRemote("origin").then(gotRemote).catch(() => gotRemote());
-    })
+        });
+    });
 });
 
 ipcMain.on("gitChangeRemote", function (event, arg) {
     if (!currentProjectPath || !currentProject) return;
-    versionControl.openOrInit(currentProjectPath).then(repo => {
-        function gotRemote(remote) {
-            let existingRemote;
-            if (remote && remote.name()) {
-                existingRemote = remote.url();
-            }
+    versionControl.openOrInit(currentProjectPath).then(() => {
+        versionControl.listRemotes(currentProject).then(remotes => {
             prompt({
                 title: "Change Remote",
                 label: "Remote URL",
                 height: 150,
-                value: existingRemote
+                value: remotes && remotes.length > 0 ? remotes[0].url : null
             }).then((r) => {
                 if (r) {
-                    function remoteDeleted() {
-                        Git.Remote.create(repo, "origin", r).then(remote => {
-                            showNotification("Remote " + remote.name() + " changed to " + remote.url());
-                            event.sender.send("remoteChanged");
-                        }).catch((err) => {
-                            console.error(err);
-                            dialog.showErrorBox("Error", err);
-                            event.sender.send("remoteChanged");// TODO: different event
-                        })
-                    }
-
-                    if (existingRemote) {// delete existing remote
-                        Git.Remote.delete(repo, "origin").then(remoteDeleted);
-                    } else {// add new remote directly
-                        remoteDeleted();
-                    }
+                    versionControl.setRemote(currentProjectPath, r).then(() => {
+                        showNotification("Remote changed to " + r);
+                        event.sender.send("remoteChanged");
+                    }).catch((err) => {
+                        console.error(err);
+                        dialog.showErrorBox("Error", err?err.message:err);
+                        event.sender.send("remoteChanged");// TODO: different event
+                    });
                 } else {
                     event.sender.send("remoteChanged");
                 }
             });
-        }
-
-        repo.getRemote("origin").then(gotRemote).catch(() => gotRemote());
-    }).catch(err => console.error(err));
+        });
+    });
 });
 
 ipcMain.on("checkUpdate", function (event) {

@@ -1,4 +1,6 @@
-const Git = require("nodegit");
+const git = require("isomorphic-git");
+const fs = require("fs");
+git.plugins.set("fs", fs);
 const path = require("path");
 const prompt = require("electron-prompt");
 const keytar = require("keytar");
@@ -6,41 +8,34 @@ const {copyFile} = require("./util");
 
 function init(projectPath) {
     return new Promise((resolve, reject) => {
-
-        // based on https://github.com/nodegit/nodegit/blob/master/examples/create-new-repo.js
-        let repository;
-        let index;
         copyFile(path.join(__dirname, "../assets/projectGitignore.txt"), path.join(projectPath, ".gitignore"))
             .then(() => {
-                return Git.Repository.init(projectPath, 0)
+                return git.init({dir: projectPath})
             })
-            .then((repo) => {
-                repository = repo;
-                return repo.refreshIndex();
+            .then(() => {// https://isomorphic-git.org/docs/en/snippets#git-add-a-
+                return git.statusMatrix({dir: projectPath})
             })
-            .then((idx) => {
-                index = idx;
-            })
-            .then(() => {
-                return index.addAll();
-            })
-            .then(() => {
-                return index.write();
+            .then((status) => {// https://isomorphic-git.org/docs/en/snippets#git-add-a-
+                return Promise.all(
+                    status.map(([filepath, , worktreeStatus]) =>
+                        // isomorphic-git may report a changed file as unmodified, so always add if not removing
+                        worktreeStatus ? git.add({dir: projectPath, filepath: filepath}) : git.remove({dir: projectPath, filepath: filepath})
+                    )
+                );
             })
             .then(() => {
-                return index.writeTree();
+                return git.commit({
+                    dir: projectPath,
+                    message: "Initial commit",
+                    author: {
+                        name: "PluginBlueprint",
+                        email: "git@pluginblueprint.net"
+                    }
+                })
             })
-            .then((oid) => {
-                let authorAndCommitter = Git.Signature.default(repository);
-                console.log(authorAndCommitter);
-                if (!authorAndCommitter || !authorAndCommitter.email) {
-                    authorAndCommitter = Git.Signature.now("PluginBlueprint", "github@pluginblueprint.net");
-                }
-                return repository.createCommit("HEAD", authorAndCommitter, authorAndCommitter, "Initial commit", oid, []);
-            })
-            .then((commitId) => {
-                console.info("Created Initial commit:", commitId);
-                resolve(repository);
+            .then((sha) => {
+                console.info("Created Initial commit:", sha);
+                resolve(sha);
             })
             .catch(reject);
     })
@@ -48,74 +43,81 @@ function init(projectPath) {
 
 function openOrInit(projectPath) {
     return new Promise((resolve, reject) => {
-        Git.Repository.open(projectPath).then((repo) => {
-            resolve(repo);
-        }).catch((err) => {
-            console.warn(err);
-            init(projectPath).then((repo) => {
-                resolve(repo);
-            }).catch(reject);
-        })
+        git.listFiles({dir: projectPath}).then((files) => {
+            console.log("git files:", files);
+            if (!files || files.length === 0) {// no repo here
+                init(projectPath).then(resolve).catch(reject);
+            } else {
+                resolve(files);
+            }
+        });
     })
 }
 
-function addAllAndCommit(projectPath, msg) {
+function addAllAndCommit(projectPath, project, msg) {
     return new Promise((resolve, reject) => {
-        // based on https://github.com/nodegit/nodegit/blob/master/examples/add-and-commit.js
-        let repository;
-        let index;
-        let oid;
-        Git.Repository.open(projectPath)
-            .then(repo => {
-                repository = repo;
-                return repo.refreshIndex();
-            })
-            .then((idx) => {
-                index = idx;
+        git.statusMatrix({dir: projectPath})
+            .then((status) => {// https://isomorphic-git.org/docs/en/snippets#git-add-a-
+                return Promise.all(
+                    status.map(([filepath, , worktreeStatus]) =>
+                        // isomorphic-git may report a changed file as unmodified, so always add if not removing
+                        worktreeStatus ? git.add({dir: projectPath, filepath: filepath}) : git.remove({dir: projectPath, filepath: filepath})
+                    )
+                );
             })
             .then(() => {
-                return index.addAll();
+                return git.commit({
+                    dir: projectPath,
+                    message: msg || "N/A",
+                    author: {
+                        name: project.gitUser ? project.gitUser : undefined,
+                        email: project.gitUser ? project.gitUser : undefined
+                    }
+                })
             })
-            .then(() => {
-                return index.write();
-            })
-            .then(() => {
-                return index.writeTree();
-            })
-            .then((oidR) => {
-                oid = oidR;
-                return Git.Reference.nameToId(repository, "HEAD");
-            })
-            .then((head) => {
-                return repository.getCommit(head);
-            })
-            .then((parent) => {
-                let authorAndCommitter = Git.Signature.default(repository);
-                console.log(authorAndCommitter);
-                if (!authorAndCommitter || !authorAndCommitter.email) {
-                    authorAndCommitter = Git.Signature.now("PluginBlueprint", "github@pluginblueprint.net");
-                }
-                return repository.createCommit("HEAD", authorAndCommitter, authorAndCommitter, msg || "", oid, [parent]);
-            })
-            .then((commitId) => {
-                console.log("New commit:", commitId, msg);
-                resolve(repository);
-            })
-            .catch(reject);
+            .then((sha) => {
+                console.log("New commit:", sha, msg);
+                resolve(sha);
+            }).catch(reject);
     })
 }
 
-function getOrRequestCredentials(project, repo) {
+function listRemotes(projectPath) {
+    return git.listRemotes({dir: projectPath})
+}
+
+function setRemote(projectPath, url) {
+    return git.addRemote({dir: projectPath, remote: "origin", url: url, force: true});
+}
+
+function push(projectPath, project) {
+    return getOrRequestCredentials(project)
+        .then((creds) => {
+            return git.push({
+                dir: projectPath,
+                username: creds.u,
+                password: creds.p
+            })
+        })
+}
+
+function getOrRequestCredentials(project) {
     return new Promise((resolve, reject) => {
         if (project && project.gitUser) {
             keytar.getPassword("pluginblueprint-git-" + project.name, project.gitUser).then(p => {
-                resolve(Git.Cred.userpassPlaintextNew(project.gitUser, p));
+                resolve({
+                    u: project.gitUser,
+                    p: p
+                });
             })
         } else {
-            requestCredentials(repo).then(c => {
+            requestCredentials().then(c => {
                 project.gitUser = c.u;
                 keytar.setPassword("pluginblueprint-git-" + project.name, c.u, c.p).then(() => {
-                    resolve(Git.Cred.userpassPlaintextNew(c.u, c.p));
+                    resolve({
+                        u: c.u,
+                        p: c.p
+                    });
                 })
             }).catch(reject);
         }
@@ -123,14 +125,12 @@ function getOrRequestCredentials(project, repo) {
 }
 
 
-function requestCredentials(repo) {
+function requestCredentials() {
     return new Promise((resolve, reject) => {
-        let defaultSignature = Git.Signature.default(repo);
         prompt({
             title: "Git Username",
             label: "Username",
-            height: 150,
-            value: defaultSignature ? defaultSignature.email || defaultSignature.name : null
+            height: 150
         }).then((u) => {
             if (!u) {
                 reject("missing username");
@@ -157,4 +157,4 @@ function requestCredentials(repo) {
     })
 }
 
-module.exports = {init, openOrInit, addAllAndCommit, getOrRequestCredentials};
+module.exports = {init, openOrInit, addAllAndCommit, listRemotes, setRemote, push, getOrRequestCredentials};
