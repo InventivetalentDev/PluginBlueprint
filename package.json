@@ -10,7 +10,7 @@
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
     "dist:win": "electron-builder --win --ia32",
-    "dist:linux": "electron-builder --linux snap deb --ia32",
+    "dist:linux": "electron-builder --linux deb --ia32",
     "dist:all": "electron-builder -wl --ia32",
     "rebuild": "electron-rebuild --arch ia32"
   },
