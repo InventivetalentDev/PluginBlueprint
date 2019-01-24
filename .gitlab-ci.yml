@@ -1,7 +1,9 @@
 image: node:latest
 
 before_script:
+  - apt-get update && apt-get install -y libsecret-1-dev
   - npm install
+
 
 stages:
   - test
