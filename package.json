@@ -69,7 +69,7 @@
     "email": "mail@inventivetalent.org",
     "url": "https://inventivetalent.org"
   },
-  "homepage": "https://inventivetalent.org",
+  "homepage": "https://pluginblueprint.net",
   "license": "BSD-3-Clause",
   "devDependencies": {
     "electron": "^3.0.13",
