@@ -11,18 +11,18 @@ describe("ClassStore", function () {
         classStore.init().then(() => {
             done();
         });
-    })
+    });
 
     describe("#getClassesByName", function () {
         let classesByName = classStore.getClassesByName();
 
         it("should return an object", function () {
             assert(typeof classesByName === "object")
-        })
+        });
         it("should not be empty", function () {
-            assert(classStore.size() > 0)
+            assert(classStore.size() > 0);
             assert(Object.keys(classStore.classStore).length > 0);
-        })
+        });
 
         it("should have a 'java.lang.string' property", function () {
             assert(classesByName.hasOwnProperty("java.lang.string"))
@@ -33,14 +33,14 @@ describe("ClassStore", function () {
             it("should return null", function () {
                 assert.equal(classStore.getClass(null), null);
             })
-        })
+        });
         describe("(java.lang.String)", function () {
             it("should not be null", function () {
                 assert(classStore.getClass("java.lang.String") !== null);
             });
             it("should not be undefined", function () {
                 assert(classStore.getClass("java.lang.String") !== undefined)
-            })
+            });
             it("should have a 'name' property", function () {
                 assert.equal(classStore.getClass("java.lang.String").hasOwnProperty("name"), true);
             });
@@ -50,33 +50,33 @@ describe("ClassStore", function () {
                 })
             })
         })
-    })
-    describe("#getAllImplementingAndExtendingClasses",function () {
-        describe("(org.bukkit.plugin.Plugin)",function () {
-            it("should not be null",function () {
+    });
+    describe("#getAllImplementingAndExtendingClasses", function () {
+        describe("(org.bukkit.plugin.Plugin)", function () {
+            it("should not be null", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin") !== null);
             });
-            it("should not be undefined",function () {
+            it("should not be undefined", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin") !== undefined);
             });
-            it("should be an Array",function () {
+            it("should be an Array", function () {
                 assert(Array.isArray(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin")));
             });
-            it("should have 3 elements",function () {
-                assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").length===3);
+            it("should have 3 elements", function () {
+                assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").length === 3);
             });
-            it("should contain org.bukkit.plugin.Plugin",function () {
+            it("should contain org.bukkit.plugin.Plugin", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").indexOf("org.bukkit.plugin.Plugin") !== -1);
             });
-            it("should contain org.bukkit.plugin.PluginBase",function () {
+            it("should contain org.bukkit.plugin.PluginBase", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").indexOf("org.bukkit.plugin.PluginBase") !== -1);
             });
-            it("should contain org.bukkit.plugin.java.JavaPlugin",function () {
+            it("should contain org.bukkit.plugin.java.JavaPlugin", function () {
                 assert(classStore.getAllImplementingAndExtendingClasses("org.bukkit.plugin.Plugin").indexOf("org.bukkit.plugin.java.JavaPlugin") !== -1);
             });
         })
     })
-})
+});
 
 
 // let bukkitData = fs.readFileSync(path.join(__dirname, "../data/bukkitClasses.json"), "utf-8");

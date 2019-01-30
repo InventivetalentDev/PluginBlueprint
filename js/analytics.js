@@ -30,4 +30,4 @@ function getUserId() {
     })
 }
 
-module.exports = {init}
+module.exports = {init};

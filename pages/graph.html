@@ -208,6 +208,32 @@
                     ]
                 },
                 {
+                  label:"Git",
+                  submenu:[
+                      {
+                          label:"Commit",click:()=>{
+                              $("#overlay").fadeIn();
+                              ipcRenderer.send("gitAddAndCommit");
+                          }
+                      },
+                      {
+                          type: "separator"
+                      },
+                      {
+                          label:"Push",click:()=>{
+                              $("#overlay").fadeIn();
+                              ipcRenderer.send("gitPush");
+                          }
+                      },
+                      {
+                          label:"Change Remote",click:()=>{
+                              $("#overlay").fadeIn();
+                              ipcRenderer.send("gitChangeRemote");
+                          }
+                      }
+                  ]
+                },
+                {
                     label: "Compile",
                     submenu: [
                         {
@@ -353,7 +379,7 @@
                 });
 
                 analytics.event("Graph", "Open Editor").pageview("/graph", "", "Graph").send();
-            })
+            });
 
             ipcRenderer.send("getProjectInfo");
 
@@ -363,7 +389,7 @@
             $("body")[0].addEventListener("keydown", canvas.processKey.bind(canvas));
             canvas.resize();
 
-            console.log("Initializing Bukkit Node generator...")
+            console.log("Initializing Bukkit Node generator...");
             NodeGenerator.init().then(() => {
                 ipcRenderer.send("getGraphData");
 
@@ -377,7 +403,7 @@
                 if (!nodeName) return;
                 let node = LiteGraph.createNode(nodeName);
                 if (!node) return;
-                console.log(node)
+                console.log(node);
                 graph.add(node);
             }
 
@@ -429,7 +455,7 @@
                 history.pause();
                 if (history.canUndo()) {
                     let undone = history.undo();
-                    console.log(undone)
+                    console.log(undone);
                     graph.configure(JSON.parse(undone))
                 }
                 history.unpause();
@@ -443,7 +469,7 @@
                 history.pause();
                 if (history.canRedo()) {
                     let redone = history.redo();
-                    console.log(redone)
+                    console.log(redone);
                     graph.configure(JSON.parse(redone));
                 }
                 history.unpause();
@@ -462,17 +488,15 @@
                 let nodePositions = [];
                 let nodes = [];
                 let links = [];
-                for (let i = 0; i < graph._nodes.length; i++) {
-                    if (graph._nodes[i].selected) {
-                        let n = LiteGraph.cloneObject(graph._nodes[i].serialize());
+                for (let i in canvas.selected_nodes) {
+                    let n = LiteGraph.cloneObject(canvas.selected_nodes[i].serialize());
 
-                        nodePositions.push([n.pos[0], n.pos[1]]);
-                        n.pos[0] -= canvas.visible_area[0];
-                        n.pos[1] -= canvas.visible_area[1];
+                    nodePositions.push([n.pos[0], n.pos[1]]);
+                    n.pos[0] -= canvas.visible_area[0];
+                    n.pos[1] -= canvas.visible_area[1];
 
-                        nodeIds.push(n.id);
-                        nodes.push(n);
-                    }
+                    nodeIds.push(n.id);
+                    nodes.push(n);
                 }
                 for (let l in graph.links) {
                     let link = graph.links[l];
@@ -506,6 +530,8 @@
                     }
                 }
 
+                console.debug("Exporting", nodes.length, "nodes,", groups.length, "groups and", links.length, "links");
+
                 return {
                     nodes: nodes,
                     links: links,
@@ -536,12 +562,12 @@
 
                     let node = LiteGraph.createNode(n.type, n.title);
                     if (!node) {
-                        console.warn("Unknown node: " + n.type)
+                        console.warn("Unknown node: " + n.type);
                         continue;
                     }
                     node.id = newId;
 
-                    console.log(node)
+                    console.log(node);
                     graph.add(node, true);
                 }
                 for (let j = 0; j < data.links.length; j++) {
@@ -613,12 +639,12 @@
 
             ipcRenderer.on("projectInfo", function (event, arg) {
                 projectInfo = arg;
-                console.log("Project:")
+                console.log("Project:");
                 console.log(arg);
             });
             ipcRenderer.on("graphData", function (event, arg) {
                 if (!arg) {
-                    console.warn("Empty graph data")
+                    console.warn("Empty graph data");
                     return;
                 }
                 if (graph && arg.nodes) {
@@ -628,11 +654,11 @@
 
                 history.unpause();
                 history.track(JSON.stringify(graph.serialize()));
-            })
+            });
             ipcRenderer.on("generateDone", function (event, arg) {
                 $("#overlay").fadeOut();
                 app.uncompiledChanges = 0;
-            })
+            });
             ipcRenderer.on("generateError", function (event, arg) {
                 $("#overlay").fadeOut();
                 console.error(arg);
@@ -648,7 +674,17 @@
                     history.track(JSON.stringify(graph.serialize()));
                 }
                 configureSnippet(arg);
-            })
+            });
+
+            ipcRenderer.on("committed",function (event,arg) {
+                $("#overlay").fadeOut();
+            });
+            ipcRenderer.on("remoteChanged",function (event,arg) {
+                $("#overlay").fadeOut();
+            });
+            ipcRenderer.on("pushed",function (event,arg) {
+                $("#overlay").fadeOut();
+            });
 
             function updateTitle() {
                 getCurrentWindow().setTitle("PluginBlueprint Editor [" + projectInfo.name + (app.unsavedChanges > 0 && app.uncompiledChanges > 0 ? "**" : (app.unsavedChanges > 0 || app.uncompiledChanges > 0 ? "*" : "")) + "]");
@@ -664,7 +700,7 @@
                             // Trace back the inputs, since the node calls the debug on itself, but litegraph wants the trigger on the originating node
                             for (let i = 0; i < node.inputs.length; i++) {
                                 let input = node.inputs[i];
-                                console.log(input)
+                                console.log(input);
                                 if (!input) continue;
                                 if (input.type === "@EXEC") {
                                     let linkInfo = input.link ? graph.links[input.link] : null;
@@ -687,7 +723,7 @@
                         // }
                     }
                 }
-            })
+            });
 
             ipcRenderer.on("highlightNode", function (event, arg) {
                 let node = graph.getNodeById(arg.node);

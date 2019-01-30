@@ -30,7 +30,7 @@ function generateClassCode(graph, projectInfo) {
     return new Promise((resolve) => {
         debug = projectInfo.debug;
         classStore.init().then(() => {
-            console.log(graph)
+            console.log(graph);
             for (let i = 0; i < graph._nodes.length; i++) {
                 if (graph._nodes[i].nodeType === "BukkitClassNode") {
                     let classData = classStore.getClass(graph._nodes[i].className);
@@ -175,15 +175,15 @@ function generateCodeForEventClassNode(graph, n, node, classData) {
     if (node.outputs) {
         for (let o = 0; o < node.outputs.length; o++) {
             let output = node.outputs[o];
-            console.log(output)
+            console.log(output);
             if (!output) continue;
             if (!output.links) continue;
             if (output.links.length > 0) {
 
                 for (let l = 0; l < output.links.length; l++) {
                     let linkInfo = graph.links[output.links[l]];
-                    console.log(graph.links)
-                    console.log(linkInfo)
+                    console.log(graph.links);
+                    console.log(linkInfo);
                     if (!linkInfo) continue;
 
                     if (output.type === "@EXEC") {
@@ -261,7 +261,7 @@ function generateSetterMethodCall(methodName, targetNode, targetInput, inputInde
     let code = "// SETTER for " + targetNode.title + "#" + methodName + "\n" +
         "private void node_" + targetNode.id + "_in_" + inputIndex + "() {\n" +
         "  " + obj + "." + methodName + "(" + param + ");\n" +
-        "}\n"
+        "}\n";
 
     methodCalls.push(code);
     return "node_" + targetNode.id + "_in_" + inputIndex;
@@ -336,7 +336,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
 
     if (!hasRef) {
         if (abstractMethods > 0) {
-            initCode += nodeV(node.id) + " = new " + classData.qualifiedName + "() {\n"
+            initCode += nodeV(node.id) + " = new " + classData.qualifiedName + "() {\n";
             for (let o = 0; o < node.outputs.length; o++) {
                 let output = node.outputs[o];
                 if (!output) continue;
@@ -345,11 +345,11 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                     if (output.linkType === "abstractMethod") {
                         let methodData = classStore.getMethod(classData.qualifiedName, output.methodSignature);
                         let params = [];
-                        if(methodData.parameters) {
+                        if (methodData.parameters) {
                             for (let p = 0; p < methodData.parameters.length; p++) {
                                 let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
                                 console.log(methodData.parameters[p]);
-                                console.log(pType)
+                                console.log(pType);
                                 params.push(pType + " " + methodData.parameters[p].name);
                             }
                         }
@@ -357,7 +357,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                         for (let l = 0; l < output.links.length; l++) {
                             let linkInfo = graph.links[output.links[l]];
                             if (!linkInfo) continue;
-                            if(methodData.parameters) {
+                            if (methodData.parameters) {
                                 for (let p = 0; p < methodData.parameters.length; p++) {
                                     let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
                                     fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
@@ -436,7 +436,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             // if (!input.link) continue;
             let linkInfo = input.link ? graph.links[input.link] : null;
             if (!linkInfo) {
-                if (node.inputs[i].name === "REF") {// REF
+                if (node.inputs[i].name === "REF" && !methodData.isStatic) {// REF
                     console.warn("Missing method reference for " + node.className + " / " + node.title);
                     return;// can't continue -> no object to execute the method on
                 }
@@ -450,7 +450,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             }
             if (node.inputs[i].name === "REF") {// REF | param opening bracket
                 // code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
-                if (sourceNode.classType === "enum" || methodData.isStatic) {
+                if (methodData.isStatic || sourceNode.classType === "enum") {
                     code += " " + classData.qualifiedName + "." + methodData.name.split("(")[0] + "(";
                 } else if (!node.isAbstractMethod) {
                     code += nodeV(linkInfo.origin_id) + "." + methodData.name.split("(")[0] + "(";

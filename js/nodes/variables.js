@@ -1,5 +1,5 @@
 const Colors = require("../colors");
-const {shapeAndColorsForSlotType} = require("../util");
+const {shapeAndColorsForSlotType,typeSwitchEnum,parseTypeSwitchEnum} = require("../util");
 
 function Set() {
     this.classType = "native";
@@ -7,16 +7,16 @@ function Set() {
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("myVariable", null);
     this.addProperty("name", "myVariable", "string");
-    this.addProperty("type", "string", "enum", {values: ["string", "byte", "char", "short", "int", "long", "float", "double", "any"]})
+    this.addProperty("type", "string", "enum", {values: typeSwitchEnum})
 }
 
 Set.prototype.onDrawBackground = function () {
     this.inputs[1].label = this.properties.name;
-    this.inputs[1].type = parseType(this.properties.type);
+    this.inputs[1].type = parseTypeSwitchEnum(this.properties.type);
 };
 Set.prototype.getFields = function (output) {
-    return [parseType(this.properties.type) + " " + this.properties.name];
-}
+    return [parseTypeSwitchEnum(this.properties.type) + " " + this.properties.name];
+};
 Set.prototype.getMethodBody = function (input, output) {
     return this.properties.name + " = " + input[1] + ";";
 };
@@ -28,26 +28,18 @@ function Get() {
     this.iconName = "sign-out-alt";
     this.addOutput("myVariable", null);
     this.addProperty("name", "myVariable", "string");
-    this.addProperty("type", "string", "enum", {values: ["string", "byte", "char", "short", "int", "long", "float", "double", "any"]})
+    this.addProperty("type", "string", "enum", {values: typeSwitchEnum})
 }
 
 Get.prototype.onDrawBackground = function () {
     this.outputs[0].label = this.properties.name;
-    this.outputs[0].type = parseType(this.properties.type);
+    this.outputs[0].type = parseTypeSwitchEnum(this.properties.type);
 };
 Get.prototype.getMethodBody = function (input, output) {
     return output[0] + " = " + this.properties.name + ";";
 };
 Get.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
-function parseType(type) {
-    if (!type || type === "any") {
-        type = "java.lang.Object"
-    } else if (type === "string") {
-        type = "java.lang.String";
-    }
-    return type;
-}
 
 
 module.exports = [

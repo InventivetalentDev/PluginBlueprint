@@ -25,6 +25,6 @@ module.exports = {
     ENUM_OFF: "#782f32",
     ENUM_ON: "#e95c61",
 
-    EXEC_OFF:"#911500",
-    EXEC_ON:"#f62000"
+    EXEC_OFF: "#911500",
+    EXEC_ON: "#f62000"
 };

@@ -59,8 +59,8 @@
                     </div>
 
                     <div class="row" style="margin-bottom: 5px;">
-                        <a class="btn btn-small" href="https://discord.gg/pEWdJCw" target="_blank"><i class="material-icons left">chat</i> Discord Server</a>
-                        <a class="btn btn-small" href="https://github.com/InventivetalentDev/PluginBlueprint/wiki" target="_blank"><i class="material-icons left">help</i> Wiki / Examples</a>
+                        <a class="btn btn-small" href="https://pluginblueprint.net/discord" target="_blank"><i class="material-icons left">chat</i> Discord Server</a>
+                        <a class="btn btn-small" href="https://pluginblueprint.net/wiki" target="_blank"><i class="material-icons left">help</i> Wiki / Examples</a>
                     </div>
 
                     <div class="row" id="updateCheckContent" style="height: 48px;">
@@ -144,12 +144,12 @@
             $(".createNewProject").click(() => {
                 ipcRenderer.send("showCreateNewProject");
                 analytics.event("Home", "Create New Project").send();
-            })
+            });
 
             $("#openProject").click(() => {
                 ipcRenderer.send("showOpenProject");
                 analytics.event("Home", "Open Project").send();
-            })
+            });
 
             ipcRenderer.on("recentProjects", function (event, arg) {
                 for (let i = 0; i < arg.length; i++) {
@@ -177,7 +177,7 @@
                 if (arg.hasUpdate) {
                     console.log("Update available!", arg);
 
-                    $("#updateCheckContent").append("<strong>Update available!</strong> (v" + arg.updateVersion + ") <a href='https://shop.inventivetalent.org/my-account/downloads/'>Download</a>")
+                    $("#updateCheckContent").append("<strong>Update available!</strong> (v" + arg.updateVersion + ") <a href='https://pluginblueprint.net/downloads'>Download</a>")
                 } else {
                     console.log("No update found", arg)
                 }

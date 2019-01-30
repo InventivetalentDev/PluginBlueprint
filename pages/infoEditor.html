@@ -190,7 +190,7 @@
                 $("#commandList").empty();
                 for (let i = 0; i < commands.length; i++) {
                     let cmd = commands[i];
-                    let commandItem = $('<li class="collection-item"><div>' + cmd.name + '<a href="#!" class="secondary-content"><i class="material-icons delete-command">delete</i></a></div></li>')
+                    let commandItem = $('<li class="collection-item"><div>' + cmd.name + '<a href="#!" class="secondary-content"><i class="material-icons delete-command">delete</i></a></div></li>');
                     commandItem.find(".delete-command").on("click", function () {
                         commands.splice(i, 1);
                         updateCommandList();
@@ -210,7 +210,7 @@
                     command: {},
                     index: -1
                 })
-            })
+            });
 
             ipcRenderer.on("commandAdded", function (event, arg) {
                 commands.push(arg);

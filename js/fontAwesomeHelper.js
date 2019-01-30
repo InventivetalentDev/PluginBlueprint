@@ -4,7 +4,7 @@ const {fas} = require('@fortawesome/free-solid-svg-icons');
 library.add(fas);
 
 function drawFontAwesomeIcon(node, ctx, iconName, x, y, size, color = "white", prefix = "far") {
-    let def = findIconDefinition({prefix: prefix, iconName: iconName})
+    let def = findIconDefinition({prefix: prefix, iconName: iconName});
     if (!def) return;
     let icn = icon(def, {
         transform: {

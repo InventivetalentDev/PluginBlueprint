@@ -6,6 +6,7 @@ const javaCompiler = require("./js/javaCompiler");
 const serverStarter = require("./js/serverStarter");
 const licenseManager = require("./js/licenseManager");
 const googleAnalytics = require("./js/analytics");
+const versionControl = require("./js/versionControl");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
@@ -54,7 +55,7 @@ function init() {
         dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'
     });
 
-    console.log(process.argv)
+    console.log(process.argv);
     process.argv.forEach((val, index) => {
         if (val === "--debug") {
             debug = true;
@@ -159,7 +160,7 @@ function showWindow() {
         checkFileAssociation();
         updateRichPresence();
         global.analytics.screenview("Home", app.getName(), app.getVersion()).send();
-    })
+    });
 
     win.on("close", function (e) {
         if (app.unsavedChanges > 0) {
@@ -168,14 +169,14 @@ function showWindow() {
                 message: "You have " + app.unsavedChanges + " unsaved changes. Are you sure you want to exit?",
                 buttons: ["Yes", "No"],
                 icon: path.join(__dirname, 'assets/images/logo-x64.png')
-            })
+            });
             if (c === 1) {
                 e.preventDefault();
             }
         }
         serverStarter.killInstance();
         logWin = null;
-    })
+    });
 
     // Emitted when the window is closed.
     win.on('closed', () => {
@@ -183,7 +184,7 @@ function showWindow() {
         // in an array if your app supports multi windows, this is the time
         // when you should delete the corresponding element.
         win = null
-    })
+    });
 
     readRecentProjects();
 
@@ -195,7 +196,7 @@ function showWindow() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', init)
+app.on('ready', init);
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
@@ -204,7 +205,7 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit()
     }
-})
+});
 
 app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
@@ -290,7 +291,7 @@ ipcMain.on("getRecentProjects", function (event, arg) {
 });
 
 function updateJumpList() {
-    if (!app.isPackaged) return;// Won't recent projects won't work properly if the app is running from the electron.exe wrapper
+    if (!app.isPackaged || process.platform !== 'win32') return;// Won't recent projects won't work properly if the app is running from the electron.exe wrapper
     let recentProjectItems = [];
     for (let i = 0; i < recentProjects.length; i++) {
         recentProjectItems.push({
@@ -338,7 +339,7 @@ ipcMain.on("openGraph", function (event, arg) {
 ipcMain.on("showCreateNewProject", function (event, arg) {
     let projectPath = dialog.showOpenDialog({
         properties: ["openDirectory"]
-    })
+    });
     console.log(projectPath);
 
     if (!projectPath || projectPath.length === 0) {
@@ -375,7 +376,7 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
                 buttons: ["Select", "I don't have one"],
                 icon: path.join(__dirname, 'assets/images/logo-x64.png')
             }, (r) => {
-                console.log(r)
+                console.log(r);
                 if (r === 0) {
                     let libPath = dialog.showOpenDialog({
                         properties: ["openFile"],
@@ -465,12 +466,16 @@ function createNewProject(arg, lib) {
                 app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
                 updateJumpList();
 
-                if (win) {
-                    win.loadFile('pages/graph.html');
-                    win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
-                }
-                updateRichPresence();
-                global.analytics.event("Project", "New created").send();
+                versionControl.init(currentProjectPath).then(repo => {
+                    console.log(repo);
+
+                    if (win) {
+                        win.loadFile('pages/graph.html');
+                        win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                    }
+                    updateRichPresence();
+                    global.analytics.event("Project", "New created").send();
+                });
             })
         });
         rs.pipe(ws);
@@ -495,7 +500,7 @@ ipcMain.on("showOpenProject", function (event, arg) {
         filters: [
             {name: 'Plugin Blueprint Projects', extensions: ['pbp']}
         ]
-    })
+    });
     console.log(p);
 
     if (!p || p.length === 0) {
@@ -510,7 +515,7 @@ ipcMain.on("showOpenProject", function (event, arg) {
     p = path.dirname(p);
 
     openProject(p);
-})
+});
 
 function openProject(arg) {
     console.log("openProject", arg);
@@ -551,18 +556,22 @@ function openProject(arg) {
         app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
         updateJumpList();
 
-        if (win) {
-            win.loadFile('pages/graph.html');
-            win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
-        }
-        updateRichPresence();
-        global.analytics.event("Project", "Open Project").send();
+        versionControl.openOrInit(currentProjectPath).then(repo => {
+            console.log(repo);
+
+            if (win) {
+                win.loadFile('pages/graph.html');
+                win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+            }
+            updateRichPresence();
+            global.analytics.event("Project", "Open Project").send();
+        });
     })
 }
 
 ipcMain.on("openProject", function (event, arg) {
     openProject(arg);
-})
+});
 
 ipcMain.on("getProjectInfo", function (event, arg) {
     event.sender.send("projectInfo", currentProject || {});
@@ -616,16 +625,20 @@ function saveGraphData(arg, cb) {
                 return;
             }
 
-            currentProject.lastSave = Date.now();
-            fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
-                if (err) {
-                    console.error("Failed to write project file");
-                    console.error(err);
-                    return;
-                }
-                if (cb) cb();
-            });
+            saveProject(cb);
         })
+    });
+}
+
+function saveProject(cb) {
+    currentProject.lastSave = Date.now();
+    fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
+        if (err) {
+            console.error("Failed to write project file");
+            console.error(err);
+            return;
+        }
+        if (cb) cb();
     });
 }
 
@@ -665,11 +678,11 @@ ipcMain.on("saveThumbnail", function (event, arg) {
             recentProjects[i].thumbnail = data;
         }
     });
-})
+});
 
 function saveCodeToFile(code) {
     return new Promise((resolve, reject) => {
-        console.log("saveCode: " + Date.now())
+        console.log("saveCode: " + Date.now());
         if (!currentProject || !currentProjectPath) {
             return reject();
         }
@@ -743,7 +756,7 @@ function compile() {
         }
 
         javaCompiler.testForJavac().then(() => {
-            console.log("compile: " + Date.now())
+            console.log("compile: " + Date.now());
             fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
                 javaCompiler.compile(currentProjectPath, currentProject).then((result) => {
                     let pluginYml = makePluginYml();
@@ -793,7 +806,7 @@ function showCustomErrorDialog(error, title) {
         icon: path.join(__dirname, 'assets/images/favicon.ico')
     });
     errWin.setMenu(null);
-    errWin.setTitle(title || "An Error occurred!")
+    errWin.setTitle(title || "An Error occurred!");
     errWin.loadFile('pages/error.html');
     errWin.theError = error;
     errWin.show();
@@ -835,7 +848,7 @@ ipcMain.on("openOutputDir", function (event, arg) {
 });
 
 ipcMain.on("openProjectInfoEditor", function (event, arg) {
-    console.log("openProjectInfoEditor")
+    console.log("openProjectInfoEditor");
     let child = new BrowserWindow({
         parent: win,
         title: DEFAULT_TITLE,
@@ -857,7 +870,7 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
 });
 
 ipcMain.on("openCommandEditor", function (event, arg) {
-    console.log("openCommandEditor")
+    console.log("openCommandEditor");
     let child = new BrowserWindow({
         parent: win,
         title: DEFAULT_TITLE,
@@ -893,7 +906,7 @@ ipcMain.on("saveCommand", function (event, arg) {
             })
         }
     }
-})
+});
 
 ipcMain.on("startServer", function (event, arg) {
     if (!currentProject || !currentProjectPath) {
@@ -924,7 +937,7 @@ ipcMain.on("startServer", function (event, arg) {
         icon: path.join(__dirname, 'assets/images/favicon.ico')
     });
     logWin.setMenu(null);
-    logWin.setTitle("PluginBlueprint Test Server")
+    logWin.setTitle("PluginBlueprint Test Server");
     logWin.loadFile('pages/log.html');
     logWin.show();
     try {
@@ -1016,7 +1029,7 @@ function reloadPlugin() {
                 showNotification("Plugin reloaded!");
             })
         })
-    })
+    });
     global.analytics.event("Project", "Reload Plugin").send();
 }
 
@@ -1027,7 +1040,7 @@ ipcMain.on("highlightNode", function (event, arg) {
 });
 
 ipcMain.on("showExportDialog", function (event, arg) {
-    console.log("showExportDialog")
+    console.log("showExportDialog");
     showExportDialog();
 });
 
@@ -1085,6 +1098,82 @@ ipcMain.on("showImportSnippet", function (event, arg) {
     });
 });
 
+ipcMain.on("gitAddAndCommit", function (event, arg) {
+    if (!currentProjectPath || !currentProject) return;
+    versionControl.openOrInit(currentProjectPath).then(() => {
+        prompt({
+            title: "Enter a commit message",
+            label: "Commit Message",
+            height: 150,
+            value: "Update things!"
+        }).then((r) => {
+            if (r) {
+                versionControl.addAllAndCommit(currentProjectPath, currentProject, r).then(repo => {
+                    showNotification("Committed '" + r + "'");
+                    event.sender.send("committed");
+                }).catch((err) => {
+                    console.error(err);
+                    dialog.showErrorBox("Error", err ? err.message : err);
+                    event.sender.send("committed");//TODO: might need a different channel
+                })
+            } else {
+                event.sender.send("committed");//TODO: might need a different channel
+            }
+        });
+    })
+});
+
+ipcMain.on("gitPush", function (event, arg) {
+    if (!currentProjectPath || !currentProject) return;
+    versionControl.openOrInit(currentProjectPath).then(() => {
+        versionControl.listRemotes(currentProjectPath).then(remotes => {
+            if (!remotes || remotes.length === 0) {
+                dialog.showErrorBox("Missing Remote", "Please configure a remote first");
+            } else {
+                saveProject(() => {
+                    versionControl.push(currentProjectPath, currentProject).then((pushResponse) => {
+                        console.log(pushResponse);
+                        showNotification("Pushed to origin");
+                        event.sender.send("pushed");//TODO: different event
+                    }).catch(err => {
+                        console.error(err);
+                        dialog.showErrorBox("Error", err ? err.message : err);
+                        event.sender.send("pushed");//TODO: different event
+                    });
+
+                })
+            }
+        });
+    });
+});
+
+ipcMain.on("gitChangeRemote", function (event, arg) {
+    if (!currentProjectPath || !currentProject) return;
+    versionControl.openOrInit(currentProjectPath).then(() => {
+        versionControl.listRemotes(currentProject).then(remotes => {
+            prompt({
+                title: "Change Remote",
+                label: "Remote URL",
+                height: 150,
+                value: remotes && remotes.length > 0 ? remotes[0].url : null
+            }).then((r) => {
+                if (r) {
+                    versionControl.setRemote(currentProjectPath, r).then(() => {
+                        showNotification("Remote changed to " + r);
+                        event.sender.send("remoteChanged");
+                    }).catch((err) => {
+                        console.error(err);
+                        dialog.showErrorBox("Error", err ? err.message : err);
+                        event.sender.send("remoteChanged");// TODO: different event
+                    });
+                } else {
+                    event.sender.send("remoteChanged");
+                }
+            });
+        });
+    });
+});
+
 ipcMain.on("checkUpdate", function (event) {
     checkUpdate().then(u => {
         event.sender.send("updateInfo", u);
@@ -1121,7 +1210,7 @@ function showNotification(body, title) {
     }, function (err, res) {
         console.log(err);
         console.log(res);
-    })
+    });
     // }
 
     return {

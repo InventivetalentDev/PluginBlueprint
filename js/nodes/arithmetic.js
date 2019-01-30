@@ -97,4 +97,4 @@ module.exports = [
     extend(Multiply, ArithmeticOperator),
     extend(Divide, ArithmeticOperator),
     extend(Modulus, ArithmeticOperator)
-]
+];

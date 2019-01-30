@@ -92,4 +92,4 @@ module.exports = {
     isRunning: () => {
         return running;
     }
-}
+};
