@@ -208,6 +208,32 @@
                     ]
                 },
                 {
+                  label:"Git",
+                  submenu:[
+                      {
+                          label:"Commit",click:()=>{
+                              $("#overlay").fadeIn();
+                              ipcRenderer.send("gitAddAndCommit");
+                          }
+                      },
+                      {
+                          type: "separator"
+                      },
+                      {
+                          label:"Push",click:()=>{
+                              $("#overlay").fadeIn();
+                              ipcRenderer.send("gitPush");
+                          }
+                      },
+                      {
+                          label:"Change Remote",click:()=>{
+                              $("#overlay").fadeIn();
+                              ipcRenderer.send("gitChangeRemote");
+                          }
+                      }
+                  ]
+                },
+                {
                     label: "Compile",
                     submenu: [
                         {
@@ -648,6 +674,16 @@
                     history.track(JSON.stringify(graph.serialize()));
                 }
                 configureSnippet(arg);
+            });
+
+            ipcRenderer.on("committed",function (event,arg) {
+                $("#overlay").fadeOut();
+            });
+            ipcRenderer.on("remoteChanged",function (event,arg) {
+                $("#overlay").fadeOut();
+            });
+            ipcRenderer.on("pushed",function (event,arg) {
+                $("#overlay").fadeOut();
             });
 
             function updateTitle() {

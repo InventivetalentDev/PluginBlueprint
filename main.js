@@ -6,6 +6,7 @@ const javaCompiler = require("./js/javaCompiler");
 const serverStarter = require("./js/serverStarter");
 const licenseManager = require("./js/licenseManager");
 const googleAnalytics = require("./js/analytics");
+const versionControl = require("./js/versionControl");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
@@ -290,7 +291,7 @@ ipcMain.on("getRecentProjects", function (event, arg) {
 });
 
 function updateJumpList() {
-    if (!app.isPackaged) return;// Won't recent projects won't work properly if the app is running from the electron.exe wrapper
+    if (!app.isPackaged || process.platform !== 'win32') return;// Won't recent projects won't work properly if the app is running from the electron.exe wrapper
     let recentProjectItems = [];
     for (let i = 0; i < recentProjects.length; i++) {
         recentProjectItems.push({
@@ -465,12 +466,16 @@ function createNewProject(arg, lib) {
                 app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
                 updateJumpList();
 
-                if (win) {
-                    win.loadFile('pages/graph.html');
-                    win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
-                }
-                updateRichPresence();
-                global.analytics.event("Project", "New created").send();
+                versionControl.init(currentProjectPath).then(repo => {
+                    console.log(repo);
+
+                    if (win) {
+                        win.loadFile('pages/graph.html');
+                        win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                    }
+                    updateRichPresence();
+                    global.analytics.event("Project", "New created").send();
+                });
             })
         });
         rs.pipe(ws);
@@ -551,12 +556,16 @@ function openProject(arg) {
         app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
         updateJumpList();
 
-        if (win) {
-            win.loadFile('pages/graph.html');
-            win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
-        }
-        updateRichPresence();
-        global.analytics.event("Project", "Open Project").send();
+        versionControl.openOrInit(currentProjectPath).then(repo => {
+            console.log(repo);
+
+            if (win) {
+                win.loadFile('pages/graph.html');
+                win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+            }
+            updateRichPresence();
+            global.analytics.event("Project", "Open Project").send();
+        });
     })
 }
 
@@ -616,16 +625,20 @@ function saveGraphData(arg, cb) {
                 return;
             }
 
-            currentProject.lastSave = Date.now();
-            fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
-                if (err) {
-                    console.error("Failed to write project file");
-                    console.error(err);
-                    return;
-                }
-                if (cb) cb();
-            });
+            saveProject(cb);
         })
+    });
+}
+
+function saveProject(cb) {
+    currentProject.lastSave = Date.now();
+    fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
+        if (err) {
+            console.error("Failed to write project file");
+            console.error(err);
+            return;
+        }
+        if (cb) cb();
     });
 }
 
@@ -1082,6 +1095,82 @@ ipcMain.on("showImportSnippet", function (event, arg) {
             if (err) throw err;
             event.sender.send("importSnippet", JSON.parse(data));
         })
+    });
+});
+
+ipcMain.on("gitAddAndCommit", function (event, arg) {
+    if (!currentProjectPath || !currentProject) return;
+    versionControl.openOrInit(currentProjectPath).then(() => {
+        prompt({
+            title: "Enter a commit message",
+            label: "Commit Message",
+            height: 150,
+            value: "Update things!"
+        }).then((r) => {
+            if (r) {
+                versionControl.addAllAndCommit(currentProjectPath, currentProject, r).then(repo => {
+                    showNotification("Committed '" + r + "'");
+                    event.sender.send("committed");
+                }).catch((err) => {
+                    console.error(err);
+                    dialog.showErrorBox("Error", err ? err.message : err);
+                    event.sender.send("committed");//TODO: might need a different channel
+                })
+            } else {
+                event.sender.send("committed");//TODO: might need a different channel
+            }
+        });
+    })
+});
+
+ipcMain.on("gitPush", function (event, arg) {
+    if (!currentProjectPath || !currentProject) return;
+    versionControl.openOrInit(currentProjectPath).then(() => {
+        versionControl.listRemotes(currentProjectPath).then(remotes => {
+            if (!remotes || remotes.length === 0) {
+                dialog.showErrorBox("Missing Remote", "Please configure a remote first");
+            } else {
+                saveProject(() => {
+                    versionControl.push(currentProjectPath, currentProject).then((pushResponse) => {
+                        console.log(pushResponse);
+                        showNotification("Pushed to origin");
+                        event.sender.send("pushed");//TODO: different event
+                    }).catch(err => {
+                        console.error(err);
+                        dialog.showErrorBox("Error", err ? err.message : err);
+                        event.sender.send("pushed");//TODO: different event
+                    });
+
+                })
+            }
+        });
+    });
+});
+
+ipcMain.on("gitChangeRemote", function (event, arg) {
+    if (!currentProjectPath || !currentProject) return;
+    versionControl.openOrInit(currentProjectPath).then(() => {
+        versionControl.listRemotes(currentProject).then(remotes => {
+            prompt({
+                title: "Change Remote",
+                label: "Remote URL",
+                height: 150,
+                value: remotes && remotes.length > 0 ? remotes[0].url : null
+            }).then((r) => {
+                if (r) {
+                    versionControl.setRemote(currentProjectPath, r).then(() => {
+                        showNotification("Remote changed to " + r);
+                        event.sender.send("remoteChanged");
+                    }).catch((err) => {
+                        console.error(err);
+                        dialog.showErrorBox("Error", err ? err.message : err);
+                        event.sender.send("remoteChanged");// TODO: different event
+                    });
+                } else {
+                    event.sender.send("remoteChanged");
+                }
+            });
+        });
     });
 });
 
