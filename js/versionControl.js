@@ -62,8 +62,8 @@ function addAllAndCommit(projectPath, project, msg) {
                     dir: projectPath,
                     message: msg || "N/A",
                     author: {
-                        name: project.gitUser ? project.gitUser : undefined,
-                        email: project.gitUser ? project.gitUser : undefined
+                        name: project.gitUser ? project.gitUser : "PluginBlueprint",
+                        email: project.gitUser ? project.gitUser : "git@pluginblueprint.net"
                     }
                 })
             })
