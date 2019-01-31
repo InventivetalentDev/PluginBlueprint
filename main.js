@@ -480,7 +480,10 @@ function createNewProject(arg, lib) {
                     }
                     updateRichPresence();
                     global.analytics.event("Project", "New created").send();
-                });
+                }).catch(err=>{
+                    console.error(err);
+                    Sentry.captureException(err);
+                })
             })
         });
         rs.pipe(ws);
@@ -570,7 +573,10 @@ function openProject(arg) {
             }
             updateRichPresence();
             global.analytics.event("Project", "Open Project").send();
-        });
+        }).catch(err=>{
+            console.error(err);
+            Sentry.captureException(err);
+        })
     })
 }
 
