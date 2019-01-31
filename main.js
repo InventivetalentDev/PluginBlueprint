@@ -237,6 +237,7 @@ function readRecentProjects() {
     fs.readFile(path.join(app.getPath("userData"), "recentProjects.pbd"), function (err, data) {
         if (err) {
             console.warn(err);
+            Sentry.captureException(err);
             return;
         }
         data = JSON.parse(data);
@@ -287,6 +288,7 @@ function writeRecentProjects() {
     fs.writeFile(path.join(app.getPath("userData"), "recentProjects.pbd"), JSON.stringify(paths), "utf-8", function (err) {
         if (err) {
             console.warn(err);
+            Sentry.captureException(err);
         }
     });
 }
@@ -438,6 +440,7 @@ function createNewProject(arg, lib) {
             console.error("Failed to create project file");
             console.error(err);
             dialog.showErrorBox("Error", "Failed to create PluginBlueprint project in that directory");
+            Sentry.captureException(err);
             return;
         }
         currentProjectPath = arg.path;
@@ -459,6 +462,7 @@ function createNewProject(arg, lib) {
                 if (err) {
                     console.error("Failed to create graph file");
                     console.error(err);
+                    Sentry.captureException(err);
                     return;
                 }
 
@@ -532,6 +536,7 @@ function openProject(arg) {
     if (!fs.existsSync(projectFilePath)) {
         console.error("No project file found");
         dialog.showErrorBox("Not found", "Could not find a PluginBlueprint project in that directory");
+        Sentry.captureException(err);
         return;
     }
     try {
@@ -543,6 +548,7 @@ function openProject(arg) {
         if (err) {
             console.error("Failed to read project file");
             console.error(err);
+            Sentry.captureException(err);
             return;
         }
 
@@ -601,6 +607,7 @@ ipcMain.on("updateProjectInfo", function (event, arg) {
         if (err) {
             console.error("Failed to write project file");
             console.error(err);
+            Sentry.captureException(err);
             return;
         }
         updateRichPresence();
@@ -615,6 +622,7 @@ ipcMain.on("getGraphData", function (event, arg) {
         if (err) {
             console.error("Failed to read graph file");
             console.error(err);
+            Sentry.captureException(err);
             return;
         }
 
@@ -633,6 +641,7 @@ function saveGraphData(arg, cb) {
             if (err) {
                 console.error("Failed to save graph file");
                 console.error(err);
+                Sentry.captureException(err);
                 return;
             }
 
@@ -647,6 +656,7 @@ function saveProject(cb) {
         if (err) {
             console.error("Failed to write project file");
             console.error(err);
+            Sentry.captureException(err);
             return;
         }
         if (cb) cb();
@@ -710,12 +720,14 @@ function saveCodeToFile(code) {
                 if (err) {
                     console.error("Failed to save code file");
                     console.error(err);
+                    Sentry.captureException(err);
                     return;
                 }
                 fs.writeFile(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\"), "GeneratedPlugin.java"), code, "utf-8", function (err) {
                     if (err) {
                         console.error("Failed to save code file");
                         console.error(err);
+                        Sentry.captureException(err);
                         return;
                     }
 
@@ -726,6 +738,7 @@ function saveCodeToFile(code) {
                         if (err) {
                             console.error("Failed to save manifest file");
                             console.error(err);
+                            Sentry.captureException(err);
                             return;
                         }
 
@@ -1125,6 +1138,7 @@ ipcMain.on("gitAddAndCommit", function (event, arg) {
                 }).catch((err) => {
                     console.error(err);
                     dialog.showErrorBox("Error", err ? err.message : err);
+                    Sentry.captureException(err);
                     event.sender.send("committed");//TODO: might need a different channel
                 })
             } else {
@@ -1149,6 +1163,7 @@ ipcMain.on("gitPush", function (event, arg) {
                     }).catch(err => {
                         console.error(err);
                         dialog.showErrorBox("Error", err ? err.message : err);
+                        Sentry.captureException(err);
                         event.sender.send("pushed");//TODO: different event
                     });
 
@@ -1175,6 +1190,7 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
                     }).catch((err) => {
                         console.error(err);
                         dialog.showErrorBox("Error", err ? err.message : err);
+                        Sentry.captureException(err);
                         event.sender.send("remoteChanged");// TODO: different event
                     });
                 } else {
