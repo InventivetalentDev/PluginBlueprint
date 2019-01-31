@@ -245,7 +245,11 @@ function readRecentProjects() {
         for (let i = 0; i < data.length; i++) {
             promises.push(new Promise(resolve => {
                 fs.readFile(path.join(data[i], "project.pbp"), function (err, projectData) {
-                    if (err) console.warn(err);
+                    if (err) {
+                        console.warn(err);
+                        resolve({});
+                        return;
+                    }
                     projectData = JSON.parse(projectData);
 
                     fs.readFile(path.join(data[i], "thumb.pbt"), "base64", function (err, thumb) {
@@ -261,7 +265,8 @@ function readRecentProjects() {
         }
 
         Promise.all(promises).then((projects) => {
-            recentProjects = projects || [];
+            projects = projects || [];
+            recentProjects = projects.filter(p => p && p.path);
 
             if (win) {
                 win.webContents.send("recentProjects", recentProjects);
