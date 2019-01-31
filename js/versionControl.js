@@ -12,7 +12,7 @@ function init(projectPath) {
             .then(() => {
                 return git.init({dir: projectPath})
             })
-            .then((status) => {
+            .then(() => {
                return git.add({dir:projectPath, filepath:"."})
             })
             .then(() => {
