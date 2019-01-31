@@ -122,7 +122,7 @@ function onObjectAdd(node, options, e, prevMenu) {
         }
     }
 
-    let menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prevMenu, scroll_speed: scrollSpeedForLength(values.length)});
+    let menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prevMenu, scroll_speed: scrollSpeedForLength(entries.length)});
 
     function inner_clicked(v, option, e) {
         var values = [];
@@ -167,7 +167,7 @@ function onMethodAdd(node, options, e, prevMenu) {
         }
     }
 
-    let menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prevMenu, scroll_speed: scrollSpeedForLength(values.length)});
+    let menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prevMenu, scroll_speed: scrollSpeedForLength(entries.length)});
     let menu1;
 
     function inner_clicked(v, option, e) {
