@@ -1,9 +1,9 @@
 ## Which version are you using?
-latest <!--- Please change --->  
+latest <!-- Please change -->  
 
 
 ## What steps will reproduce the problem?  
-1. <!--- Please change --->
+1. <!-- Please change -->
 2. 
 3. 
 
