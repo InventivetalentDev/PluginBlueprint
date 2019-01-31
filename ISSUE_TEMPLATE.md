@@ -1,5 +1,5 @@
 ## Which version are you using?
-> latest <!--- Please change --->  
+latest <!--- Please change --->  
 
 
 ## What steps will reproduce the problem?  
