@@ -1176,7 +1176,7 @@ ipcMain.on("gitPush", function (event, arg) {
 ipcMain.on("gitChangeRemote", function (event, arg) {
     if (!currentProjectPath || !currentProject) return;
     versionControl.openOrInit(currentProjectPath).then(() => {
-        versionControl.listRemotes(currentProject).then(remotes => {
+        versionControl.listRemotes(currentProjectPath).then(remotes => {
             prompt({
                 title: "Change Remote",
                 label: "Remote URL",
