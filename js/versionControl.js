@@ -12,16 +12,8 @@ function init(projectPath) {
             .then(() => {
                 return git.init({dir: projectPath})
             })
-            .then(() => {// https://isomorphic-git.org/docs/en/snippets#git-add-a-
-                return git.statusMatrix({dir: projectPath})
-            })
-            .then((status) => {// https://isomorphic-git.org/docs/en/snippets#git-add-a-
-                return Promise.all(
-                    status.map(([filepath, , worktreeStatus]) =>
-                        // isomorphic-git may report a changed file as unmodified, so always add if not removing
-                        worktreeStatus ? git.add({dir: projectPath, filepath: filepath}) : git.remove({dir: projectPath, filepath: filepath})
-                    )
-                );
+            .then((status) => {
+               return git.add({dir:projectPath, filepath:"."})
             })
             .then(() => {
                 return git.commit({
