@@ -1,9 +1,16 @@
 <html>
     <head>
+        <link rel="stylesheet" href="../node_modules/materialize-css/dist/css/materialize.min.css">
         <style>
+            body {
+                color: white;
+                padding: 5px;
+                font-size: 16px;
+            }
+
             #content {
                 font-family: Consolas, monospace;
-                color: white;
+                padding-top: 16px;
             }
 
             .node-ref {
@@ -13,6 +20,11 @@
         </style>
     </head>
     <body>
+        <h2>Oh noes!</h2>
+        <strong>Looks like there is an error in your Blueprint!</strong>
+        <div id="message">
+
+        </div>
         <div id="content">
 
         </div>
@@ -31,6 +43,9 @@
             $(document).ready(function () {
                 Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
             });
+
+            let msg = getCurrentWindow().theMessage;
+            $("#message").text(msg || "Please make sure you didn't forget to connect any of the nodes - you can also click on the highlighted nodes below to check which might cause the problems.")
 
             let error = getCurrentWindow().theError;
             let message = typeof error === "string" ? error : error.message || error.msg;

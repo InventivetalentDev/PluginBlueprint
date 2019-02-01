@@ -815,13 +815,13 @@ function pack() {
     })
 }
 
-function showCustomErrorDialog(error, title) {
+function showCustomErrorDialog(error, title, message) {
     if (errWin) errWin.destroy();
     errWin = null;
 
     errWin = new BrowserWindow({
         parent: win,
-        width: 800,
+        width: 1000,
         height: 600,
         modal: false,
         show: false,
@@ -833,6 +833,7 @@ function showCustomErrorDialog(error, title) {
     errWin.setTitle(title || "An Error occurred!");
     errWin.loadFile('pages/error.html');
     errWin.theError = error;
+    errWin.theMessage = message;
     errWin.show();
     // Open the DevTools.
     if (debug) {
