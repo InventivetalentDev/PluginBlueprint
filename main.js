@@ -446,9 +446,9 @@ function createNewProject(arg, lib) {
 
     progressBar.on("ready", function () {
         progressBar.detail = "Creating project files...";
-        progressBar.value++;
 
         fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
+            progressBar.value++;
             if (err) {
                 console.error("Failed to create project file");
                 console.error(err);
@@ -469,15 +469,15 @@ function createNewProject(arg, lib) {
             fs.mkdirSync(path.join(arg.path, "lib"));
 
             progressBar.detail = "Copying server .jar file...";
-            progressBar.value++;
 
             let rs = fs.createReadStream(lib);
             let ws = fs.createWriteStream(path.join(currentProjectPath, "lib", "spigot.jar"));
             ws.on("close", function () {
-                progressBar.detail = "Setting up graph file...";
                 progressBar.value++;
+                progressBar.detail = "Setting up graph file...";
 
                 fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
+                    progressBar.value++;
                     if (err) {
                         console.error("Failed to create graph file");
                         console.error(err);
@@ -495,17 +495,17 @@ function createNewProject(arg, lib) {
                     updateJumpList();
 
                     progressBar.detail = "Creating initial commit...";
-                    progressBar.value++;
 
                     versionControl.init(currentProjectPath).then(repo => {
+                        progressBar.value++;
                         console.log(repo);
 
                         progressBar.detail = "Done!";
-                        progressBar.value++;
 
                         if (win) {
                             win.loadFile('pages/graph.html');
                             win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                            progressBar.value++;
                         }
                         updateRichPresence();
                         global.analytics.event("Project", "New created").send();
