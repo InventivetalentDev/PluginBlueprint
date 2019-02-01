@@ -422,6 +422,14 @@ function createNewProject(arg, lib) {
         dialog.showErrorBox("Project exists", "There is already a PluginBlueprint project in that directory");
         return;
     }
+
+    let progressBar = new ProgressBar({
+        indeterminate: false,
+        text: "Creating Project...",
+        detail: "Creating Project...",
+        maxValue: 5
+    });
+
     let projectInfo = {
         name: arg.name,
         creationTime: Date.now(),
@@ -435,63 +443,81 @@ function createNewProject(arg, lib) {
         buildNumber: 0,
         debug: true
     };
-    fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
-        if (err) {
-            console.error("Failed to create project file");
-            console.error(err);
-            dialog.showErrorBox("Error", "Failed to create PluginBlueprint project in that directory");
-            Sentry.captureException(err);
-            return;
-        }
-        currentProjectPath = arg.path;
-        currentProject = projectInfo;
 
-        // Create dummy file with project name
-        // (symlink would be nicer but requires admin perms)
-        fs.writeFileSync(path.join(currentProjectPath, currentProject.name + ".pbp"), projectFilePath, "utf-8");
+    progressBar.on("ready", function () {
+        progressBar.detail = "Creating project files...";
+        progressBar.value++;
 
-        fs.mkdirSync(path.join(arg.path, "src"));
-        fs.mkdirSync(path.join(arg.path, "classes"));
-        fs.mkdirSync(path.join(arg.path, "output"));
-        fs.mkdirSync(path.join(arg.path, "lib"));
+        fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
+            if (err) {
+                console.error("Failed to create project file");
+                console.error(err);
+                dialog.showErrorBox("Error", "Failed to create PluginBlueprint project in that directory");
+                Sentry.captureException(err);
+                return;
+            }
+            currentProjectPath = arg.path;
+            currentProject = projectInfo;
 
-        let rs = fs.createReadStream(lib);
-        let ws = fs.createWriteStream(path.join(currentProjectPath, "lib", "spigot.jar"));
-        ws.on("close", function () {
-            fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
-                if (err) {
-                    console.error("Failed to create graph file");
-                    console.error(err);
-                    Sentry.captureException(err);
-                    return;
-                }
+            // Create dummy file with project name
+            // (symlink would be nicer but requires admin perms)
+            fs.writeFileSync(path.join(currentProjectPath, currentProject.name + ".pbp"), projectFilePath, "utf-8");
 
-                recentProjects.unshift({
-                    path: currentProjectPath,
-                    name: currentProject.name
-                });
-                writeRecentProjects();
+            fs.mkdirSync(path.join(arg.path, "src"));
+            fs.mkdirSync(path.join(arg.path, "classes"));
+            fs.mkdirSync(path.join(arg.path, "output"));
+            fs.mkdirSync(path.join(arg.path, "lib"));
 
-                app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
-                updateJumpList();
+            progressBar.detail = "Copying server .jar file...";
+            progressBar.value++;
 
-                versionControl.init(currentProjectPath).then(repo => {
-                    console.log(repo);
+            let rs = fs.createReadStream(lib);
+            let ws = fs.createWriteStream(path.join(currentProjectPath, "lib", "spigot.jar"));
+            ws.on("close", function () {
+                progressBar.detail = "Setting up graph file...";
+                progressBar.value++;
 
-                    if (win) {
-                        win.loadFile('pages/graph.html');
-                        win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
+                    if (err) {
+                        console.error("Failed to create graph file");
+                        console.error(err);
+                        Sentry.captureException(err);
+                        return;
                     }
-                    updateRichPresence();
-                    global.analytics.event("Project", "New created").send();
-                }).catch(err=>{
-                    console.error(err);
-                    Sentry.captureException(err);
-                })
-            })
-        });
-        rs.pipe(ws);
 
+                    recentProjects.unshift({
+                        path: currentProjectPath,
+                        name: currentProject.name
+                    });
+                    writeRecentProjects();
+
+                    app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
+                    updateJumpList();
+
+                    progressBar.detail = "Creating initial commit...";
+                    progressBar.value++;
+
+                    versionControl.init(currentProjectPath).then(repo => {
+                        console.log(repo);
+
+                        progressBar.detail = "Done!";
+                        progressBar.value++;
+
+                        if (win) {
+                            win.loadFile('pages/graph.html');
+                            win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                        }
+                        updateRichPresence();
+                        global.analytics.event("Project", "New created").send();
+                    }).catch(err => {
+                        console.error(err);
+                        Sentry.captureException(err);
+                    })
+                })
+            });
+            rs.pipe(ws);
+
+        });
     });
 }
 
@@ -579,7 +605,7 @@ function openProject(arg) {
             }
             updateRichPresence();
             global.analytics.event("Project", "Open Project").send();
-        }).catch(err=>{
+        }).catch(err => {
             console.error(err);
             Sentry.captureException(err);
         })
