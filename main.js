@@ -447,77 +447,79 @@ function createNewProject(arg, lib) {
     progressBar.on("ready", function () {
         progressBar.detail = "Creating project files...";
 
-        fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
-            progressBar.value++;
-            if (err) {
-                console.error("Failed to create project file");
-                console.error(err);
-                dialog.showErrorBox("Error", "Failed to create PluginBlueprint project in that directory");
-                Sentry.captureException(err);
-                return;
-            }
-            currentProjectPath = arg.path;
-            currentProject = projectInfo;
-
-            // Create dummy file with project name
-            // (symlink would be nicer but requires admin perms)
-            fs.writeFileSync(path.join(currentProjectPath, currentProject.name + ".pbp"), projectFilePath, "utf-8");
-
-            fs.mkdirSync(path.join(arg.path, "src"));
-            fs.mkdirSync(path.join(arg.path, "classes"));
-            fs.mkdirSync(path.join(arg.path, "output"));
-            fs.mkdirSync(path.join(arg.path, "lib"));
-
-            progressBar.detail = "Copying server .jar file...";
-
-            let rs = fs.createReadStream(lib);
-            let ws = fs.createWriteStream(path.join(currentProjectPath, "lib", "spigot.jar"));
-            ws.on("close", function () {
+        setTimeout(function () {
+            fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
                 progressBar.value++;
-                progressBar.detail = "Setting up graph file...";
+                if (err) {
+                    console.error("Failed to create project file");
+                    console.error(err);
+                    dialog.showErrorBox("Error", "Failed to create PluginBlueprint project in that directory");
+                    Sentry.captureException(err);
+                    return;
+                }
+                currentProjectPath = arg.path;
+                currentProject = projectInfo;
 
-                fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
+                // Create dummy file with project name
+                // (symlink would be nicer but requires admin perms)
+                fs.writeFileSync(path.join(currentProjectPath, currentProject.name + ".pbp"), projectFilePath, "utf-8");
+
+                fs.mkdirSync(path.join(arg.path, "src"));
+                fs.mkdirSync(path.join(arg.path, "classes"));
+                fs.mkdirSync(path.join(arg.path, "output"));
+                fs.mkdirSync(path.join(arg.path, "lib"));
+
+                progressBar.detail = "Copying server .jar file...";
+
+                let rs = fs.createReadStream(lib);
+                let ws = fs.createWriteStream(path.join(currentProjectPath, "lib", "spigot.jar"));
+                ws.on("close", function () {
                     progressBar.value++;
-                    if (err) {
-                        console.error("Failed to create graph file");
-                        console.error(err);
-                        Sentry.captureException(err);
-                        return;
-                    }
+                    progressBar.detail = "Setting up graph file...";
 
-                    recentProjects.unshift({
-                        path: currentProjectPath,
-                        name: currentProject.name
-                    });
-                    writeRecentProjects();
-
-                    app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
-                    updateJumpList();
-
-                    progressBar.detail = "Creating initial commit...";
-
-                    versionControl.init(currentProjectPath).then(repo => {
+                    fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
                         progressBar.value++;
-                        console.log(repo);
-
-                        progressBar.detail = "Done!";
-
-                        if (win) {
-                            win.loadFile('pages/graph.html');
-                            win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
-                            progressBar.value++;
+                        if (err) {
+                            console.error("Failed to create graph file");
+                            console.error(err);
+                            Sentry.captureException(err);
+                            return;
                         }
-                        updateRichPresence();
-                        global.analytics.event("Project", "New created").send();
-                    }).catch(err => {
-                        console.error(err);
-                        Sentry.captureException(err);
-                    })
-                })
-            });
-            rs.pipe(ws);
 
-        });
+                        recentProjects.unshift({
+                            path: currentProjectPath,
+                            name: currentProject.name
+                        });
+                        writeRecentProjects();
+
+                        app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
+                        updateJumpList();
+
+                        progressBar.detail = "Creating initial commit...";
+
+                        versionControl.init(currentProjectPath).then(repo => {
+                            progressBar.value++;
+                            console.log(repo);
+
+                            progressBar.detail = "Done!";
+
+                            if (win) {
+                                win.loadFile('pages/graph.html');
+                                win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                                progressBar.value++;
+                            }
+                            updateRichPresence();
+                            global.analytics.event("Project", "New created").send();
+                        }).catch(err => {
+                            console.error(err);
+                            Sentry.captureException(err);
+                        })
+                    })
+                });
+                rs.pipe(ws);
+
+            });
+        }, 500);
     });
 }
 
@@ -882,15 +884,17 @@ ipcMain.on("codeGenerated", function (event, arg) {
     });
 
     progressBar.on("ready", function () {
-        generateCompilePackage(arg, progressBar).then(() => {
-            progressBar.detail = "Done!";
-            console.log("Done!");
-            showNotification("Done!");
-            event.sender.send("generateDone");
-        }).catch((err) => {
-            event.sender.send("generateError", err);
-            showCustomErrorDialog(err, "Compilation Error");
-        })
+        setTimeout(function () {
+            generateCompilePackage(arg, progressBar).then(() => {
+                progressBar.detail = "Done!";
+                console.log("Done!");
+                showNotification("Done!");
+                event.sender.send("generateDone");
+            }).catch((err) => {
+                event.sender.send("generateError", err);
+                showCustomErrorDialog(err, "Compilation Error");
+            })
+        }, 500);
     });
 });
 
