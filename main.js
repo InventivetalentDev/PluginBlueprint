@@ -870,26 +870,46 @@ function showCustomErrorDialog(error, title, message) {
 }
 
 ipcMain.on("codeGenerated", function (event, arg) {
-    generateCompilePackage(arg).then(() => {
-        console.log("Done!");
-        showNotification("Done!");
-        event.sender.send("generateDone");
-    }).catch((err) => {
-        event.sender.send("generateError", err);
-        showCustomErrorDialog(err, "Compilation Error");
-    })
+    let max = 0;
+    if (arg.code) max++;
+    if (arg.compile) max++;
+    if (arg.pack) max++;
+    let progressBar = new ProgressBar({
+        indeterminate: false,
+        maxValue: max,
+        text: "Generating/Compiling/Packaging...",
+        detail: "Waiting..."
+    });
+
+    progressBar.on("ready", function () {
+        generateCompilePackage(arg, progressBar).then(() => {
+            progressBar.detail = "Done!";
+            console.log("Done!");
+            showNotification("Done!");
+            event.sender.send("generateDone");
+        }).catch((err) => {
+            event.sender.send("generateError", err);
+            showCustomErrorDialog(err, "Compilation Error");
+        })
+    });
 });
 
 // async/await to preserve execution order
-async function generateCompilePackage(arg) {
+async function generateCompilePackage(arg, progressBar) {
     if (arg.code) {
+        progressBar.detail = "Generating code...";
         await saveCodeToFile(arg.code);
+        progressBar.value++;
     }
     if (arg.compile) {
+        progressBar.detail = "Compiling...";
         await compile();
+        progressBar.value++;
     }
     if (arg.pack) {
+        progressBar.detail = "Packaging...";
         await pack();
+        progressBar.value++;
     }
 }
 
