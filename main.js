@@ -1028,7 +1028,7 @@ ipcMain.on("startServer", function (event, arg) {
         });
     }
     let port = "";
-    serverStarter.copyPlugin(currentProjectPath, currentProject.name).then(() => {
+    serverStarter.copyPlugin(currentProjectPath, currentProject).then(() => {
         serverStarter.startServer(currentProjectPath,
             (out) => {
                 if (logWin) {
@@ -1099,7 +1099,7 @@ function reloadPlugin() {
     if (!currentProject) return;
     console.log("Reloading plugin...");
     serverStarter.sendCommandToInstance("pluginblueprint unload " + currentProject.name, () => {
-        serverStarter.copyPlugin(currentProjectPath, currentProject.name, true, true).then(() => {
+        serverStarter.copyPlugin(currentProjectPath, currentProject, true, true, true).then(() => {
             serverStarter.sendCommandToInstance("pluginblueprint load " + currentProject.name, () => {
                 console.log("Plugin reloaded!");
                 showNotification("Plugin reloaded!");
