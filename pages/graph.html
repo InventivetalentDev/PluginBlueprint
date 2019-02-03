@@ -389,12 +389,6 @@
             $("body")[0].addEventListener("keydown", canvas.processKey.bind(canvas));
             canvas.resize();
 
-            console.log("Initializing Bukkit Node generator...");
-            NodeGenerator.init().then(() => {
-                ipcRenderer.send("getGraphData");
-
-                graph.start(100);
-            });
 
 
             function addBukkitNode(className, classType) {
@@ -641,6 +635,14 @@
                 projectInfo = arg;
                 console.log("Project:");
                 console.log(arg);
+
+
+                console.log("Initializing Bukkit Node generator...");
+                NodeGenerator.init().then(() => {
+                    ipcRenderer.send("getGraphData");
+
+                    graph.start(100);
+                });
             });
             ipcRenderer.on("graphData", function (event, arg) {
                 if (!arg) {
