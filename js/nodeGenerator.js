@@ -529,7 +529,7 @@ function addClassIO(node, classData, isChildCall) {
         let methodSignature = method.fullSignature;
 
 
-        let isLambda = checkLambda(classData, method);
+        let isLambda = checkLambdaOrAbstractMethod(classData, method);
 
         if (method.returnType.qualifiedName === "void") {// Regular void or abstract Method
             addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
@@ -638,7 +638,7 @@ function addMethodIO(node, classData, methodData) {
 
     let methodSignature = methodData.fullSignature;
 
-    let isLambda = checkLambda(classData, methodData);
+    let isLambda = checkLambdaOrAbstractMethod(classData, methodData);
 
     if (!isLambda && !(classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete")))
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
@@ -717,7 +717,7 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
 }
 
 function addConstructorIO(node, classData, constructorData) {
-    let isLambda = checkLambda(classData, constructorData);
+    let isLambda = checkLambdaOrAbstractMethod(classData, constructorData);
 
     if (!isLambda)
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
@@ -741,8 +741,8 @@ function addConstructorIO(node, classData, constructorData) {
 
 }
 
-function checkLambda(classData, methodData) {
-    return (classData.methods.length === 1 || countNonDefaultMethods(classData) === 1) && classData.isInterface && methodData.isAbstract
+function checkLambdaOrAbstractMethod(classData, methodData) {
+    return (classData.methods.length === 1 || countNonDefaultMethods(classData) === 1) && classData.isInterface || methodData.isAbstract
 }
 
 function countNonDefaultMethods(classData) {
