@@ -26,7 +26,7 @@ function compile(rootDir, projectInfo) {
         if(projectInfo.libraries) {
             for (let l = 0; l < projectInfo.libraries.length; l++) {
                 console.log("Adding Library", projectInfo.libraries[l], "to classpath");
-                classpath.push(path.join(app.getPath("userData"), "jjdoc-binaries", projectInfo.libraries[l] + ".json"));
+                classpath.push(path.join(app.getPath("userData"), "jjdoc-binaries", projectInfo.libraries[l] + ".jar"));
             }
         }
 
