@@ -635,18 +635,22 @@
                 $("#overlay").fadeOut();
             }
 
+            let nodesInitialized=false;
             ipcRenderer.on("projectInfo", function (event, arg) {
                 projectInfo = arg;
                 console.log("Project:");
                 console.log(arg);
 
 
-                console.log("Initializing Bukkit Node generator...");
-                NodeGenerator.init(projectInfo.libraries || []).then(() => {
-                    ipcRenderer.send("getGraphData");
+                if(!nodesInitialized) {
+                    console.log("Initializing Bukkit Node generator...");
+                    NodeGenerator.init(projectInfo.libraries || []).then(() => {
+                        nodesInitialized=true;
+                        ipcRenderer.send("getGraphData");
 
-                    graph.start(100);
-                });
+                        graph.start(100);
+                    });
+                }
             });
             ipcRenderer.on("libraryAdded", function (event, arg) {
                 NodeGenerator.addLibrary(arg);
