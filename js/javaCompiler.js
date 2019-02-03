@@ -23,14 +23,14 @@ function compile(rootDir, projectInfo) {
     return new Promise((resolve, reject) => {
         let classpath = [];
         classpath.push(path.join(rootDir, "lib", "spigot.jar"));
-        if(projectInfo.libraries) {
+        if (projectInfo.libraries) {
             for (let l = 0; l < projectInfo.libraries.length; l++) {
                 console.log("Adding Library", projectInfo.libraries[l], "to classpath");
                 classpath.push(path.join(app.getPath("userData"), "jjdoc-binaries", projectInfo.libraries[l] + ".jar"));
             }
         }
 
-        let cl = "javac -cp \"" + classpath.join(":") + "\" -d \"" + path.join(rootDir, "classes") + "\" \"" + path.join(rootDir, "src", projectInfo.package.split(".").join("\\"), "GeneratedPlugin.java") + "\"";
+        let cl = "javac -cp \"" + classpath.join(";") + "\" -d \"" + path.join(rootDir, "classes") + "\" \"" + path.join(rootDir, "src", projectInfo.package.split(".").join("\\"), "GeneratedPlugin.java") + "\"";
         console.log("Running \"" + cl + "\"...");
         exec(cl, (err, stdout, stderr) => {
             if (err) {
