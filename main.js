@@ -1254,7 +1254,7 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
     });
 });
 
-ipcMain.on("showLibrarySelector",function (event) {
+ipcMain.on("showLibrarySelector", function (event) {
     let child = new BrowserWindow({
         parent: win,
         title: DEFAULT_TITLE,
@@ -1280,13 +1280,13 @@ ipcMain.on("showLibrarySelector",function (event) {
     global.analytics.screenview("Library Selector", app.getName(), app.getVersion()).event("Project", "Open Library Selector").send();
 });
 
-ipcMain.on("addLibrary",function (event,arg) {
+ipcMain.on("addLibrary", function (event, arg) {
     console.log("addLibrary", arg);
-   if(!currentProject)return;
-   if(!currentProject.libraries) currentProject.libraries = [];
-   if(currentProject.libraries.indexOf(arg)===-1) {
-       currentProject.libraries.push(arg);
-   }
+    if (!currentProject) return;
+    if (!currentProject.libraries) currentProject.libraries = [];
+    if (currentProject.libraries.indexOf(arg) === -1) {
+        currentProject.libraries.push(arg);
+    }
     saveProject(function () {
         if (win) {
             win.webContents.send("libraryAdded", arg);
