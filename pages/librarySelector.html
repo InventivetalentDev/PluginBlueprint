@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="../node_modules/materialize-css/dist/css/materialize.min.css">
+    </head>
+    <body>
+        <div class="container">
+            <br/>
+            <br/>
+            <div class="row">
+                <div class="input field col s12">
+                    <select id="libSelector">
+                        <option disabled selected id="placeholderOption">Loading...</option>
+                    </select>
+                    <label>Library</label>
+                </div>
+            </div>
+            <button class="btn" id="addBtn">Add Library</button>
+        </div>
+
+        <script src="../node_modules/materialize-css/dist/js/materialize.min.js"></script>
+        <script>
+            const {ipcRenderer} = require("electron");
+            const {Menu, getCurrentWindow, getGlobal} = require("electron").remote;
+            const prompt = require('electron-prompt');
+            const analytics = getGlobal("analytics");
+            const $ = require("jquery");
+            const Sentry = require("@sentry/electron");
+            const ClassDataStore = require("../js/classDataStore");
+
+
+            $(document).ready(function () {
+                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
+                analytics.pageview("/librarySelector", "", "Library Selector").send();
+                refreshSelect();
+            });
+
+            ClassDataStore.getAvailableLibraries().then((libs) => {
+                $("#placeholderOption").text("Pick a Library");
+                for (let i = 0; i < libs.length; i++) {
+                    $("#libSelector").append("<option value='" + libs[i] + "'>" + libs[i] + "</option>");
+                }
+                refreshSelect();
+            });
+
+            $("#addBtn").click(function () {
+                let name = $("#libSelector").val();
+                if (name && name.length > 0) {
+                    console.log("Add Library:", name);
+                    ipcRenderer.send("addLibrary", name);
+
+                    getCurrentWindow().close();
+                }
+            })
+
+            function refreshSelect() {
+                var elems = document.querySelectorAll('select');
+                var instances = M.FormSelect.init(elems);
+            }
+        </script>
+    </body>
+</html>

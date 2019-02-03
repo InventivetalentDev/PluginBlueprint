@@ -278,7 +278,7 @@ function showOptionalSlotMenu(v, opts, e, prev_menu, node) {
     return false;
 }
 
-function init() {
+function init(extraLibraries) {
     return new Promise((resolve => {
         // Clear default node types
         LiteGraph.registered_node_types = {};
@@ -375,23 +375,39 @@ function init() {
         }
 
         classStore.init().then(() => {
-            console.log("Generating & Registering Java nodes...");
-            let classesByName = classStore.getClassesByName();
-            for (let n in classesByName) {
-                let clazz = classesByName[n];
-                getOrCreateBukkitClassNode(clazz.qualifiedName);
-                for (let m in clazz.methodsBySignature) {
-                    let method = clazz.methodsBySignature[m];
-                    getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
+            console.log("Generating & Registering Nodes...");
+
+            if (extraLibraries && extraLibraries.length > 0) {
+                let libPromises = [];
+                for (let l = 0; l < extraLibraries.length; l++) {
+                    libPromises.push(classStore.loadLibrary(extraLibraries[l]));
                 }
-                for (let c in clazz.constructorsBySignature) {
-                    let constructor = clazz.constructorsBySignature[c];
-                    getOrCreateBukkitConstructorNode(clazz.qualifiedName, constructor.fullSignature);
-                }
+                Promise.all(libPromises).then(() => {
+                    ensureNodeRegistration();
+                    resolve();
+                })
+            } else {
+                ensureNodeRegistration();
+                resolve();
             }
-            resolve();
         });
     }))
+}
+
+function ensureNodeRegistration() {
+    let classesByName = classStore.getClassesByName();
+    for (let n in classesByName) {
+        let clazz = classesByName[n];
+        getOrCreateBukkitClassNode(clazz.qualifiedName);
+        for (let m in clazz.methodsBySignature) {
+            let method = clazz.methodsBySignature[m];
+            getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
+        }
+        for (let c in clazz.constructorsBySignature) {
+            let constructor = clazz.constructorsBySignature[c];
+            getOrCreateBukkitConstructorNode(clazz.qualifiedName, constructor.fullSignature);
+        }
+    }
 }
 
 function getOrCreateBukkitClassNode(className) {
@@ -834,4 +850,12 @@ module.exports = {
     init: init,
     getOrCreateBukkitClassNode: getOrCreateBukkitClassNode,
     getOrCreateBukkitMethodNode: getOrCreateBukkitMethodNode,
+    addLibrary: function (lib) {
+        return new Promise((resolve, reject) => {
+            classStore.loadLibrary(lib).then(() => {
+                ensureNodeRegistration();
+                resolve();
+            }).catch(reject);
+        })
+    }
 };

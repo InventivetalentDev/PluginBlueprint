@@ -28,6 +28,7 @@ let logWin;
 let errWin;
 let editorWin;
 let commandWin;
+let libraryWin;
 
 let richPresence;
 
@@ -1249,6 +1250,46 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
                 }
             });
         });
+    });
+});
+
+ipcMain.on("showLibrarySelector",function (event) {
+    let child = new BrowserWindow({
+        parent: win,
+        title: DEFAULT_TITLE,
+        width: 600,
+        height: 300,
+        modal: true,
+        show: false,
+        resizable: false,
+        backgroundColor: "#373737",
+        icon: path.join(__dirname, 'assets/icons/favicon.ico')
+    });
+    libraryWin = child;
+    child.on("close", () => {
+        libraryWin = null;
+    });
+    child.loadFile('pages/librarySelector.html');
+    if (debug) {
+        child.webContents.openDevTools({
+            mode: "detach"
+        });
+    }
+    child.show();
+    global.analytics.screenview("Library Selector", app.getName(), app.getVersion()).event("Project", "Open Library Selector").send();
+});
+
+ipcMain.on("addLibrary",function (event,arg) {
+    console.log("addLibrary", arg);
+   if(!currentProject)return;
+   if(!currentProject.libraries) currentProject.libraries = [];
+   if(currentProject.libraries.indexOf(arg)===-1) {
+       currentProject.libraries.push(arg);
+   }
+    saveProject(function () {
+        if (win) {
+            win.webContents.send("libraryAdded", arg);
+        }
     });
 });
 

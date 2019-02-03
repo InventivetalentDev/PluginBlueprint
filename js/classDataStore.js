@@ -1,4 +1,5 @@
-const {app} = require("electron");
+const electron = require("electron");
+const app = electron.app || electron.remote.app;
 const path = require("path");
 const fs = require("fs-extra");
 const request = require("request");
@@ -101,33 +102,45 @@ ClassDataStore.getAvailableLibraries = function () {
 };
 
 ClassDataStore.downloadLibraryDoc = function (libraryName) {
-   return new Promise((resolve, reject) => {
-       let docDir = path.join(app.getPath("userData"), "jjdoc");
-       fs.ensureDir(docDir).then(()=>{
-           let docFile = path.join(docDir, libraryName + ".json");
-           request("https://jjdoc.inventivetalent.org/libs/"+libraryName+"/all",function (err,resp,body) {
-               if (err) {
-                   reject(err);
-                   return;
-               }
-               if (resp.statusCode !== 200) {
-                   reject(body);
-                   return;
-               }
-               let stream = fs.createWriteStream(docFile);
-               resp.pipe(stream);
-               resolve();
-           })
-       })
-   })
+    return new Promise((resolve, reject) => {
+        let docDir = path.join(app.getPath("userData"), "jjdoc");
+        fs.ensureDir(docDir).then(() => {
+            let docFile = path.join(docDir, libraryName + ".json");
+            console.log("Downloading", "https://jjdoc.inventivetalent.org/libs/" + libraryName + "/all");
+            request("https://jjdoc.inventivetalent.org/libs/" + libraryName + "/all", function (err, resp, body) {
+                if (err) {
+                    console.warn(err);
+                    reject(err);
+                    return;
+                }
+                console.log(body);
+                if (resp.statusCode !== 200) {
+                    console.warn("Response != 200");
+                    reject(body);
+                    return;
+                }
+                fs.writeFile(docFile, body, function (err) {
+                    if (err) {
+                        console.warn(err);
+                        reject(err);
+                        return;
+                    }
+                    resolve();
+                })
+            })
+        })
+    })
 };
 
 ClassDataStore.prototype.loadLibrary = function (libraryName) {
+    console.log("Loading Library:", libraryName);
     let that = this;
-    return new Promise((resolve, reject) =>  {
+    return new Promise((resolve, reject) => {
         if (fs.existsSync(path.join(app.getPath("userData"), "jjdoc", libraryName + ".json"))) {
+            console.log("Loading Library", libraryName, "from File...");
             that.loadClassFile(libraryName, true).then(resolve).catch(reject);
-        }else{
+        } else {
+            console.log("Downloading new Library", libraryName);
             ClassDataStore.downloadLibraryDoc(libraryName).then(() => {
                 that.loadClassFile(libraryName, true).then(resolve).catch(reject);
             }).catch(reject);
