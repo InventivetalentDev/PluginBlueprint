@@ -347,7 +347,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                         let params = [];
                         if (methodData.parameters) {
                             for (let p = 0; p < methodData.parameters.length; p++) {
-                                let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
+                                let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
                                 console.log(methodData.parameters[p]);
                                 console.log(pType);
                                 params.push(pType + " " + methodData.parameters[p].name);
@@ -359,7 +359,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                             if (!linkInfo) continue;
                             if (methodData.parameters) {
                                 for (let p = 0; p < methodData.parameters.length; p++) {
-                                    let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type;
+                                    let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
                                     fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
                                     initCode += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
                                 }
@@ -461,7 +461,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
 
             if (!linkInfo || !sourceNode) {
                 let param = methodData.parameters[i - paramOffset];
-                params.push(getNullForType(param ? param.type : null));
+                params.push(getNullForType(param ? param.type.qualifiedName : null));
             } else {// append param
                 params.push(nodeOutput(linkInfo.origin_id, linkInfo.origin_slot));
             }
