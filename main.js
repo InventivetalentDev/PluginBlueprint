@@ -787,6 +787,7 @@ function makePluginYml() {
         "\nversion: " + currentProject.version + (currentProject.debug ? ("-b" + ++currentProject.buildNumber) : "") +
         "\nmain: " + currentProject.package + ".GeneratedPlugin" +
         "\nauthor: " + currentProject.author +
+        "\nsoftdepend: [" + (currentProject.softdepend || []).join(",") + "]" +
         "\ngenerator: PluginBlueprint " + app.getVersion() +
         "\napi-version: 1.13\n";
     if (currentProject.commands) {
