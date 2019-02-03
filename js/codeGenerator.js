@@ -29,135 +29,143 @@ let debug = false;
 function generateClassCode(graph, projectInfo) {
     return new Promise((resolve) => {
         debug = projectInfo.debug;
-        classStore.init().then(() => {
-            console.log(graph);
-            for (let i = 0; i < graph._nodes.length; i++) {
-                if (graph._nodes[i].nodeType === "BukkitClassNode") {
-                    let classData = classStore.getClass(graph._nodes[i].className);
-                    if (graph._nodes[i].classType === "event") {
-                        generateCodeForEventClassNode(graph, i, graph._nodes[i], classData);
-                    }
-                    if (graph._nodes[i].classType === "object") {
-                        generateCodeForObjectClassNode(graph, i, graph._nodes[i], classData);
-                    }
-                    if (graph._nodes[i].classType === "enum") {
-                        generateCodeForEnumClassNode(graph, i, graph._nodes[i], classData);
-                    }
-                } else if (graph._nodes[i].nodeType === "BukkitMethodNode") {
-                    let classData = classStore.getClass(graph._nodes[i].className);
-                    let methodData = classStore.getMethod(graph._nodes[i].className, graph._nodes[i].methodSignature);
-                    generateCodeForMethodNode(graph, i, graph._nodes[i], classData, methodData);
-                } else if (graph._nodes[i].nodeType === "BukkitConstructorNode") {
-                    let classData = classStore.getClass(graph._nodes[i].className);
-                    let constructorData = classStore.getConstructor(graph._nodes[i].className, graph._nodes[i].constructorSignature);
-                    generateCodeForConstructorNode(graph, i, graph._nodes[i], classData, constructorData);
-                } else {
-                    if (graph._nodes[i].classType === "native") {
-                        generateCodeForNativeNode(graph, i, graph._nodes[i]);
+        classStore.init()
+            .then(() => {
+                let libPromises = [];
+                for (let l = 0; l < projectInfo.libraries.length; l++) {
+                    libPromises.push(classStore.loadLibrary(projectInfo.libraries[l]));
+                }
+                return Promise.all(libPromises);
+            })
+            .then(() => {
+                console.log(graph);
+                for (let i = 0; i < graph._nodes.length; i++) {
+                    if (graph._nodes[i].nodeType === "BukkitClassNode") {
+                        let classData = classStore.getClass(graph._nodes[i].className);
+                        if (graph._nodes[i].classType === "event") {
+                            generateCodeForEventClassNode(graph, i, graph._nodes[i], classData);
+                        }
+                        if (graph._nodes[i].classType === "object") {
+                            generateCodeForObjectClassNode(graph, i, graph._nodes[i], classData);
+                        }
+                        if (graph._nodes[i].classType === "enum") {
+                            generateCodeForEnumClassNode(graph, i, graph._nodes[i], classData);
+                        }
+                    } else if (graph._nodes[i].nodeType === "BukkitMethodNode") {
+                        let classData = classStore.getClass(graph._nodes[i].className);
+                        let methodData = classStore.getMethod(graph._nodes[i].className, graph._nodes[i].methodSignature);
+                        generateCodeForMethodNode(graph, i, graph._nodes[i], classData, methodData);
+                    } else if (graph._nodes[i].nodeType === "BukkitConstructorNode") {
+                        let classData = classStore.getClass(graph._nodes[i].className);
+                        let constructorData = classStore.getConstructor(graph._nodes[i].className, graph._nodes[i].constructorSignature);
+                        generateCodeForConstructorNode(graph, i, graph._nodes[i], classData, constructorData);
+                    } else {
+                        if (graph._nodes[i].classType === "native") {
+                            generateCodeForNativeNode(graph, i, graph._nodes[i]);
+                        }
                     }
                 }
-            }
 
 
-            let classCode = "" +
-                "package " + projectInfo.package + ";\n" +
-                "\n" +
-                "/******************************************************************/\n" +
-                "/* Hi! Welcome to the generated source code of a PluginBlueprint! */\n" +
-                "/*                                                                */\n" +
-                "/* Just as a quick disclaimer:                                    */\n" +
-                "/* If you're trying to get into *actual* programming, please      */\n" +
-                "/* do NOT use this code as a starting point!                      */\n" +
-                "/* This code was designed to be easily generated by more code     */\n" +
-                "/* and goes against a whole lot of programming conventions in     */\n" +
-                "/* terms of efficiency, readability & more.                       */\n" +
-                "/*                                                                */\n" +
-                "/* Anyway - have fun blueprinting and/or programming! :)          */\n" +
-                "/* ~inventivetalent                                               */\n" +
-                "/******************************************************************/\n" +
-                "/****          Generated by PluginBlueprint                    ****/\n" +
-                "/******************************************************************/\n" +
-                "public class GeneratedPlugin extends org.bukkit.plugin.java.JavaPlugin implements org.bukkit.event.Listener {\n" +
-                "\n" +
-                "\n/*** Start Fields ***/\n" +
-                fields.join("\n") +
-                "\n/*** End Fields ***/\n" +
-                "\n\n" +
-                "\n" +
-                "@java.lang.Override\n" +
-                "public void onLoad() {\n" +
-                onLoadMethods.join("\n") +
-                "}\n" +
-                "\n" +
-                "@java.lang.Override\n" +
-                "public void onEnable() {\n" +
-                "getServer().getPluginManager().registerEvents(this, this);\n" +
-                "\n" +
-                javaPluginMethods.join("\n") +
-                onEnableMethods.join("\n") +
-                "}\n" +
-                "\n" +
-                "@java.lang.Override\n" +
-                "public void onDisable() {\n" +
-                onDisableMethods.join("\n") +
-                "}\n" +
-                "\n" +
-                "@java.lang.Override\n" +
-                "public boolean onCommand(org.bukkit.command.CommandSender sender, org.bukkit.command.Command command, java.lang.String label, java.lang.String[] args) {\n" +
-                onCommandMethods.join("\n") +
-                "return true;\n" +// TODO: variable return
-                "}\n" +
-                "\n" +
-                "\n/*** Start Event Listeners ***/\n" +
-                eventListenerMethods.join("\n") +
-                "\n/*** End Event Listeners ***/\n" +
-                "\n" +
-                "\n/*** Start Object Methods ***/\n" +
-                objectMethods.join("\n") +
-                "\n/*** End Object Methods ***/\n" +
-                "\n" +
-                "\n/*** Start Enum Methods ***/\n" +
-                enumMethods.join("\n") +
-                "\n/*** End Enum Methods ***/\n" +
-                "\n" +
-                "\n/*** Start Generated Methods ***/\n" +
-                generatedMethods.join("\n") +
-                "\n/*** End Generated Methods ***/\n" +
-                "\n" +
-                "\n/*** Start Constructor Calls ***/\n" +
-                constructorCalls.join("\n") +
-                "\n/*** End Constructor Calls ***/\n" +
-                "\n" +
-                "\n/*** Start Method Calls ***/\n" +
-                methodCalls.join("\n") +
-                "\n/*** End Method Calls ***/\n" +
-                "\n" +
-                "\n/*** Start Native Calls ***/\n" +
-                nativeCalls.join("\n") +
-                "\n/*** End Native Calls ***/\n" +
-                "\n" +
-                "}\n";
+                let classCode = "" +
+                    "package " + projectInfo.package + ";\n" +
+                    "\n" +
+                    "/******************************************************************/\n" +
+                    "/* Hi! Welcome to the generated source code of a PluginBlueprint! */\n" +
+                    "/*                                                                */\n" +
+                    "/* Just as a quick disclaimer:                                    */\n" +
+                    "/* If you're trying to get into *actual* programming, please      */\n" +
+                    "/* do NOT use this code as a starting point!                      */\n" +
+                    "/* This code was designed to be easily generated by more code     */\n" +
+                    "/* and goes against a whole lot of programming conventions in     */\n" +
+                    "/* terms of efficiency, readability & more.                       */\n" +
+                    "/*                                                                */\n" +
+                    "/* Anyway - have fun blueprinting and/or programming! :)          */\n" +
+                    "/* ~inventivetalent                                               */\n" +
+                    "/******************************************************************/\n" +
+                    "/****          Generated by PluginBlueprint                    ****/\n" +
+                    "/******************************************************************/\n" +
+                    "public class GeneratedPlugin extends org.bukkit.plugin.java.JavaPlugin implements org.bukkit.event.Listener {\n" +
+                    "\n" +
+                    "\n/*** Start Fields ***/\n" +
+                    fields.join("\n") +
+                    "\n/*** End Fields ***/\n" +
+                    "\n\n" +
+                    "\n" +
+                    "@java.lang.Override\n" +
+                    "public void onLoad() {\n" +
+                    onLoadMethods.join("\n") +
+                    "}\n" +
+                    "\n" +
+                    "@java.lang.Override\n" +
+                    "public void onEnable() {\n" +
+                    "getServer().getPluginManager().registerEvents(this, this);\n" +
+                    "\n" +
+                    javaPluginMethods.join("\n") +
+                    onEnableMethods.join("\n") +
+                    "}\n" +
+                    "\n" +
+                    "@java.lang.Override\n" +
+                    "public void onDisable() {\n" +
+                    onDisableMethods.join("\n") +
+                    "}\n" +
+                    "\n" +
+                    "@java.lang.Override\n" +
+                    "public boolean onCommand(org.bukkit.command.CommandSender sender, org.bukkit.command.Command command, java.lang.String label, java.lang.String[] args) {\n" +
+                    onCommandMethods.join("\n") +
+                    "return true;\n" +// TODO: variable return
+                    "}\n" +
+                    "\n" +
+                    "\n/*** Start Event Listeners ***/\n" +
+                    eventListenerMethods.join("\n") +
+                    "\n/*** End Event Listeners ***/\n" +
+                    "\n" +
+                    "\n/*** Start Object Methods ***/\n" +
+                    objectMethods.join("\n") +
+                    "\n/*** End Object Methods ***/\n" +
+                    "\n" +
+                    "\n/*** Start Enum Methods ***/\n" +
+                    enumMethods.join("\n") +
+                    "\n/*** End Enum Methods ***/\n" +
+                    "\n" +
+                    "\n/*** Start Generated Methods ***/\n" +
+                    generatedMethods.join("\n") +
+                    "\n/*** End Generated Methods ***/\n" +
+                    "\n" +
+                    "\n/*** Start Constructor Calls ***/\n" +
+                    constructorCalls.join("\n") +
+                    "\n/*** End Constructor Calls ***/\n" +
+                    "\n" +
+                    "\n/*** Start Method Calls ***/\n" +
+                    methodCalls.join("\n") +
+                    "\n/*** End Method Calls ***/\n" +
+                    "\n" +
+                    "\n/*** Start Native Calls ***/\n" +
+                    nativeCalls.join("\n") +
+                    "\n/*** End Native Calls ***/\n" +
+                    "\n" +
+                    "}\n";
 
-            console.log(classCode);
+                console.log(classCode);
 
-            // Reset
-            fields.splice(0, fields.length);
-            eventListenerMethods.splice(0, eventListenerMethods.length);
-            onLoadMethods.splice(0, onLoadMethods.length);
-            javaPluginMethods.splice(0, javaPluginMethods.length);
-            onEnableMethods.splice(0, onEnableMethods.length);
-            onDisableMethods.splice(0, onDisableMethods.length);
-            onCommandMethods.splice(0, onCommandMethods.length);
-            onTabCompleteMethods.splice(0, onTabCompleteMethods.length);
-            generatedMethods.splice(0, generatedMethods.length);
-            objectMethods.splice(0, objectMethods.length);
-            enumMethods.splice(0, objectMethods.length);
-            constructorCalls.splice(0, constructorCalls.length);
-            methodCalls.splice(0, methodCalls.length);
-            nativeCalls.splice(0, nativeCalls.length);
+                // Reset
+                fields.splice(0, fields.length);
+                eventListenerMethods.splice(0, eventListenerMethods.length);
+                onLoadMethods.splice(0, onLoadMethods.length);
+                javaPluginMethods.splice(0, javaPluginMethods.length);
+                onEnableMethods.splice(0, onEnableMethods.length);
+                onDisableMethods.splice(0, onDisableMethods.length);
+                onCommandMethods.splice(0, onCommandMethods.length);
+                onTabCompleteMethods.splice(0, onTabCompleteMethods.length);
+                generatedMethods.splice(0, generatedMethods.length);
+                objectMethods.splice(0, objectMethods.length);
+                enumMethods.splice(0, objectMethods.length);
+                constructorCalls.splice(0, constructorCalls.length);
+                methodCalls.splice(0, methodCalls.length);
+                nativeCalls.splice(0, nativeCalls.length);
 
-            resolve(classCode);
-        });
+                resolve(classCode);
+            });
     })
 }
 
