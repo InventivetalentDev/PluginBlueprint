@@ -1,13 +1,15 @@
+const {app} = require("electron");
 const path = require("path");
-const fs = require("fs");
+const fs = require("fs-extra");
+const request = require("request");
 
 function ClassDataStore() {
     this.classStore = {};
 
-    this.loadClassFile = function (fileName) {
+    this.loadClassFile = function (fileName, external) {
         return new Promise(((resolve, reject) => {
             console.log("[ClassStore] Load " + fileName);
-            fs.readFile(path.join(__dirname, "../data/classes/" + fileName + ".json"), "utf-8", (err, data) => {
+            fs.readFile((external ? path.join(app.getPath("userData"), "jjdoc", fileName + ".json") : path.join(__dirname, "../data/classes", fileName + ".json")), "utf-8", (err, data) => {
                 if (err) {
                     reject();
                     return;
@@ -82,6 +84,57 @@ ClassDataStore.prototype.getClassesByName = function () {
     return this.classStore;
 };
 
+ClassDataStore.getAvailableLibraries = function () {
+    return new Promise((resolve, reject) => {
+        request("https://jjdoc.inventivetalent.org/libs", function (err, resp, body) {
+            if (err) {
+                reject(err);
+                return;
+            }
+            if (resp.statusCode !== 200) {
+                reject(body);
+                return;
+            }
+            resolve(JSON.parse(body));
+        });
+    })
+};
+
+ClassDataStore.downloadLibraryDoc = function (libraryName) {
+   return new Promise((resolve, reject) => {
+       let docDir = path.join(app.getPath("userData"), "jjdoc");
+       fs.ensureDir(docDir).then(()=>{
+           let docFile = path.join(docDir, libraryName + ".json");
+           request("https://jjdoc.inventivetalent.org/libs/"+libraryName+"/all",function (err,resp,body) {
+               if (err) {
+                   reject(err);
+                   return;
+               }
+               if (resp.statusCode !== 200) {
+                   reject(body);
+                   return;
+               }
+               let stream = fs.createWriteStream(docFile);
+               resp.pipe(stream);
+               resolve();
+           })
+       })
+   })
+};
+
+ClassDataStore.prototype.loadLibrary = function (libraryName) {
+    let that = this;
+    return new Promise((resolve, reject) =>  {
+        if (fs.existsSync(path.join(app.getPath("userData"), "jjdoc", libraryName + ".json"))) {
+            that.loadClassFile(libraryName, true).then(resolve).catch(reject);
+        }else{
+            ClassDataStore.downloadLibraryDoc(libraryName).then(() => {
+                that.loadClassFile(libraryName, true).then(resolve).catch(reject);
+            }).catch(reject);
+        }
+    })
+};
+
 ClassDataStore.prototype.getClass = function (className) {
     if (!className) return null;
     return this.classStore[className.toLowerCase()];
@@ -102,7 +155,7 @@ ClassDataStore.prototype.getConstructor = function (className, constructorSignat
 };
 
 ClassDataStore.prototype.getConstructorParam = function (className, constructorSignature, paramName) {
-    if (!className || !constructorName || !paramName) return null;
+    if (!className || !constructorSignature || !paramName) return null;
     let clazz = this.classStore[className.toLowerCase()];
     if (!clazz) return null;
     let constructor = clazz.constructorsBySignature[constructorSignature];
