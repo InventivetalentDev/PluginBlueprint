@@ -132,6 +132,27 @@ ClassDataStore.downloadLibraryDoc = function (libraryName) {
     })
 };
 
+ClassDataStore.downloadLibraryBinary = function (libraryName) {
+    return new Promise((resolve, reject) => {
+        let binDir = path.join(app.getPath("userData"), "jjdoc-binaries");
+        fs.ensureDir(binDir).then(() => {
+            let binFile = path.join(binDir, libraryName + ".jar");
+            console.log("Downloading", "https://jjdoc.inventivetalent.org/libs/" + libraryName + "/binary");
+            let stream = fs.createWriteStream(binFile);
+            request("https://jjdoc.inventivetalent.org/libs/" + libraryName + "/binary")
+                .on('response', function (response) {
+                    console.log(response.statusCode) // 200
+                    console.log(response.headers['content-type']) // 'image/png'
+                    resolve();
+                })
+                .on("error", function (err) {
+                    reject(err);
+                })
+                .pipe(stream);
+        })
+    })
+};
+
 ClassDataStore.prototype.loadLibrary = function (libraryName) {
     console.log("Loading Library:", libraryName);
     let that = this;
@@ -142,7 +163,9 @@ ClassDataStore.prototype.loadLibrary = function (libraryName) {
         } else {
             console.log("Downloading new Library", libraryName);
             ClassDataStore.downloadLibraryDoc(libraryName).then(() => {
-                that.loadClassFile(libraryName, true).then(resolve).catch(reject);
+                ClassDataStore.downloadLibraryBinary(libraryName).then(() => {
+                    that.loadClassFile(libraryName, true).then(resolve).catch(reject);
+                }).catch(reject);
             }).catch(reject);
         }
     })
