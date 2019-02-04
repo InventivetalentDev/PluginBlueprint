@@ -893,8 +893,10 @@ ipcMain.on("codeGenerated", function (event, arg) {
                 showNotification("Done!");
                 event.sender.send("generateDone");
             }).catch((err) => {
+                progressBar.detail = "Error";
                 event.sender.send("generateError", err);
                 showCustomErrorDialog(err, "Compilation Error");
+                progressBar.close();
             })
         }, 500);
     });
