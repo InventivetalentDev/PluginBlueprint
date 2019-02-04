@@ -468,7 +468,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbst
             }
             if (node.inputs[i].name === "RETURN") {// abstract method return
                 fields.push("private " + node.inputs[i].type + nodeReturn(node.id) + ";");
-                code += nodeReturn(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot)+";";
+                code += nodeReturn(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot)+";\n";
                 break;
             }
 
