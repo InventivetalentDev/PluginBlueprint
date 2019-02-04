@@ -4,6 +4,23 @@ const path = require("path");
 const fs = require("fs-extra");
 const request = require("request");
 
+
+const INTERFACE_DUMMY_CONSTRUCTOR={
+    "name": "....",
+    "isClass": false,
+    "isInterface": false,
+    "isEnum": false,
+    "isEnumConstant": false,
+    "isConstructor": true,
+    "isField": false,
+    "isMethod": false,
+    "isOrdinaryClass": false,
+    "signature": "()",
+    "flatSignature": "()",
+    "parameters": [],
+    "typeParameters": []
+};
+
 function ClassDataStore() {
     this.classStore = {};
 
@@ -25,6 +42,12 @@ function ClassDataStore() {
                     clazz.constructorsBySignature = {};
                     clazz.isEvent = clazz.qualifiedName.endsWith("Event");
                     clazz.isObject = !clazz.isEvent && !clazz.isEnum;
+
+                    if (clazz.isInterface) {// Add dummy default constructor if it's an interface
+                        let constr = Object.assign({}, INTERFACE_DUMMY_CONSTRUCTOR);
+                        constr.name=clazz.simpleName;
+                        clazz.constructors.push(constr);
+                    }
 
                     for (let f = 0; f < clazz.fields.length; f++) {
                         let field = Object.assign({}, clazz.fields[f]);
