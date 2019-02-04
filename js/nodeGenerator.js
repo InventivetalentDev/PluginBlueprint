@@ -402,9 +402,7 @@ function ensureNodeRegistration() {
         getOrCreateBukkitClassNode(clazz.qualifiedName);
         for (let m in clazz.methodsBySignature) {
             let method = clazz.methodsBySignature[m];
-            if((clazz.isAbstract||clazz.isInterface)&&method.isAbstract&&!method.isStatic||(clazz.qualifiedName==="org.bukkit.plugin.java.JavaPlugin"&&(method.name==="onEnable"||method.name==="onLoad"||method.name==="onDisable"||method.name==="onCommand"||method.name==="onTabComplete"))){
-                getOrCreateBukkitAbstractMethodNode(clazz.qualifiedName, method.fullSignature)
-            }
+            getOrCreateBukkitAbstractMethodNode(clazz.qualifiedName, method.fullSignature)
             getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
         }
         for (let c in clazz.constructorsBySignature) {
