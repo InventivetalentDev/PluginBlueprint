@@ -466,6 +466,11 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
                 paramOffset++;
                 continue;
             }
+            if (node.inputs[i].name === "RETURN") {// abstract method return
+                fields.push("private " + node.inputs[i].type + nodeReturn(node.id) + ";");
+                code += nodeReturn(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot);
+                break;
+            }
 
             if (!linkInfo || !sourceNode) {
                 let param = methodData.parameters[i - paramOffset];
@@ -590,7 +595,8 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
                             methodParams.push(pType + " " + methodData.parameters[p].name);
                         }
                     }
-                    code += "    public void " + methodData.name + "(" + methodParams.join(",") + ") {\n";
+                    code += "    public "+methodData.returnType.qualifiedName+" " + methodData.name + "(" + methodParams.join(",") + ") {\n";
+                    let returnCode = "";
                     for (let l = 0; l < output.links.length; l++) {
                         let linkInfo = graph.links[output.links[l]];
                         if (!linkInfo) continue;
@@ -602,8 +608,13 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
                             }
                         }
                         code += nodeExec(linkInfo.target_id) + ";\n"
+
+                        if (methodData.returnType.qualifiedName !== "void") {
+                            returnCode = "return " + nodeReturn(linkInfo.target_id);// can only return once
+                        }
                     }
-                    code += "  }\n"
+                    code += returnCode + "\n";
+                    code += "  }\n";
                 }
             }
         }
@@ -787,6 +798,9 @@ function nodeOutput(n, o) {
     return " node_" + n + "_output_" + o;
 }
 
+function nodeReturn(n) {
+    return " node_" + n + "_return";
+}
 
 function nodeExec(nodeId) {
     return " node_" + nodeId + "_exec()"
