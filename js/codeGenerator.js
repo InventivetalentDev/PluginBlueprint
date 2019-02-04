@@ -342,46 +342,46 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
         hasRef = true;
     }
 
-    if (!hasRef) {
-        if (abstractMethods > 0) {
-            initCode += nodeV(node.id) + " = new " + classData.qualifiedName + "() {\n";
-            for (let o = 0; o < node.outputs.length; o++) {
-                let output = node.outputs[o];
-                if (!output) continue;
-                if (!output.links) continue;
-                if (output.links.length > 0) {
-                    if (output.linkType === "abstractMethod") {
-                        let methodData = classStore.getMethod(classData.qualifiedName, output.methodSignature);
-                        let params = [];
-                        if (methodData.parameters) {
-                            for (let p = 0; p < methodData.parameters.length; p++) {
-                                let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
-                                console.log(methodData.parameters[p]);
-                                console.log(pType);
-                                params.push(pType + " " + methodData.parameters[p].name);
-                            }
-                        }
-                        initCode += "    public void " + methodData.name + "(" + params.join(",") + ") {\n";
-                        for (let l = 0; l < output.links.length; l++) {
-                            let linkInfo = graph.links[output.links[l]];
-                            if (!linkInfo) continue;
-                            if (methodData.parameters) {
-                                for (let p = 0; p < methodData.parameters.length; p++) {
-                                    let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
-                                    fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
-                                    initCode += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
-                                }
-                            }
-                            initCode += nodeExec(linkInfo.target_id) + ";\n"
-                        }
-                        initCode += "  }\n"
-                    }
-                }
-            }
-
-            initCode += "};\n";
-        }
-    }
+    // if (!hasRef) {
+    //     if (abstractMethods > 0) {
+    //         initCode += nodeV(node.id) + " = new " + classData.qualifiedName + "() {\n";
+    //         for (let o = 0; o < node.outputs.length; o++) {
+    //             let output = node.outputs[o];
+    //             if (!output) continue;
+    //             if (!output.links) continue;
+    //             if (output.links.length > 0) {
+    //                 if (output.linkType === "abstractMethod") {
+    //                     let methodData = classStore.getMethod(classData.qualifiedName, output.methodSignature);
+    //                     let params = [];
+    //                     if (methodData.parameters) {
+    //                         for (let p = 0; p < methodData.parameters.length; p++) {
+    //                             let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
+    //                             console.log(methodData.parameters[p]);
+    //                             console.log(pType);
+    //                             params.push(pType + " " + methodData.parameters[p].name);
+    //                         }
+    //                     }
+    //                     initCode += "    public void " + methodData.name + "(" + params.join(",") + ") {\n";
+    //                     for (let l = 0; l < output.links.length; l++) {
+    //                         let linkInfo = graph.links[output.links[l]];
+    //                         if (!linkInfo) continue;
+    //                         if (methodData.parameters) {
+    //                             for (let p = 0; p < methodData.parameters.length; p++) {
+    //                                 let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
+    //                                 fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
+    //                                 initCode += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
+    //                             }
+    //                         }
+    //                         initCode += nodeExec(linkInfo.target_id) + ";\n"
+    //                     }
+    //                     initCode += "  }\n"
+    //                 }
+    //             }
+    //         }
+    //
+    //         initCode += "};\n";
+    //     }
+    // }
 
     code += initCode;
     code += otherCode;
@@ -568,7 +568,51 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
     }
 
     code += params.join(",");
-    code += ");\n";
+
+
+
+    if (classData.isAbstract) {
+        code += ") {\n";
+
+        for (let o = 0; o < node.outputs.length; o++) {
+            let output = node.outputs[o];
+            if (!output) continue;
+            if (!output.links) continue;
+            if (output.links.length > 0) {
+                if (output.linkType === "abstractMethod") {
+                    let methodData = classStore.getMethod(classData.qualifiedName, output.methodSignature);
+                    let methodParams = [];
+                    if (methodData.parameters) {
+                        for (let p = 0; p < methodData.parameters.length; p++) {
+                            let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
+                            console.log(methodData.parameters[p]);
+                            console.log(pType);
+                            methodParams.push(pType + " " + methodData.parameters[p].name);
+                        }
+                    }
+                    code += "    public void " + methodData.name + "(" + methodParams.join(",") + ") {\n";
+                    for (let l = 0; l < output.links.length; l++) {
+                        let linkInfo = graph.links[output.links[l]];
+                        if (!linkInfo) continue;
+                        if (methodData.parameters) {
+                            for (let p = 0; p < methodData.parameters.length; p++) {
+                                let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
+                                fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
+                                code += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
+                            }
+                        }
+                        code += nodeExec(linkInfo.target_id) + ";\n"
+                    }
+                    code += "  }\n"
+                }
+            }
+        }
+
+        code += "};\n";
+    }else{
+        code += ");\n";
+    }
+
 
     code += execCode;
 

@@ -525,50 +525,50 @@ function addClassIO(node, classData, isChildCall) {
     for (let m in classData.methodsBySignature) {
         let method = classData.methodsBySignature[m];
 
-
         let methodSignature = method.fullSignature;
-
 
         let isLambda = checkLambdaOrAbstractMethod(classData, method);
 
-        if (method.returnType.qualifiedName === "void") {// Regular void or abstract Method
-            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
-                linkType: isLambda ? "abstractMethod" : "method",
-                className: classData.qualifiedName,
-                methodName: method.name,
-                methodSignature: method.fullSignature
-            }), true);
-        } else if (method.parameters.length === 0) {// non-void method without parameters
-            let returnData = classStore.getClass(method.returnType.qualifiedName);
+        if(!isLambda) {
+            if (method.returnType.qualifiedName === "void") {// Regular void or abstract Method
+                addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(method.isStatic ? "staticMethod" : "method", {
+                    linkType:  "method",
+                    className: classData.qualifiedName,
+                    methodName: method.name,
+                    methodSignature: method.fullSignature
+                }), true);
+            } else if (method.parameters.length === 0) {// non-void method without parameters
+                let returnData = classStore.getClass(method.returnType.qualifiedName);
 
-            let linkType = "";
-            let extraDataType = "";
-            if (isPrimitiveType(method.returnType.qualifiedName) || method.returnType.qualifiedName === "java.lang.String") {// use getter
-                linkType = "getter";
-                extraDataType = method.returnType.qualifiedName;
-            } else if (returnData && returnData.isObject) {// Object return
-                linkType = extraDataType = "object";
-            } else if (returnData && returnData.isEnum) {// Enum return
-                linkType = extraDataType = "enum";
+                let linkType = "";
+                let extraDataType = "";
+                if (isPrimitiveType(method.returnType.qualifiedName) || method.returnType.qualifiedName === "java.lang.String") {// use getter
+                    linkType = "getter";
+                    extraDataType = method.returnType.qualifiedName;
+                } else if (returnData && returnData.isObject) {// Object return
+                    linkType = extraDataType = "object";
+                } else if (returnData && returnData.isEnum) {// Enum return
+                    linkType = extraDataType = "enum";
+                } else {// fallback to abstract/regular method
+                    linkType = extraDataType = isLambda ? "abstractMethod" : "method";
+                }
+
+                // add it!
+                addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, shapeAndColorsForSlotType(extraDataType, {
+                    linkType: linkType,
+                    returnType: method.returnType.qualifiedName,
+                    className: classData.qualifiedName,
+                    methodName: method.name,
+                    methodSignature: method.fullSignature
+                }), true);
             } else {// fallback to abstract/regular method
-                linkType = extraDataType = isLambda ? "abstractMethod" : "method";
+                addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(method.isStatic ? "staticMethod" : "method", {
+                    linkType: "method",
+                    className: classData.qualifiedName,
+                    methodName: method.name,
+                    methodSignature: method.fullSignature
+                }), true);
             }
-
-            // add it!
-            addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, shapeAndColorsForSlotType(extraDataType, {
-                linkType: linkType,
-                returnType: method.returnType.qualifiedName,
-                className: classData.qualifiedName,
-                methodName: method.name,
-                methodSignature: method.fullSignature
-            }), true);
-        } else {// fallback to abstract/regular method
-            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
-                linkType: isLambda ? "abstractMethod" : "method",
-                className: classData.qualifiedName,
-                methodName: method.name,
-                methodSignature: method.fullSignature
-            }), true);
         }
     }
 
@@ -663,7 +663,7 @@ function addMethodIO(node, classData, methodData) {
             addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
         }
     } else {
-        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("method"));
+        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(methodData.isStatic?"staticMethod":"method"));
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
             addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {
@@ -725,7 +725,7 @@ function addConstructorIO(node, classData, constructorData) {
 
     addNodeOutput(node, "THIS", classData.qualifiedName, shapeAndColorsForSlotType("THIS", {linkType: "this"}));
 
-    if (!classData.isInterface && !classData.isAbstract) {
+    if (!classData.isInterface) {
         for (let i = 0; i < constructorData.parameters.length; i++) {
             let param = constructorData.parameters[i];
             addNodeInput(node, param.name, param.type.qualifiedName, shapeAndColorsForSlotType(param.type.qualifiedName, {
@@ -737,6 +737,24 @@ function addConstructorIO(node, classData, constructorData) {
             }))
         }
     }
+
+    for (let m in classData.methodsBySignature) {
+        let method = classData.methodsBySignature[m];
+
+        let methodSignature = method.fullSignature;
+
+        let isLambda = checkLambdaOrAbstractMethod(classData, method);
+
+        if (!method.isStatic) {
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("abstractMethod", {
+                linkType:  "abstractMethod" ,
+                className: classData.qualifiedName,
+                methodName: method.name,
+                methodSignature: method.fullSignature
+            }), !isLambda);
+        }
+    }
+
 
 
 }
