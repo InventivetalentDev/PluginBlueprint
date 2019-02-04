@@ -310,6 +310,7 @@ function init(extraLibraries) {
             "double": Colors.NUMBER_ON,
             "method": Colors.FUNCTION_ON,
             "abstractMethod": Colors.ABSTRACT_FUNCTION_ON,
+            "staticMethod": Colors.STATIC_FUNCTION_ON,
             "object": Colors.OBJECT_ON,
             "this": Colors.OBJECT_ON,
             "enum": Colors.ENUM_ON,
