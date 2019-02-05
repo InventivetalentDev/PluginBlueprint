@@ -626,7 +626,7 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
         this.isMethodNode=true;
     }
 
-    BukkitMethodNode.title = simpleClassName + "#" + methodData.fullFlatSignature;
+    BukkitMethodNode.title = simpleClassName + (methodData.isAbstract?".":"#") + methodData.fullFlatSignature;
 
     BukkitMethodNode.prototype.color = Colors.FUNCTION;
 
