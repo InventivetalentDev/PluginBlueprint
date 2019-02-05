@@ -490,7 +490,8 @@ function createNewProject(arg, lib) {
 
                         recentProjects.unshift({
                             path: currentProjectPath,
-                            name: currentProject.name
+                            name: currentProject.name,
+                            editorVersion: currentProject.editorVersion
                         });
                         writeRecentProjects();
 
@@ -596,7 +597,8 @@ function openProject(arg) {
             }
             recentProjects.unshift({
                 path: currentProjectPath,
-                name: currentProject.name
+                name: currentProject.name,
+                editorVersion: currentProject.editorVersion
             });
             writeRecentProjects();
 
