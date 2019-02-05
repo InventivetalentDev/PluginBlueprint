@@ -259,6 +259,7 @@ function readRecentProjects() {
                         resolve({
                             path: data[i],
                             name: projectData.name,
+                            editorVersion: projectData.editorVersion,
                             thumbnail: thumb
                         })
                     })
