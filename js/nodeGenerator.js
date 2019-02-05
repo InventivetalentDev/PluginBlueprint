@@ -626,9 +626,9 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
         this.isMethodNode=true;
     }
 
-    BukkitMethodNode.title = simpleClassName + (methodData.isAbstract?".":"#") + methodData.fullFlatSignature;
+    BukkitMethodNode.title = simpleClassName + (methodData.isStatic?".":"#") + methodData.fullFlatSignature;
 
-    BukkitMethodNode.prototype.color = Colors.FUNCTION;
+    BukkitMethodNode.prototype.color = methodData.isStatic  ?Colors.STATIC_FUNCTION_OFF : Colors.FUNCTION;
 
 
     LiteGraph.registerNodeType(categoryName, BukkitMethodNode);
