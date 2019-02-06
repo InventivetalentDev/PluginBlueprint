@@ -310,6 +310,7 @@ function init(extraLibraries) {
             "double": Colors.NUMBER_ON,
             "method": Colors.FUNCTION_ON,
             "abstractMethod": Colors.ABSTRACT_FUNCTION_ON,
+            "staticMethod": Colors.STATIC_FUNCTION_ON,
             "object": Colors.OBJECT_ON,
             "this": Colors.OBJECT_ON,
             "enum": Colors.ENUM_ON,
@@ -401,6 +402,7 @@ function ensureNodeRegistration() {
         getOrCreateBukkitClassNode(clazz.qualifiedName);
         for (let m in clazz.methodsBySignature) {
             let method = clazz.methodsBySignature[m];
+            getOrCreateBukkitAbstractMethodNode(clazz.qualifiedName, method.fullSignature)
             getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
         }
         for (let c in clazz.constructorsBySignature) {
@@ -448,20 +450,25 @@ function getOrCreateBukkitClassNode(className) {
 
         if (classData.isEvent) {
             this.classType = "event";
+            this.iconName="bullhorn";
             this.color = Colors.EVENT;
         } else if (classData.isEnum) {
             this.classType = "enum";
+            this.iconName="list-ol";
             this.color = Colors.ENUM_OFF;//TODO: separate variable
         } else {
             this.classType = "object";
+            this.iconName="box";
             this.color = Colors.OBJECT;
         }
 
         this.className = classData.qualifiedName;
+        this.isClassNode=true;
     }
 
     BukkitClassNode.title = simpleClassName;
 
+    BukkitClassNode.prototype.onDrawTitleBox = require("./fontAwesomeHelper").handleDrawTitleBox;
 
     LiteGraph.registerNodeType(categoryName, BukkitClassNode);
 
@@ -527,11 +534,10 @@ function addClassIO(node, classData, isChildCall) {
 
         let methodSignature = method.fullSignature;
 
-        let isLambda = checkLambdaOrAbstractMethod(classData, method);
 
         if (method.returnType.qualifiedName === "void") {// Regular void or abstract Method
-            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method", {
-                linkType: isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method",
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType( method.isStatic ? "staticMethod" : "method", {
+                linkType:  method.isStatic ? "staticMethod" : "method",
                 className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
@@ -549,7 +555,7 @@ function addClassIO(node, classData, isChildCall) {
             } else if (returnData && returnData.isEnum) {// Enum return
                 linkType = extraDataType = "enum";
             } else {// fallback to abstract/regular method
-                linkType = extraDataType = isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method";
+                linkType = extraDataType =  method.isStatic ? "staticMethod" : "method";
             }
 
             // add it!
@@ -561,8 +567,8 @@ function addClassIO(node, classData, isChildCall) {
                 methodSignature: method.fullSignature
             }), true);
         } else {// fallback to abstract/regular method
-            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method", {
-                linkType: isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method",
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType( method.isStatic ? "staticMethod" : "method", {
+                linkType:  method.isStatic ? "staticMethod" : "method",
                 className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
@@ -618,14 +624,17 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
     function BukkitMethodNode() {
         addMethodIO(this, classData, methodData);
         this.nodeType = "BukkitMethodNode";
+        this.iconName="hashtag";
         this.className = classData.qualifiedName;
         this.methodName = methodData.name;
         this.methodSignature = methodData.fullSignature;
+        this.isMethodNode=true;
     }
 
-    BukkitMethodNode.title = simpleClassName + "#" + methodData.fullFlatSignature;
+    BukkitMethodNode.title = simpleClassName + (methodData.isStatic?".":"#") + methodData.fullFlatSignature;
 
-    BukkitMethodNode.prototype.color = Colors.FUNCTION;
+    BukkitMethodNode.prototype.color = methodData.isStatic  ?Colors.STATIC_FUNCTION_OFF : Colors.FUNCTION;
+    BukkitMethodNode.prototype.onDrawTitleBox = require("./fontAwesomeHelper").handleDrawTitleBox;
 
 
     LiteGraph.registerNodeType(categoryName, BukkitMethodNode);
@@ -637,32 +646,13 @@ function addMethodIO(node, classData, methodData) {
 
     let methodSignature = methodData.fullSignature;
 
-    let isLambda = checkLambdaOrAbstractMethod(classData, methodData);
 
-    if (!isLambda && !(classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete")))
+    if(!(classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete")))
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
-    if (isLambda && methodData.returnType.qualifiedName === "void" || (classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete"))) {
-        node.isAbstractMethod = true;
-        node.color = Colors.ABSTRACT_FUNCTION_OFF;
-        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("abstractMethod"));
-        for (let p = 0; p < methodData.parameters.length; p++) {
-            let param = methodData.parameters[p];
-            let paramType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : param.type.qualifiedName;
 
-            addNodeOutput(node, param.name, paramType + param.type.dimension, shapeAndColorsForSlotType(paramType, {
-                paramName: param.name,
-                paramType: param.type.qualifiedName,
-                paramIndex: p
-            }));
-        }
-
-        if (methodData.returnType.qualifiedName !== "void") {
-            addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
-        }
-    } else {
-        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(methodData.isStatic?"staticMethod":"method"));
+        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(methodData.isStatic ? "staticMethod" : "method"));
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
             addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {
@@ -675,6 +665,71 @@ function addMethodIO(node, classData, methodData) {
         if (methodData.returnType.qualifiedName !== "void") {
             addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
         }
+}
+
+
+function getOrCreateBukkitAbstractMethodNode(className, methodSignature) {
+
+    let classData = classStore.getClass(className);
+    if (!classData) {
+        console.warn("Class " + className + " does not exist or isn't loaded");
+        return null;
+    }
+    let simpleClassName = classData.simpleName;
+
+    let methodData = classStore.getMethod(className, methodSignature);
+    if (!methodData) {
+        console.warn("Missing method data for " + methodSignature + " in " + className);
+        return null;
+    }
+
+    let categoryName = className + "{" + methodSignature + "}";
+
+    if (LiteGraph.registered_node_types.hasOwnProperty(categoryName)) {
+        return categoryName;
+    }
+
+    function BukkitAbstractMethodNode() {
+        addAbstractMethodIO(this, classData, methodData);
+        this.nodeType = "BukkitAbstractMethodNode";
+        this.iconName="sitemap";
+        this.className = classData.qualifiedName;
+        this.methodName = methodData.name;
+        this.methodSignature = methodData.fullSignature;
+        this.isAbstractMethod = true;
+        this.isAbstractMethodNode=true;
+    }
+
+    BukkitAbstractMethodNode.title = simpleClassName + "{" + methodData.fullFlatSignature + "}";
+
+    BukkitAbstractMethodNode.prototype.color = Colors.ABSTRACT_FUNCTION_OFF;
+    BukkitAbstractMethodNode.prototype.onDrawTitleBox = require("./fontAwesomeHelper").handleDrawTitleBox;
+
+
+    LiteGraph.registerNodeType(categoryName, BukkitAbstractMethodNode);
+
+    return categoryName;
+}
+
+function addAbstractMethodIO(node, classData, methodData) {
+    let methodSignature = methodData.fullSignature;
+
+    addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+
+    addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("abstractMethod"));
+    for (let p = 0; p < methodData.parameters.length; p++) {
+        let param = methodData.parameters[p];
+        let paramType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : param.type.qualifiedName;
+
+        addNodeOutput(node, param.name, paramType + param.type.dimension, shapeAndColorsForSlotType(paramType, {
+            paramName: param.name,
+            paramType: param.type.qualifiedName,
+            paramIndex: p
+        }));
+    }
+
+    if (methodData.returnType.qualifiedName !== "void") {
+        addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
     }
 }
 
@@ -700,14 +755,17 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
     function BukkitConstructorNode() {
         addConstructorIO(this, classData, constructorData);
         this.nodeType = "BukkitConstructorNode";
+        this.iconName="plus-square";
         this.className = classData.qualifiedName;
         this.constructorName = constructorData.name;
         this.constructorSignature = constructorData.fullSignature;
+        this.isConstructorNode=true;
     }
 
     BukkitConstructorNode.title = constructorData.fullFlatSignature;
 
     BukkitConstructorNode.prototype.color = Colors.CONSTRUCTOR;
+    BukkitConstructorNode.prototype.onDrawTitleBox = require("./fontAwesomeHelper").handleDrawTitleBox;
 
 
     LiteGraph.registerNodeType(categoryName, BukkitConstructorNode);
@@ -716,9 +774,6 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
 }
 
 function addConstructorIO(node, classData, constructorData) {
-    let isLambda = checkLambdaOrAbstractMethod(classData, constructorData);
-
-    if (!isLambda)
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
@@ -746,14 +801,13 @@ function addConstructorIO(node, classData, constructorData) {
 
         if (!method.isStatic) {
             addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("abstractMethod", {
-                linkType:  "abstractMethod" ,
+                linkType: "abstractMethod",
                 className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
             }), !isLambda);
         }
     }
-
 
 
 }
@@ -842,7 +896,11 @@ function handleSlotDoubleClick(node, i, e) {
     if (slot.name === "RETURN" || slot.hasOwnProperty("returnType")) {
         nodeName = getOrCreateBukkitClassNode(slot.returnType);
     } else if (slot.type.indexOf("#") !== -1) {
-        nodeName = getOrCreateBukkitMethodNode(slot.className, slot.methodSignature);//TODO: update params
+        if(node.isConstructorNode||(slot.className==="org.bukkit.plugin.java.JavaPlugin"&&(slot.methodName==="onLoad"||slot.methodName==="onEnable"||slot.methodName==="onDisable"||slot.methodName==="onCommand"||slot.methodName==="onTabComplete"))){// abstract method
+            nodeName = getOrCreateBukkitAbstractMethodNode(slot.className, slot.methodSignature);
+        }else {// regular method
+            nodeName = getOrCreateBukkitMethodNode(slot.className, slot.methodSignature);
+        }
     } else /*if (slot.type.startsWith("org.bukkit") && classesByName.hasOwnProperty(slot.type))*/ {
         nodeName = getOrCreateBukkitClassNode(slot.className || slot.type);
     }

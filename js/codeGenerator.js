@@ -51,10 +51,10 @@ function generateClassCode(graph, projectInfo) {
                         if (graph._nodes[i].classType === "enum") {
                             generateCodeForEnumClassNode(graph, i, graph._nodes[i], classData);
                         }
-                    } else if (graph._nodes[i].nodeType === "BukkitMethodNode") {
+                    } else if (graph._nodes[i].nodeType === "BukkitMethodNode"||graph._nodes[i].nodeType === "BukkitAbstractMethodNode") {
                         let classData = classStore.getClass(graph._nodes[i].className);
                         let methodData = classStore.getMethod(graph._nodes[i].className, graph._nodes[i].methodSignature);
-                        generateCodeForMethodNode(graph, i, graph._nodes[i], classData, methodData);
+                        generateCodeForMethodNode(graph, i, graph._nodes[i], classData, methodData, graph._nodes[i].nodeType === "BukkitAbstractMethodNode");
                     } else if (graph._nodes[i].nodeType === "BukkitConstructorNode") {
                         let classData = classStore.getClass(graph._nodes[i].className);
                         let constructorData = classStore.getConstructor(graph._nodes[i].className, graph._nodes[i].constructorSignature);
@@ -289,7 +289,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
         if (!output) continue;
         if (!output.links) continue;
         if (output.links.length > 0) {
-            if (output.linkType === "method") continue;
+            if (output.linkType === "method"||output.linkType==="staticMethod") continue;
 
             if (output.type === "@EXEC" && output.linkType !== "abstractMethod") {
                 for (let l = 0; l < output.links.length; l++) {
@@ -404,15 +404,15 @@ function generateCodeForEnumClassNode(graph, n, node, classData) {
         if (!output) continue;
         if (!output.links) continue;
         if (output.links.length > 0) {
-            if (output.linkType === "method") continue;
+            if (output.linkType === "method"||output.linkType === "staticMethod") continue;
 
             fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + classData.qualifiedName + "." + output.enumName + ";");
         }
     }
 }
 
-function generateCodeForMethodNode(graph, n, node, classData, methodData) {
-    let code = "// METHOD EXECUTION for " + classData.qualifiedName + "#" + methodData.name + "\n" +
+function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbstractMethodNode) {
+    let code = "// "+(isAbstractMethodNode?"ABSTRACT":"")+" METHOD EXECUTION for " + classData.qualifiedName + (isAbstractMethodNode?"{":"#") + methodData.name +(isAbstractMethodNode?"}":"")+ "\n" +
         "private void node_" + node.id + "_exec() {\n" + debugCall(node.id);
 
     let execCode = "";
@@ -468,8 +468,12 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData) {
             }
             if (node.inputs[i].name === "RETURN") {// abstract method return
                 fields.push("private " + node.inputs[i].type + nodeReturn(node.id) + ";");
-                code += nodeReturn(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot);
-                break;
+                if(linkInfo) {
+                    code += nodeReturn(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) + ";\n";
+                }else{
+                    code += nodeReturn(node.id) + "=" + getNullForType(sourceOutput ? sourceOutput.type : null)+";\n";
+                }
+                    break;
             }
 
             if (!linkInfo || !sourceNode) {
@@ -610,7 +614,7 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
                         code += nodeExec(linkInfo.target_id) + ";\n"
 
                         if (methodData.returnType.qualifiedName !== "void") {
-                            returnCode = "return " + nodeReturn(linkInfo.target_id);// can only return once
+                            returnCode = "return " + nodeReturn(linkInfo.target_id)+";\n";// can only return once
                         }
                     }
                     code += returnCode + "\n";

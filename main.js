@@ -259,6 +259,7 @@ function readRecentProjects() {
                         resolve({
                             path: data[i],
                             name: projectData.name,
+                            editorVersion: projectData.editorVersion,
                             thumbnail: thumb
                         })
                     })
@@ -489,7 +490,8 @@ function createNewProject(arg, lib) {
 
                         recentProjects.unshift({
                             path: currentProjectPath,
-                            name: currentProject.name
+                            name: currentProject.name,
+                            editorVersion: currentProject.editorVersion
                         });
                         writeRecentProjects();
 
@@ -580,38 +582,67 @@ function openProject(arg) {
             Sentry.captureException(err);
             return;
         }
+        data = JSON.parse(data);
 
-        currentProjectPath = arg;
-        currentProject = JSON.parse(data);
 
-        let i = recentProjects.map(function (e) {
-            return e.path;
-        }).indexOf(currentProjectPath);
-        if (i !== -1) {
-            recentProjects.splice(i, 1);
-        }
-        recentProjects.unshift({
-            path: currentProjectPath,
-            name: currentProject.name
-        });
-        writeRecentProjects();
+        function doOpen() {
+            currentProjectPath = arg;
+            currentProject = data;
 
-        app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
-        updateJumpList();
-
-        versionControl.openOrInit(currentProjectPath).then(repo => {
-            console.log(repo);
-
-            if (win) {
-                win.loadFile('pages/graph.html');
-                win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+            let i = recentProjects.map(function (e) {
+                return e.path;
+            }).indexOf(currentProjectPath);
+            if (i !== -1) {
+                recentProjects.splice(i, 1);
             }
-            updateRichPresence();
-            global.analytics.event("Project", "Open Project").send();
-        }).catch(err => {
-            console.error(err);
-            Sentry.captureException(err);
-        })
+            recentProjects.unshift({
+                path: currentProjectPath,
+                name: currentProject.name,
+                editorVersion: currentProject.editorVersion
+            });
+            writeRecentProjects();
+
+            app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
+            updateJumpList();
+
+            versionControl.openOrInit(currentProjectPath).then(repo => {
+                console.log(repo);
+
+                if (win) {
+                    win.loadFile('pages/graph.html');
+                    win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                }
+                updateRichPresence();
+                global.analytics.event("Project", "Open Project").send();
+            }).catch(err => {
+                console.error(err);
+                Sentry.captureException(err);
+            })
+        }
+
+        let appVersion = app.getVersion();
+        let appVersionSplit = appVersion.split(".");
+        let fileVersion = data.editorVersion;
+        let fileVersionSplit = fileVersion.split(".");
+        if (appVersionSplit[1] !== fileVersionSplit[1]) {// compare minor version
+            dialog.showMessageBox({
+                type: "warning",
+                title: "Different Editor Version",
+                message: "The project you're trying to open was created using a different PluginBlueprint version.",
+                detail: "It might not be compatible with the current version, so please proceed carefully and create a backup first. (Project Version: " + fileVersion + ", Editor Version: " + appVersion + ")",
+                buttons: ["Proceed Anyway", "Open Project Directory to create backup", "Cancel"],
+                defaultId: 1
+            }, (r) => {
+                console.log(r);
+                if (r === 0) {// Proceed Anyway
+                    doOpen();
+                } else if (r === 1) {// Open directory
+                    shell.openItem(arg);
+                } else {// cancel
+                }
+            });
+        }
+
     })
 }
 
@@ -893,8 +924,10 @@ ipcMain.on("codeGenerated", function (event, arg) {
                 showNotification("Done!");
                 event.sender.send("generateDone");
             }).catch((err) => {
+                progressBar.detail = "Error";
                 event.sender.send("generateError", err);
                 showCustomErrorDialog(err, "Compilation Error");
+                progressBar.close();
             })
         }, 500);
     });
@@ -1303,7 +1336,7 @@ ipcMain.on("checkUpdate", function (event) {
 function checkUpdate() {
     return new Promise(resolve => {
         request("https://pluginblueprint.net/checkupdate.php", function (err, res, body) {
-            if (err) {
+            if (err || !body || body.length > 10/* invalid response content */) {
                 resolve({
                     hasUpdate: false
                 });

@@ -41,6 +41,12 @@
                 background-position: center;
                 background-size: cover;
             }
+
+            .collection-item > .editorVersion {
+                float: right;
+                text-align: right;
+                color: #7d7d7d;
+            }
         </style>
     </head>
     <body>
@@ -154,7 +160,7 @@
             ipcRenderer.on("recentProjects", function (event, arg) {
                 for (let i = 0; i < arg.length; i++) {
                     if (!arg[i] || !arg[i].path) continue;
-                    let item = $('<li class="collection-item avatar">' + (arg[i].thumbnail ? '<div class="thumbnail" style="background-image: url(data:image/jpeg;base64,' + arg[i].thumbnail + ')"></div>' : '') + '<span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p></li>');
+                    let item = $('<li class="collection-item avatar">' + (arg[i].thumbnail ? '<div class="thumbnail" style="background-image: url(data:image/jpeg;base64,' + arg[i].thumbnail + ')"></div>' : '') + '<span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p><span class="editorVersion">' + arg[i].editorVersion + '</span></li>');
                     item.click(() => {
                         ipcRenderer.send("openProject", arg[i].path);
                         analytics.event("Home", "Open Recent Project").send();
