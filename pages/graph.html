@@ -146,12 +146,6 @@
                             type: "separator"
                         },
                         {
-                            role: "toggledevtools"
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
                             label: "Close Project",
                             click: () => {
                                 saveGraphAndClose();
@@ -209,6 +203,12 @@
                                     canvas.centerOnNode(graph._nodes[0]);
                                 }
                             }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            role: "toggledevtools"
                         }
                     ]
                 },
