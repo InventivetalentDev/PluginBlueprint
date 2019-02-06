@@ -1,5 +1,5 @@
 const electron = require("electron");
-const app = electron.app || electron.remote.app;
+const app = electron.app || electron.remote?electron.remote.app:null;
 const path = require("path");
 const fs = require("fs-extra");
 const request = require("request");
