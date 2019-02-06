@@ -345,8 +345,11 @@ function init(extraLibraries) {
         LGraphNode.prototype.onConfigure = function () {
             this.size = this.computeSize();
         };
+        LGraphNode.prototype.onInputDblClick = function (i, e) {
+            handleSlotDoubleClick(this, "in", i, e);
+        };
         LGraphNode.prototype.onOutputDblClick = function (i, e) {
-            handleSlotDoubleClick(this, i, e);
+            handleSlotDoubleClick(this, "out", i, e);
         };
         LGraphNode.prototype.onDblClick = function () {
             console.log(this);
@@ -450,20 +453,20 @@ function getOrCreateBukkitClassNode(className) {
 
         if (classData.isEvent) {
             this.classType = "event";
-            this.iconName="bullhorn";
+            this.iconName = "bullhorn";
             this.color = Colors.EVENT;
         } else if (classData.isEnum) {
             this.classType = "enum";
-            this.iconName="list-ol";
+            this.iconName = "list-ol";
             this.color = Colors.ENUM_OFF;//TODO: separate variable
         } else {
             this.classType = "object";
-            this.iconName="box";
+            this.iconName = "box";
             this.color = Colors.OBJECT;
         }
 
         this.className = classData.qualifiedName;
-        this.isClassNode=true;
+        this.isClassNode = true;
     }
 
     BukkitClassNode.title = simpleClassName;
@@ -536,8 +539,8 @@ function addClassIO(node, classData, isChildCall) {
 
 
         if (method.returnType.qualifiedName === "void") {// Regular void or abstract Method
-            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType( method.isStatic ? "staticMethod" : "method", {
-                linkType:  method.isStatic ? "staticMethod" : "method",
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(method.isStatic ? "staticMethod" : "method", {
+                linkType: method.isStatic ? "staticMethod" : "method",
                 className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
@@ -555,7 +558,7 @@ function addClassIO(node, classData, isChildCall) {
             } else if (returnData && returnData.isEnum) {// Enum return
                 linkType = extraDataType = "enum";
             } else {// fallback to abstract/regular method
-                linkType = extraDataType =  method.isStatic ? "staticMethod" : "method";
+                linkType = extraDataType = method.isStatic ? "staticMethod" : "method";
             }
 
             // add it!
@@ -567,8 +570,8 @@ function addClassIO(node, classData, isChildCall) {
                 methodSignature: method.fullSignature
             }), true);
         } else {// fallback to abstract/regular method
-            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType( method.isStatic ? "staticMethod" : "method", {
-                linkType:  method.isStatic ? "staticMethod" : "method",
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(method.isStatic ? "staticMethod" : "method", {
+                linkType: method.isStatic ? "staticMethod" : "method",
                 className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
@@ -624,16 +627,16 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
     function BukkitMethodNode() {
         addMethodIO(this, classData, methodData);
         this.nodeType = "BukkitMethodNode";
-        this.iconName="hashtag";
+        this.iconName = "hashtag";
         this.className = classData.qualifiedName;
         this.methodName = methodData.name;
         this.methodSignature = methodData.fullSignature;
-        this.isMethodNode=true;
+        this.isMethodNode = true;
     }
 
-    BukkitMethodNode.title = simpleClassName + (methodData.isStatic?".":"#") + methodData.fullFlatSignature;
+    BukkitMethodNode.title = simpleClassName + (methodData.isStatic ? "." : "#") + methodData.fullFlatSignature;
 
-    BukkitMethodNode.prototype.color = methodData.isStatic  ?Colors.STATIC_FUNCTION_OFF : Colors.FUNCTION;
+    BukkitMethodNode.prototype.color = methodData.isStatic ? Colors.STATIC_FUNCTION_OFF : Colors.FUNCTION;
     BukkitMethodNode.prototype.onDrawTitleBox = require("./fontAwesomeHelper").handleDrawTitleBox;
 
 
@@ -647,24 +650,24 @@ function addMethodIO(node, classData, methodData) {
     let methodSignature = methodData.fullSignature;
 
 
-    if(!(classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete")))
+    if (!(classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete")))
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
 
-        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(methodData.isStatic ? "staticMethod" : "method"));
-        for (let p = 0; p < methodData.parameters.length; p++) {
-            let param = methodData.parameters[p];
-            addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {
-                paramName: param.name,
-                paramType: param.type.qualifiedName,
-                paramIndex: p
-            }));
-        }
+    addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(methodData.isStatic ? "staticMethod" : "method"));
+    for (let p = 0; p < methodData.parameters.length; p++) {
+        let param = methodData.parameters[p];
+        addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {
+            paramName: param.name,
+            paramType: param.type.qualifiedName,
+            paramIndex: p
+        }));
+    }
 
-        if (methodData.returnType.qualifiedName !== "void") {
-            addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
-        }
+    if (methodData.returnType.qualifiedName !== "void") {
+        addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
+    }
 }
 
 
@@ -692,12 +695,12 @@ function getOrCreateBukkitAbstractMethodNode(className, methodSignature) {
     function BukkitAbstractMethodNode() {
         addAbstractMethodIO(this, classData, methodData);
         this.nodeType = "BukkitAbstractMethodNode";
-        this.iconName="sitemap";
+        this.iconName = "sitemap";
         this.className = classData.qualifiedName;
         this.methodName = methodData.name;
         this.methodSignature = methodData.fullSignature;
         this.isAbstractMethod = true;
-        this.isAbstractMethodNode=true;
+        this.isAbstractMethodNode = true;
     }
 
     BukkitAbstractMethodNode.title = simpleClassName + "{" + methodData.fullFlatSignature + "}";
@@ -755,11 +758,11 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
     function BukkitConstructorNode() {
         addConstructorIO(this, classData, constructorData);
         this.nodeType = "BukkitConstructorNode";
-        this.iconName="plus-square";
+        this.iconName = "plus-square";
         this.className = classData.qualifiedName;
         this.constructorName = constructorData.name;
         this.constructorSignature = constructorData.fullSignature;
-        this.isConstructorNode=true;
+        this.isConstructorNode = true;
     }
 
     BukkitConstructorNode.title = constructorData.fullFlatSignature;
@@ -774,7 +777,7 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
 }
 
 function addConstructorIO(node, classData, constructorData) {
-        addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     addNodeOutput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
     addNodeOutput(node, "THIS", classData.qualifiedName, shapeAndColorsForSlotType("THIS", {linkType: "this"}));
@@ -887,36 +890,54 @@ function addNodeOutput(node, name, type, options, optional) {
     return node.outputs.length - 1;
 }
 
-function handleSlotDoubleClick(node, i, e) {
-    console.log("onOutputDblClick");
-    let slot = node.getOutputInfo(i);
+function handleSlotDoubleClick(node, type, i, e) {
+    console.log("handleSlotDoubleClick", type);
+    let slot = type === "in" ? node.getInputInfo(i) : node.getOutputInfo(i);
     console.log(slot);
 
     let nodeName;
-    if (slot.name === "RETURN" || slot.hasOwnProperty("returnType")) {
-        nodeName = getOrCreateBukkitClassNode(slot.returnType);
-    } else if (slot.type.indexOf("#") !== -1) {
-        if(node.isConstructorNode||(slot.className==="org.bukkit.plugin.java.JavaPlugin"&&(slot.methodName==="onLoad"||slot.methodName==="onEnable"||slot.methodName==="onDisable"||slot.methodName==="onCommand"||slot.methodName==="onTabComplete"))){// abstract method
-            nodeName = getOrCreateBukkitAbstractMethodNode(slot.className, slot.methodSignature);
-        }else {// regular method
-            nodeName = getOrCreateBukkitMethodNode(slot.className, slot.methodSignature);
+    let offsetX = 0;
+    let offsetY = 0;
+    if (type === "out") {
+        offsetX = 40;
+        offsetY = -10;
+        if (slot.name === "RETURN" || slot.hasOwnProperty("returnType")) {
+            nodeName = getOrCreateBukkitClassNode(slot.returnType);
+        } else if (slot.type.indexOf("#") !== -1) {
+            if (node.isConstructorNode || (slot.className === "org.bukkit.plugin.java.JavaPlugin" && (slot.methodName === "onLoad" || slot.methodName === "onEnable" || slot.methodName === "onDisable" || slot.methodName === "onCommand" || slot.methodName === "onTabComplete"))) {// abstract method
+                nodeName = getOrCreateBukkitAbstractMethodNode(slot.className, slot.methodSignature);
+            } else {// regular method
+                nodeName = getOrCreateBukkitMethodNode(slot.className, slot.methodSignature);
+            }
+        } else /*if (slot.type.startsWith("org.bukkit") && classesByName.hasOwnProperty(slot.type))*/ {
+            nodeName = getOrCreateBukkitClassNode(slot.className || slot.type);
         }
-    } else /*if (slot.type.startsWith("org.bukkit") && classesByName.hasOwnProperty(slot.type))*/ {
-        nodeName = getOrCreateBukkitClassNode(slot.className || slot.type);
+    } else if (type === "in") {
+        offsetX = -(40 + node.size[0]);
+        offsetY = 10;
+        if (slot.linkType === "ref" && slot.hasOwnProperty("type")) {
+            let nameSplit = node.className.split(".");
+            let simpleName = nameSplit[nameSplit.length - 1];
+            nodeName = getOrCreateBukkitConstructorNode(node.className, simpleName+"()");
+        }
     }
     if (nodeName) {
         console.log(nodeName);
         var n = LiteGraph.createNode(nodeName);
-        n.pos = [e.canvasX + 40, e.canvasY - 10];
+        n.pos = [e.canvasX + offsetX, e.canvasY + offsetY];
         canvas.graph.add(n);
 
-        if (n.inputs) {
+        if (type === "out" && n.inputs) {
             if (n.inputs[0].name === "REF") {// special case for abstract methods
                 node.connect(i, n, 0);// 0 = REF
             } else {// default case
                 node.connect(0, n, 0);// 0 = EXEC
                 node.connect(i, n, 1);// 1 = REF
             }
+        }
+        if (type === "in" && n.outputs) {
+            n.connect(0, n, 0);// 0 = EXEC
+            n.connect(1, n, i);// 1 = THIS
         }
     }
 }
