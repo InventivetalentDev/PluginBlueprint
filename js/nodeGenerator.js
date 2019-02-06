@@ -122,7 +122,7 @@ function onObjectAdd(node, options, e, prevMenu) {
         }
     }
 
-    let menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prevMenu, scroll_speed: scrollSpeedForLength(values.length)});
+    let menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prevMenu, scroll_speed: scrollSpeedForLength(entries.length)});
 
     function inner_clicked(v, option, e) {
         var values = [];
@@ -167,7 +167,7 @@ function onMethodAdd(node, options, e, prevMenu) {
         }
     }
 
-    let menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prevMenu, scroll_speed: scrollSpeedForLength(values.length)});
+    let menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prevMenu, scroll_speed: scrollSpeedForLength(entries.length)});
     let menu1;
 
     function inner_clicked(v, option, e) {
@@ -278,7 +278,7 @@ function showOptionalSlotMenu(v, opts, e, prev_menu, node) {
     return false;
 }
 
-function init() {
+function init(extraLibraries) {
     return new Promise((resolve => {
         // Clear default node types
         LiteGraph.registered_node_types = {};
@@ -375,23 +375,39 @@ function init() {
         }
 
         classStore.init().then(() => {
-            console.log("Generating & Registering Java nodes...");
-            let classesByName = classStore.getClassesByName();
-            for (let n in classesByName) {
-                let clazz = classesByName[n];
-                getOrCreateBukkitClassNode(clazz.qualifiedName);
-                for (let m in clazz.methodsBySignature) {
-                    let method = clazz.methodsBySignature[m];
-                    getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
+            console.log("Generating & Registering Nodes...");
+
+            if (extraLibraries && extraLibraries.length > 0) {
+                let libPromises = [];
+                for (let l = 0; l < extraLibraries.length; l++) {
+                    libPromises.push(classStore.loadLibrary(extraLibraries[l]));
                 }
-                for (let c in clazz.constructorsBySignature) {
-                    let constructor = clazz.constructorsBySignature[c];
-                    getOrCreateBukkitConstructorNode(clazz.qualifiedName, constructor.fullSignature);
-                }
+                Promise.all(libPromises).then(() => {
+                    ensureNodeRegistration();
+                    resolve();
+                })
+            } else {
+                ensureNodeRegistration();
+                resolve();
             }
-            resolve();
         });
     }))
+}
+
+function ensureNodeRegistration() {
+    let classesByName = classStore.getClassesByName();
+    for (let n in classesByName) {
+        let clazz = classesByName[n];
+        getOrCreateBukkitClassNode(clazz.qualifiedName);
+        for (let m in clazz.methodsBySignature) {
+            let method = clazz.methodsBySignature[m];
+            getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
+        }
+        for (let c in clazz.constructorsBySignature) {
+            let constructor = clazz.constructorsBySignature[c];
+            getOrCreateBukkitConstructorNode(clazz.qualifiedName, constructor.fullSignature);
+        }
+    }
 }
 
 function getOrCreateBukkitClassNode(className) {
@@ -509,15 +525,13 @@ function addClassIO(node, classData, isChildCall) {
     for (let m in classData.methodsBySignature) {
         let method = classData.methodsBySignature[m];
 
-
         let methodSignature = method.fullSignature;
 
-
-        let isLambda = checkLambda(classData, method);
+        let isLambda = checkLambdaOrAbstractMethod(classData, method);
 
         if (method.returnType.qualifiedName === "void") {// Regular void or abstract Method
-            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
-                linkType: isLambda ? "abstractMethod" : "method",
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method", {
+                linkType: isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method",
                 className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
@@ -535,7 +549,7 @@ function addClassIO(node, classData, isChildCall) {
             } else if (returnData && returnData.isEnum) {// Enum return
                 linkType = extraDataType = "enum";
             } else {// fallback to abstract/regular method
-                linkType = extraDataType = isLambda ? "abstractMethod" : "method";
+                linkType = extraDataType = isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method";
             }
 
             // add it!
@@ -547,13 +561,14 @@ function addClassIO(node, classData, isChildCall) {
                 methodSignature: method.fullSignature
             }), true);
         } else {// fallback to abstract/regular method
-            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : "method", {
-                linkType: isLambda ? "abstractMethod" : "method",
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method", {
+                linkType: isLambda ? "abstractMethod" : method.isStatic?"staticMethod": "method",
                 className: classData.qualifiedName,
                 methodName: method.name,
                 methodSignature: method.fullSignature
             }), true);
         }
+
     }
 
     // Interfaces
@@ -622,7 +637,7 @@ function addMethodIO(node, classData, methodData) {
 
     let methodSignature = methodData.fullSignature;
 
-    let isLambda = checkLambda(classData, methodData);
+    let isLambda = checkLambdaOrAbstractMethod(classData, methodData);
 
     if (!isLambda && !(classData.qualifiedName === "org.bukkit.plugin.java.JavaPlugin" && (methodData.name === "onEnable" || methodData.name === "onDisable" || methodData.name === "onCommand" || methodData.name === "onTabComplete")))
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
@@ -647,7 +662,7 @@ function addMethodIO(node, classData, methodData) {
             addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
         }
     } else {
-        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("method"));
+        addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(methodData.isStatic?"staticMethod":"method"));
         for (let p = 0; p < methodData.parameters.length; p++) {
             let param = methodData.parameters[p];
             addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {
@@ -701,7 +716,7 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
 }
 
 function addConstructorIO(node, classData, constructorData) {
-    let isLambda = checkLambda(classData, constructorData);
+    let isLambda = checkLambdaOrAbstractMethod(classData, constructorData);
 
     if (!isLambda)
         addNodeInput(node, "EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
@@ -709,7 +724,7 @@ function addConstructorIO(node, classData, constructorData) {
 
     addNodeOutput(node, "THIS", classData.qualifiedName, shapeAndColorsForSlotType("THIS", {linkType: "this"}));
 
-    if (!classData.isInterface && !classData.isAbstract) {
+    if (!classData.isInterface) {
         for (let i = 0; i < constructorData.parameters.length; i++) {
             let param = constructorData.parameters[i];
             addNodeInput(node, param.name, param.type.qualifiedName, shapeAndColorsForSlotType(param.type.qualifiedName, {
@@ -722,11 +737,29 @@ function addConstructorIO(node, classData, constructorData) {
         }
     }
 
+    for (let m in classData.methodsBySignature) {
+        let method = classData.methodsBySignature[m];
+
+        let methodSignature = method.fullSignature;
+
+        let isLambda = checkLambdaOrAbstractMethod(classData, method);
+
+        if (!method.isStatic) {
+            addNodeOutput(node, method.fullFlatSignature, classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("abstractMethod", {
+                linkType:  "abstractMethod" ,
+                className: classData.qualifiedName,
+                methodName: method.name,
+                methodSignature: method.fullSignature
+            }), !isLambda);
+        }
+    }
+
+
 
 }
 
-function checkLambda(classData, methodData) {
-    return (classData.methods.length === 1 || countNonDefaultMethods(classData) === 1) && classData.isInterface && methodData.isAbstract
+function checkLambdaOrAbstractMethod(classData, methodData) {
+    return (classData.methods.length === 1 || countNonDefaultMethods(classData) === 1) && classData.isInterface || methodData.isAbstract
 }
 
 function countNonDefaultMethods(classData) {
@@ -834,4 +867,12 @@ module.exports = {
     init: init,
     getOrCreateBukkitClassNode: getOrCreateBukkitClassNode,
     getOrCreateBukkitMethodNode: getOrCreateBukkitMethodNode,
+    addLibrary: function (lib) {
+        return new Promise((resolve, reject) => {
+            classStore.loadLibrary(lib).then(() => {
+                ensureNodeRegistration();
+                resolve();
+            }).catch(reject);
+        })
+    }
 };

@@ -185,6 +185,11 @@
                             }
                         },
                         {
+                          label:"Add Library", click:()=>{
+                                ipcRenderer.send("showLibrarySelector");
+                            }
+                        },
+                        {
                             type: "separator"
                         },
                         {
@@ -208,30 +213,30 @@
                     ]
                 },
                 {
-                  label:"Git",
-                  submenu:[
-                      {
-                          label:"Commit",click:()=>{
-                              $("#overlay").fadeIn();
-                              ipcRenderer.send("gitAddAndCommit");
-                          }
-                      },
-                      {
-                          type: "separator"
-                      },
-                      {
-                          label:"Push",click:()=>{
-                              $("#overlay").fadeIn();
-                              ipcRenderer.send("gitPush");
-                          }
-                      },
-                      {
-                          label:"Change Remote",click:()=>{
-                              $("#overlay").fadeIn();
-                              ipcRenderer.send("gitChangeRemote");
-                          }
-                      }
-                  ]
+                    label: "Git",
+                    submenu: [
+                        {
+                            label: "Commit", click: () => {
+                                $("#overlay").fadeIn();
+                                ipcRenderer.send("gitAddAndCommit");
+                            }
+                        },
+                        {
+                            type: "separator"
+                        },
+                        {
+                            label: "Push", click: () => {
+                                $("#overlay").fadeIn();
+                                ipcRenderer.send("gitPush");
+                            }
+                        },
+                        {
+                            label: "Change Remote", click: () => {
+                                $("#overlay").fadeIn();
+                                ipcRenderer.send("gitChangeRemote");
+                            }
+                        }
+                    ]
                 },
                 {
                     label: "Compile",
@@ -388,13 +393,6 @@
             });
             $("body")[0].addEventListener("keydown", canvas.processKey.bind(canvas));
             canvas.resize();
-
-            console.log("Initializing Bukkit Node generator...");
-            NodeGenerator.init().then(() => {
-                ipcRenderer.send("getGraphData");
-
-                graph.start(100);
-            });
 
 
             function addBukkitNode(className, classType) {
@@ -637,10 +635,25 @@
                 $("#overlay").fadeOut();
             }
 
+            let nodesInitialized=false;
             ipcRenderer.on("projectInfo", function (event, arg) {
                 projectInfo = arg;
                 console.log("Project:");
                 console.log(arg);
+
+
+                if(!nodesInitialized) {
+                    console.log("Initializing Bukkit Node generator...");
+                    NodeGenerator.init(projectInfo.libraries || []).then(() => {
+                        nodesInitialized=true;
+                        ipcRenderer.send("getGraphData");
+
+                        graph.start(100);
+                    });
+                }
+            });
+            ipcRenderer.on("libraryAdded", function (event, arg) {
+                NodeGenerator.addLibrary(arg);
             });
             ipcRenderer.on("graphData", function (event, arg) {
                 if (!arg) {
@@ -676,13 +689,13 @@
                 configureSnippet(arg);
             });
 
-            ipcRenderer.on("committed",function (event,arg) {
+            ipcRenderer.on("committed", function (event, arg) {
                 $("#overlay").fadeOut();
             });
-            ipcRenderer.on("remoteChanged",function (event,arg) {
+            ipcRenderer.on("remoteChanged", function (event, arg) {
                 $("#overlay").fadeOut();
             });
-            ipcRenderer.on("pushed",function (event,arg) {
+            ipcRenderer.on("pushed", function (event, arg) {
                 $("#overlay").fadeOut();
             });
 

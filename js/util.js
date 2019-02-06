@@ -73,6 +73,13 @@ function shapeAndColorsForSlotType(slotType, extraInfo) {
             color_off: Colors.ABSTRACT_FUNCTION_OFF
         }, extraInfo);
     }
+    if (slotType === "staticMethod") {
+        return Object.assign({}, {
+            shape: LiteGraph.BOX_SHAPE,
+            color_on: Colors.STATIC_FUNCTION_ON,
+            color_off: Colors.STATIC_FUNCTION_OFF
+        }, extraInfo);
+    }
     if (slotType === "enum") {
         return Object.assign({}, {
             color_on: Colors.ENUM_ON,
