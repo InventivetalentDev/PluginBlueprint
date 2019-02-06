@@ -191,6 +191,13 @@ function showWindow() {
 
     // Init Discord Rich Presence
     richPresence = RPC("532503320108072960");
+    richPresence.on("error",(err)=>{
+        console.warn(err);
+        global.analytics.event("DiscordRPC", "failed").send();
+    });
+    richPresence.on("connected",()=>{
+        global.analytics.event("DiscordRPC", "connected").send();
+    });
 }
 
 
