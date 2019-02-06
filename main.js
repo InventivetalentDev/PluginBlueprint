@@ -1336,7 +1336,7 @@ ipcMain.on("checkUpdate", function (event) {
 function checkUpdate() {
     return new Promise(resolve => {
         request("https://pluginblueprint.net/checkupdate.php", function (err, res, body) {
-            if (err) {
+            if (err || !body || body.length > 10/* invalid response content */) {
                 resolve({
                     hasUpdate: false
                 });
