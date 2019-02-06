@@ -405,7 +405,7 @@ function ensureNodeRegistration() {
         getOrCreateBukkitClassNode(clazz.qualifiedName);
         for (let m in clazz.methodsBySignature) {
             let method = clazz.methodsBySignature[m];
-            getOrCreateBukkitAbstractMethodNode(clazz.qualifiedName, method.fullSignature)
+            getOrCreateBukkitAbstractMethodNode(clazz.qualifiedName, method.fullSignature);
             getOrCreateBukkitMethodNode(clazz.qualifiedName, method.fullSignature);
         }
         for (let c in clazz.constructorsBySignature) {
@@ -918,7 +918,7 @@ function handleSlotDoubleClick(node, type, i, e) {
         if (slot.linkType === "ref" && slot.hasOwnProperty("type")) {
             let nameSplit = node.className.split(".");
             let simpleName = nameSplit[nameSplit.length - 1];
-            nodeName = getOrCreateBukkitConstructorNode(node.className, simpleName+"()");
+            nodeName = getOrCreateBukkitConstructorNode(node.className, simpleName + "()");
         }
     }
     if (nodeName) {

@@ -611,7 +611,7 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
                                 code += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
                             }
                         }
-                        code += nodeExec(linkInfo.target_id) + ";\n"
+                        code += nodeExec(linkInfo.target_id) + ";\n";
 
                         if (methodData.returnType.qualifiedName !== "void") {
                             returnCode = "return " + nodeReturn(linkInfo.target_id)+";\n";// can only return once

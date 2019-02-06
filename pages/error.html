@@ -45,7 +45,7 @@
             });
 
             let msg = getCurrentWindow().theMessage;
-            $("#message").text(msg || "Please make sure you didn't forget to connect any of the nodes - you can also click on the highlighted nodes below to check which might cause the problems.")
+            $("#message").text(msg || "Please make sure you didn't forget to connect any of the nodes - you can also click on the highlighted nodes below to check which might cause the problems.");
 
             let error = getCurrentWindow().theError;
             let message = typeof error === "string" ? error : error.message || error.msg;

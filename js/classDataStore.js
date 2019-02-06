@@ -164,8 +164,8 @@ ClassDataStore.downloadLibraryBinary = function (libraryName) {
             let stream = fs.createWriteStream(binFile);
             request("https://jjdoc.inventivetalent.org/libs/" + libraryName + "/binary")
                 .on('response', function (response) {
-                    console.log(response.statusCode) // 200
-                    console.log(response.headers['content-type']) // 'image/png'
+                    console.log(response.statusCode); // 200
+                    console.log(response.headers['content-type']); // 'image/png'
                     resolve();
                 })
                 .on("error", function (err) {
