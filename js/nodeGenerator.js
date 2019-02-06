@@ -450,12 +450,15 @@ function getOrCreateBukkitClassNode(className) {
 
         if (classData.isEvent) {
             this.classType = "event";
+            this.iconName="bullhorn";
             this.color = Colors.EVENT;
         } else if (classData.isEnum) {
             this.classType = "enum";
+            this.iconName="list-ol";
             this.color = Colors.ENUM_OFF;//TODO: separate variable
         } else {
             this.classType = "object";
+            this.iconName="box";
             this.color = Colors.OBJECT;
         }
 
@@ -465,6 +468,7 @@ function getOrCreateBukkitClassNode(className) {
 
     BukkitClassNode.title = simpleClassName;
 
+    BukkitClassNode.prototype.onDrawTitleBox = require("./fontAwesomeHelper").handleDrawTitleBox;
 
     LiteGraph.registerNodeType(categoryName, BukkitClassNode);
 
@@ -620,6 +624,7 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
     function BukkitMethodNode() {
         addMethodIO(this, classData, methodData);
         this.nodeType = "BukkitMethodNode";
+        this.iconName="hashtag";
         this.className = classData.qualifiedName;
         this.methodName = methodData.name;
         this.methodSignature = methodData.fullSignature;
@@ -629,6 +634,7 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
     BukkitMethodNode.title = simpleClassName + (methodData.isStatic?".":"#") + methodData.fullFlatSignature;
 
     BukkitMethodNode.prototype.color = methodData.isStatic  ?Colors.STATIC_FUNCTION_OFF : Colors.FUNCTION;
+    BukkitMethodNode.prototype.onDrawTitleBox = require("./fontAwesomeHelper").handleDrawTitleBox;
 
 
     LiteGraph.registerNodeType(categoryName, BukkitMethodNode);
@@ -686,6 +692,7 @@ function getOrCreateBukkitAbstractMethodNode(className, methodSignature) {
     function BukkitAbstractMethodNode() {
         addAbstractMethodIO(this, classData, methodData);
         this.nodeType = "BukkitAbstractMethodNode";
+        this.iconName="sitemap";
         this.className = classData.qualifiedName;
         this.methodName = methodData.name;
         this.methodSignature = methodData.fullSignature;
@@ -696,6 +703,7 @@ function getOrCreateBukkitAbstractMethodNode(className, methodSignature) {
     BukkitAbstractMethodNode.title = simpleClassName + "{" + methodData.fullFlatSignature + "}";
 
     BukkitAbstractMethodNode.prototype.color = Colors.ABSTRACT_FUNCTION_OFF;
+    BukkitAbstractMethodNode.prototype.onDrawTitleBox = require("./fontAwesomeHelper").handleDrawTitleBox;
 
 
     LiteGraph.registerNodeType(categoryName, BukkitAbstractMethodNode);
@@ -747,6 +755,7 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
     function BukkitConstructorNode() {
         addConstructorIO(this, classData, constructorData);
         this.nodeType = "BukkitConstructorNode";
+        this.iconName="plus-square";
         this.className = classData.qualifiedName;
         this.constructorName = constructorData.name;
         this.constructorSignature = constructorData.fullSignature;
@@ -756,6 +765,7 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
     BukkitConstructorNode.title = constructorData.fullFlatSignature;
 
     BukkitConstructorNode.prototype.color = Colors.CONSTRUCTOR;
+    BukkitConstructorNode.prototype.onDrawTitleBox = require("./fontAwesomeHelper").handleDrawTitleBox;
 
 
     LiteGraph.registerNodeType(categoryName, BukkitConstructorNode);
