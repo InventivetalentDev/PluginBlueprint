@@ -76,6 +76,7 @@ function init() {
 
     function licenseValid() {
         googleAnalytics.init().then(analytics => {
+            analytics.set("ds", "app");
             analytics.set("validLicense", true);
             analytics.set("debugEnabled", debug);
             analytics.set("appVersion", app.getVersion());
