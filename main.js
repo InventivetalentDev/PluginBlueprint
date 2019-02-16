@@ -649,6 +649,8 @@ function openProject(arg) {
                 } else {// cancel
                 }
             });
+        } else {
+            doOpen();
         }
 
     })
