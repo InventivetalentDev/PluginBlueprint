@@ -390,7 +390,7 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
 
             dialog.showMessageBox({
                 title: "Select spigot.jar location",
-                message: "Please select the location of a valid spigot.jar executable",
+                message: "Please select the location of a valid Spigot or Paper Server executable (usually spigot.jar)",
                 buttons: ["Select", "I don't have one"],
                 icon: path.join(__dirname, 'assets/images/logo-x64.png')
             }, (r) => {
