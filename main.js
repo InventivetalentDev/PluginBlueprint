@@ -628,9 +628,9 @@ function openProject(arg) {
             })
         }
 
-        let appVersion = app.getVersion();
+        let appVersion = app.getVersion() || "x.x.x";
         let appVersionSplit = appVersion.split(".");
-        let fileVersion = data.editorVersion;
+        let fileVersion = data.editorVersion || "y.y.y";
         let fileVersionSplit = fileVersion.split(".");
         if (appVersionSplit[1] !== fileVersionSplit[1]) {// compare minor version
             dialog.showMessageBox({
