@@ -179,7 +179,7 @@
                             }
                         },
                         {
-                          label:"Add Library", click:()=>{
+                            label: "Add Library", click: () => {
                                 ipcRenderer.send("showLibrarySelector");
                             }
                         },
@@ -301,6 +301,7 @@
             getCurrentWindow().setMenu(theMenu);
 
             let projectInfo = {};
+            let isNewProject = false;
 
             let history = new History();
             history.pause();
@@ -636,17 +637,20 @@
                 $("#overlay").fadeOut();
             }
 
-            let nodesInitialized=false;
+            let nodesInitialized = false;
             ipcRenderer.on("projectInfo", function (event, arg) {
                 projectInfo = arg;
+                isNewProject = projectInfo.isNewProject;
+                delete projectInfo.isNewProject;
                 console.log("Project:");
                 console.log(arg);
+                console.log("Is New:", isNewProject);
 
 
-                if(!nodesInitialized) {
+                if (!nodesInitialized) {
                     console.log("Initializing Bukkit Node generator...");
                     NodeGenerator.init(projectInfo.libraries || []).then(() => {
-                        nodesInitialized=true;
+                        nodesInitialized = true;
                         ipcRenderer.send("getGraphData");
 
                         graph.start(100);

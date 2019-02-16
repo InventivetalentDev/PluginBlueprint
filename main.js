@@ -36,6 +36,7 @@ let debug = false;
 
 let currentProject;
 let currentProjectPath;
+let isNewProject;
 
 let recentProjects = [];
 
@@ -469,6 +470,7 @@ function createNewProject(arg, lib) {
                 }
                 currentProjectPath = arg.path;
                 currentProject = projectInfo;
+                isNewProject = true;
 
                 // Create dummy file with project name
                 // (symlink would be nicer but requires admin perms)
@@ -596,6 +598,7 @@ function openProject(arg) {
         function doOpen() {
             currentProjectPath = arg;
             currentProject = data;
+            isNewProject = false;
 
             let i = recentProjects.map(function (e) {
                 return e.path;
@@ -661,7 +664,9 @@ ipcMain.on("openProject", function (event, arg) {
 });
 
 ipcMain.on("getProjectInfo", function (event, arg) {
-    event.sender.send("projectInfo", currentProject || {});
+    let proj = currentProject || {};
+    proj.isNewProject = isNewProject;
+    event.sender.send("projectInfo", proj);
 });
 
 ipcMain.on("updateProjectInfo", function (event, arg) {
@@ -697,6 +702,10 @@ ipcMain.on("getGraphData", function (event, arg) {
         }
 
         event.sender.send("graphData", JSON.parse(data));
+
+        if (isNewProject) {
+            importSnippet(path.join(__dirname, "assets", "snippets", "onEnableLog.pbs"));
+        }
     });
 });
 
@@ -1211,12 +1220,20 @@ ipcMain.on("showImportSnippet", function (event, arg) {
         }]
     }, (files) => {
         if (!files || files.length === 0) return;
-        fs.readFile(files[0], function (err, data) {
-            if (err) throw err;
-            event.sender.send("importSnippet", JSON.parse(data));
-        })
+        importSnippet(files[0]);
     });
 });
+
+function importSnippet(file) {
+    if (!file) {
+        return;
+    }
+    fs.readFile(file, function (err, data) {
+        if (err) throw err;
+        if (!win) return;
+        win.webContents.send("importSnippet", JSON.parse(data));
+    });
+}
 
 ipcMain.on("gitAddAndCommit", function (event, arg) {
     if (!currentProjectPath || !currentProject) return;
