@@ -32,8 +32,10 @@ function generateClassCode(graph, projectInfo) {
         classStore.init()
             .then(() => {
                 let libPromises = [];
-                for (let l = 0; l < projectInfo.libraries.length; l++) {
-                    libPromises.push(classStore.loadLibrary(projectInfo.libraries[l]));
+                if(projectInfo.libraries) {
+                    for (let l = 0; l < projectInfo.libraries.length; l++) {
+                        libPromises.push(classStore.loadLibrary(projectInfo.libraries[l]));
+                    }
                 }
                 return Promise.all(libPromises);
             })
