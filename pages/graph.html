@@ -676,15 +676,27 @@
             ipcRenderer.on("generateDone", function (event, arg) {
                 $("#overlay").fadeOut();
                 app.uncompiledChanges = 0;
+
+                for (let i = 0; i < graph._nodes.length; i++) {
+                    delete graph._nodes[i].has_errors;
+                }
             });
             ipcRenderer.on("generateError", function (event, arg) {
                 $("#overlay").fadeOut();
                 console.error(arg);
+
+                highlightAffectedNodes(arg, true);
             });
             ipcRenderer.on("graphDataSaved", function (event, arg) {
                 $("#overlay").fadeOut();
                 app.unsavedChanges = 0;
                 updateTitle();
+            });
+
+            ipcRenderer.on("logError", function (event, arg) {
+                console.log("logError", arg);
+
+                highlightAffectedNodes(arg, false);
             });
 
             ipcRenderer.on("importSnippet", function (event, arg) {
@@ -703,6 +715,24 @@
             ipcRenderer.on("pushed", function (event, arg) {
                 $("#overlay").fadeOut();
             });
+
+
+            function highlightAffectedNodes(arg, deselectFirst) {
+                let affectedNode = /node_([0-9]+)/gm.exec(arg);
+                console.log(affectedNode);
+
+                if (deselectFirst) {
+                    for (let i = 0; i < graph._nodes.length; i++) {
+                        delete graph._nodes[i].has_errors;
+                    }
+                }
+                if (affectedNode) {
+                    let n = graph.getNodeById(parseInt(affectedNode[1]));
+                    if (n) {
+                        n.has_errors = true;
+                    }
+                }
+            }
 
             function updateTitle() {
                 getCurrentWindow().setTitle("PluginBlueprint Editor [" + projectInfo.name + (app.unsavedChanges > 0 && app.uncompiledChanges > 0 ? "**" : (app.unsavedChanges > 0 || app.uncompiledChanges > 0 ? "*" : "")) + "]");

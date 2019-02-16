@@ -1116,6 +1116,8 @@ ipcMain.on("startServer", function (event, arg) {
                         if (log.indexOf(currentProject.package) !== -1) {
                             if (log.indexOf("node_") !== -1) {
                                 logData.hasNode = true;
+
+                                if (win) win.webContents.send("logError", log);
                             }
                         }
 
