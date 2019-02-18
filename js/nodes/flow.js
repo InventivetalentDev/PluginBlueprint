@@ -58,8 +58,37 @@ ForLoop.prototype.getExecAfter = function (exec, output) {
 ForLoop.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 
+
+// FlipFlop
+
+function FlipFlop() {
+    this.classType = "native";
+    this.iconName = "toggle-on";
+    this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+
+    this.addOutput("A", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("B", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("isA", "boolean", shapeAndColorsForSlotType("boolean"));
+}
+
+FlipFlop.title = "FlipFlop";
+FlipFlop.prototype.getFields = function (output) {
+    return ["boolean flipflop_"+this.id, "boolean "+output[2]];
+};
+FlipFlop.prototype.getMethodBody = function (input, output) {
+    return "flipflop_"+this.id+" = "+ output[2]+" = !flipflop_"+this.id+";";
+};
+FlipFlop.prototype.getExecAfter = function (exec) {
+    return "if(flipflop_"+this.id+") {\n" +
+        exec[0].join("\n") + "//A\n" +
+        "} else {\n" +
+        exec[1].join("\n") + "//B\n" +
+        "}";
+};
+FlipFlop.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
+
 module.exports = [
     Switch,
-
-    ForLoop
+    ForLoop,
+    FlipFlop
 ];
