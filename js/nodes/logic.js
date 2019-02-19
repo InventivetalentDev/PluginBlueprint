@@ -18,7 +18,7 @@ NotGate.prototype.getFields = function (output) {
     return ["boolean " + output[1]];
 };
 NotGate.prototype.getMethodBody = function (input, output) {
-    return output[1] + " = !" + input[1]+";";
+    return output[1] + " = !" + input[1]+";\n";
 };
 NotGate.prototype.getExecAfter = function (exec) {
     return exec[0].join("\n");
@@ -43,7 +43,7 @@ AndGate.prototype.getFields = function (output) {
     return ["boolean " + output[1]];
 };
 AndGate.prototype.getMethodBody = function (input, output) {
-    return output[1] + " = " + input[1] + " && " + input[2]+";";
+    return output[1] + " = " + input[1] + " && " + input[2]+";\n";
 };
 AndGate.prototype.getExecAfter = function (exec) {
     return exec[0].join("\n");
@@ -69,7 +69,7 @@ OrGate.prototype.getFields = function (output) {
     return ["boolean " + output[1]];
 };
 OrGate.prototype.getMethodBody = function (input, output) {
-    return output[1] + " = " + input[1] + " || " + input[2]+";";
+    return output[1] + " = " + input[1] + " || " + input[2]+";\n";
 };
 OrGate.prototype.getExecAfter = function (exec) {
     return exec[0].join("\n");
