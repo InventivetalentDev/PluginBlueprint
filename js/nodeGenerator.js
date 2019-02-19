@@ -12,6 +12,7 @@ const relationalNodes = require("./nodes/relational");
 const variableNodes = require("./nodes/variables");
 const arrayNodes = require("./nodes/array");
 const flowNodes = require("./nodes/flow");
+const logicNodes = require("./nodes/logic");
 
 const classStore = new ClassDataStore();
 
@@ -376,6 +377,9 @@ function init(extraLibraries) {
         }
         for (let n = 0; n < flowNodes.length; n++) {
             LiteGraph.registerNodeType("flow/" + flowNodes[n].name, flowNodes[n]);
+        }
+        for (let n = 0; n < logicNodes.length; n++) {
+            LiteGraph.registerNodeType("logic/" + logicNodes[n].name, logicNodes[n]);
         }
 
         classStore.init().then(() => {
