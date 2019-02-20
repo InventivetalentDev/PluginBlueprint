@@ -326,6 +326,8 @@
             app.uncompiledChanges = 0;
 
             var graph = new LGraph();
+            if (!graph.config) graph.config = {};
+            graph.config.align_to_grid = true;
             graph.onNodeAdded = function (n) {
                 console.debug("[HISTORY] onNodeAdded");
                 if (n) {
