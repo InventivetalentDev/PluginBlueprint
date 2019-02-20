@@ -76,72 +76,89 @@ function init() {
     });
 
     function licenseValid() {
-        googleAnalytics.init().then(analytics => {
-            analytics.set("ds", "app");
-            analytics.set("validLicense", true);
-            analytics.set("debugEnabled", debug);
-            analytics.set("appVersion", app.getVersion());
-            showWindow();
-        })
+        showWindow();
+        global.analytics.event("License", "valid-license").send();
     }
 
-    let licenseFile = path.join(app.getPath("userData"), "license");
-    if (!fs.existsSync(licenseFile)) {
-        prompt({
-            title: "Enter License Key",
-            label: "License Key",
-            height: 150
-        }).then((r) => {
-            if (!r) {
-                dialog.showMessageBox(null, {
-                    type: "error",
-                    title: "Error",
-                    message: "Invalid license key"
-                }, function () {
-                    app.quit();
-                })
-            } else {
-                let progressBar = new ProgressBar({
-                    title: "Checking License...",
-                    text: "Checking License..."
-                });
-                licenseManager.activate(r).then((m) => {
-                    progressBar.setCompleted();
-                    dialog.showMessageBox(null, {
-                        type: "info",
-                        title: "Success",
-                        message: m || "License activated successfully!"
-                    }, function () {
-                        progressBar.close();
-                        licenseValid();
-                    })
-                }).catch((m) => {
-                    progressBar.setCompleted();
+    function analyticsReady() {
+        let licenseFile = path.join(app.getPath("userData"), "license");
+        if (!fs.existsSync(licenseFile)) {
+            prompt({
+                title: "Enter License Key",
+                label: "License Key",
+                height: 150
+            }).then((r) => {
+                if (!r) {
                     dialog.showMessageBox(null, {
                         type: "error",
                         title: "Error",
-                        message: m || "Failed to activate license"
+                        message: "Invalid license key"
                     }, function () {
                         app.quit();
+                    });
+                    global.analytics.set("validLicense", false);
+                    global.analytics.event("License", "empty-key").send();
+                } else {
+                    let progressBar = new ProgressBar({
+                        title: "Checking License...",
+                        text: "Checking License..."
+                    });
+                    licenseManager.activate(r).then((m) => {
+                        progressBar.setCompleted();
+                        dialog.showMessageBox(null, {
+                            type: "info",
+                            title: "Success",
+                            message: m || "License activated successfully!"
+                        }, function () {
+                            progressBar.close();
+                            licenseValid();
+                        });
+                        global.analytics.set("validLicense", true);
+                        global.analytics.event("License", "activated-key", m).send();
+                    }).catch((m) => {
+                        progressBar.setCompleted();
+                        dialog.showMessageBox(null, {
+                            type: "error",
+                            title: "Error",
+                            message: m || "Failed to activate license"
+                        }, function () {
+                            app.quit();
+                        });
+                        global.analytics.set("validLicense", false);
+                        global.analytics.event("License", "failed-key", m).send();
                     })
-                })
-            }
-        });
-    } else {
-        licenseManager.validate().then(() => {
-            licenseValid();
-        }).catch(() => {
-            fs.remove(licenseFile, function (err) {
-                dialog.showMessageBox(null, {
-                    type: "error",
-                    title: "Error",
-                    message: "Invalid license key"
-                }, function () {
-                    app.quit();
-                })
+
+                    global.analytics.event("License", "checking").send();
+                }
             });
-        })
+        } else {
+            licenseManager.validate().then(() => {
+                licenseValid();
+                global.analytics.set("validLicense", true);
+                global.analytics.event("License", "validated-file").send();
+            }).catch(() => {
+                fs.remove(licenseFile, function (err) {
+                    dialog.showMessageBox(null, {
+                        type: "error",
+                        title: "Error",
+                        message: "Invalid license key"
+                    }, function () {
+                        app.quit();
+                    });
+                    global.analytics.set("validLicense", false);
+                    global.analytics.event("License", "invalidated-file").send();
+                });
+            })
+        }
     }
+
+    googleAnalytics.init().then(analytics => {
+        analytics.set("ds", "app");
+        analytics.set("debugEnabled", debug);
+        analytics.set("appVersion", app.getVersion());
+
+        analyticsReady();
+    }).catch(analyticsReady);
 }
 
 function showWindow() {
