@@ -58,7 +58,6 @@ ForLoop.prototype.getExecAfter = function (exec, output) {
 ForLoop.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 
-
 // FlipFlop
 
 function FlipFlop() {
@@ -73,13 +72,13 @@ function FlipFlop() {
 
 FlipFlop.title = "FlipFlop";
 FlipFlop.prototype.getFields = function (output) {
-    return ["boolean flipflop_"+this.id, "boolean "+output[2]];
+    return ["boolean flipflop_" + this.id, "boolean " + output[2]];
 };
 FlipFlop.prototype.getMethodBody = function (input, output) {
-    return "flipflop_"+this.id+" = "+ output[2]+" = !flipflop_"+this.id+";";
+    return "flipflop_" + this.id + " = " + output[2] + " = !flipflop_" + this.id + ";";
 };
 FlipFlop.prototype.getExecAfter = function (exec) {
-    return "if(flipflop_"+this.id+") {\n" +
+    return "if(flipflop_" + this.id + ") {\n" +
         exec[0].join("\n") + "//A\n" +
         "} else {\n" +
         exec[1].join("\n") + "//B\n" +

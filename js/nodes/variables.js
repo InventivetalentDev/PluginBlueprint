@@ -1,5 +1,5 @@
 const Colors = require("../colors");
-const {shapeAndColorsForSlotType,typeSwitchEnum,parseTypeSwitchEnum} = require("../util");
+const {shapeAndColorsForSlotType, typeSwitchEnum, parseTypeSwitchEnum} = require("../util");
 
 function Set() {
     this.classType = "native";
@@ -39,7 +39,6 @@ Get.prototype.getMethodBody = function (input, output) {
     return output[0] + " = " + this.properties.name + ";";
 };
 Get.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
-
 
 
 module.exports = [

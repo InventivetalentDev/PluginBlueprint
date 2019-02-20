@@ -14,14 +14,14 @@ function copyPlugin(projectPath, projectInfo, skipEmpty, skipReloadHelper, skipL
         function doCopy() {
             copyFile(path.join(projectPath, "output", projectName + ".jar"), path.join(projectPath, "lib", "plugins", projectName + ".jar"))// copy plugin
                 .then(() => {
-                    if (skipReloadHelper && (skipLibraries||!projectInfo.libraries||projectInfo.libraries.length===0)) {
+                    if (skipReloadHelper && (skipLibraries || !projectInfo.libraries || projectInfo.libraries.length === 0)) {
                         resolve()
                     } else {
                         copyFile(path.join(__dirname, "../assets/lib/livereload.jar"), path.join(projectPath, "lib", "plugins", "livereload.jar"))// copy livereload helper plugin
-                            .then(()=>{
-                                if (skipLibraries||!projectInfo.libraries||projectInfo.libraries.length===0) {
+                            .then(() => {
+                                if (skipLibraries || !projectInfo.libraries || projectInfo.libraries.length === 0) {
                                     resolve();
-                                }else{
+                                } else {
                                     let libPromises = [];
                                     for (let l = 0; l < projectInfo.libraries.length; l++) {
                                         libPromises.push(copyFile(path.join(app.getPath("userData"), "jjdoc-binaries", projectInfo.libraries[l] + ".jar"), path.join(projectPath, "lib", "plugins", projectInfo.libraries[l] + ".jar")));
