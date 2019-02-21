@@ -458,7 +458,7 @@ function getOrCreateBukkitClassNode(className) {
 
         this.nodeType = "BukkitClassNode";
 
-        this.desc = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean luctus laoreet libero quis consequat. Nam in sem eget justo suscipit gravida sed consequat dui. Quisque facilisis dui risus, at facilisis neque cursus ut. Sed commodo mauris libero, nec laoreet purus mollis fermentum. Cras vitae purus pretium, rhoncus ex vitae, iaculis nibh. Suspendisse imperdiet metus vel orci sollicitudin, sed tincidunt orci sodales. Sed nec venenatis dolor. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nunc malesuada ut sem nec rutrum.";
+        this.desc = classData.comment;
 
         if (classData.isEvent) {
             this.classType = "event";
@@ -642,7 +642,7 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
         this.methodSignature = methodData.fullSignature;
         this.isMethodNode = true;
 
-        this.desc = "Method Test Description";
+        this.desc = methodData.comment;
     }
 
     BukkitMethodNode.title = simpleClassName + (methodData.isStatic ? "." : "#") + methodData.fullFlatSignature;
@@ -713,7 +713,7 @@ function getOrCreateBukkitAbstractMethodNode(className, methodSignature) {
         this.isAbstractMethod = true;
         this.isAbstractMethodNode = true;
 
-        this.desc = "Abstract Method Test Description";
+        this.desc = methodData.comment;
     }
 
     BukkitAbstractMethodNode.title = simpleClassName + "{" + methodData.fullFlatSignature + "}";
@@ -777,7 +777,7 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
         this.constructorSignature = constructorData.fullSignature;
         this.isConstructorNode = true;
 
-        this.desc = "Constructor Test Description";
+        this.desc = constructorData.comment;
     }
 
     BukkitConstructorNode.title = constructorData.fullFlatSignature;
