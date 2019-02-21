@@ -189,7 +189,11 @@ function handleDescDrawBackground(ctx) {
 }
 
 function handleDescOnBounding(rect) {
-    if (!this.flags.collapsed && this.mouseOver)
+    if (this.flags.collapsed)
+        return;
+    if (!this.desc && !this.description)
+        return;
+    if (this.mouseOver)
         rect[3] = this.size[1] + 20;
 }
 
