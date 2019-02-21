@@ -458,7 +458,7 @@ function getOrCreateBukkitClassNode(className) {
 
         this.nodeType = "BukkitClassNode";
 
-        this.desc = "Class Test Description";
+        this.desc = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean luctus laoreet libero quis consequat. Nam in sem eget justo suscipit gravida sed consequat dui. Quisque facilisis dui risus, at facilisis neque cursus ut. Sed commodo mauris libero, nec laoreet purus mollis fermentum. Cras vitae purus pretium, rhoncus ex vitae, iaculis nibh. Suspendisse imperdiet metus vel orci sollicitudin, sed tincidunt orci sodales. Sed nec venenatis dolor. Interdum et malesuada fames ac ante ipsum primis in faucibus. Nunc malesuada ut sem nec rutrum.";
 
         if (classData.isEvent) {
             this.classType = "event";
