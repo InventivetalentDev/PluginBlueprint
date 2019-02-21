@@ -184,7 +184,7 @@ function handleDescDrawBackground(ctx) {
 
     if (this.mouseOver) {
         ctx.fillStyle = "#AAA";
-        this.descBlockHeight = wrapCanvasText(ctx, this.desc || this.description, 0, this.size[1] + 14, this.size[0], 14);
+        this.descBlockHeight = wrapCanvasText(ctx, (this.desc || this.description) + " [double-click for more]", 0, this.size[1] + 14, this.size[0], 14);
     }
 }
 

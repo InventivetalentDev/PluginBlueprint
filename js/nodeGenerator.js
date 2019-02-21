@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const shell = require('electron').shell;
 const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
@@ -354,6 +355,26 @@ function init(extraLibraries) {
         };
         LGraphNode.prototype.onDblClick = function () {
             console.log(this);
+
+            let className = this.className;
+            if (!className) {
+                return;
+            }
+            let url;
+            if (className.startsWith("org.bukkit.")) {
+                url= "https://hub.spigotmc.org/javadocs/spigot/";
+            }else if(className.startsWith("java.")){
+                url = "https://docs.oracle.com/javase/8/docs/api/";
+            }
+            if (!url) {
+                return;
+            }
+
+            url += className.split(".").join("/") + ".html";
+
+            /// TODO: link to individual fields/methods/etc.
+
+            shell.openExternal(url);
         };
 
         LGraphNode.prototype.onDrawBackground = handleDescDrawBackground;
