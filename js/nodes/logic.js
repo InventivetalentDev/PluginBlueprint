@@ -5,6 +5,7 @@ const {shapeAndColorsForSlotType, isPrimitiveType} = require("../util");
 
 function NotGate() {
     this.classType = "native";
+    this.iconName = "dungeon";
 
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("IN", "boolean", shapeAndColorsForSlotType("boolean"));
@@ -29,6 +30,7 @@ NotGate.prototype.getExecAfter = function (exec) {
 
 function AndGate() {
     this.classType = "native";
+    this.iconName = "dungeon";
 
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("A", "boolean", shapeAndColorsForSlotType("boolean"));
@@ -54,6 +56,7 @@ AndGate.prototype.getExecAfter = function (exec) {
 
 function OrGate() {
     this.classType = "native";
+    this.iconName = "dungeon";
 
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("A", "boolean", shapeAndColorsForSlotType("boolean"));
