@@ -1,5 +1,5 @@
 const Colors = require("../colors");
-const {shapeAndColorsForSlotType} = require("../util");
+const {shapeAndColorsForSlotType, handleDescDrawBackground} = require("../util");
 
 const RelationalOperator = function () {
     this.classType = "native";
@@ -33,6 +33,8 @@ RelationalOperator.prototype.onDrawBackground = function (ctx) {
     ctx.textAlign = "center";
     ctx.fillText(this.operation, this.size[0] * 0.5, this.size[1] * 0.35 + LiteGraph.NODE_TITLE_HEIGHT);
     ctx.textAlign = "left";
+
+    handleDescDrawBackground(ctx);
 };
 
 RelationalOperator.prototype.getFields = function (output) {

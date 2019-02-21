@@ -1,5 +1,5 @@
 const Colors = require("../colors");
-const {shapeAndColorsForSlotType, getNumberSuffix} = require("../util");
+const {shapeAndColorsForSlotType, getNumberSuffix, handleDescDrawBackground} = require("../util");
 
 // String Constant
 
@@ -11,8 +11,9 @@ function StringConstant() {
 }
 
 StringConstant.prototype.color = Colors.STRING_OFF;
-StringConstant.prototype.onDrawBackground = function () {
+StringConstant.prototype.onDrawBackground = function (ctx) {
     this.outputs[0].label = this.properties.string;
+    handleDescDrawBackground(ctx);
 };
 StringConstant.prototype.getFields = function (output) {
     return ["java.lang.String " + output[0] + " = \"" + this.properties.string + "\""];
@@ -33,9 +34,10 @@ function NumberConstant() {
 }
 
 NumberConstant.prototype.color = Colors.NUMBER_OFF;
-NumberConstant.prototype.onDrawBackground = function () {
+NumberConstant.prototype.onDrawBackground = function (ctx) {
     this.outputs[0].label = this.properties.type + " " + this.properties.number;
     this.outputs[0].type = this.properties.type;
+    handleDescDrawBackground(ctx);
 };
 NumberConstant.prototype.getFields = function (output) {
     return [this.properties.type + " " + output[0] + " = " + this.properties.number + getNumberSuffix(this.properties.type)];
@@ -52,8 +54,9 @@ function BooleanConstant() {
 }
 
 BooleanConstant.prototype.color = Colors.BOOLEAN_OFF;
-BooleanConstant.prototype.onDrawBackground = function () {
+BooleanConstant.prototype.onDrawBackground = function (ctx) {
     this.outputs[0].label = "" + this.properties.value;
+    handleDescDrawBackground(ctx);
 };
 BooleanConstant.prototype.getFields = function (output) {
     return ["boolean " + output[0] + " = " + this.properties.value];

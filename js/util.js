@@ -176,6 +176,23 @@ function parseTypeSwitchEnum(type) {
     return type;
 }
 
+function handleDescDrawBackground(ctx) {
+    if (this.flags.collapsed)
+        return;
+    if (!this.desc && !this.description)
+        return;
 
-module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength, typeSwitchEnum, parseTypeSwitchEnum};
+    if (this.mouseOver) {
+        ctx.fillStyle = "#AAA";
+        ctx.fillText(this.desc || this.description, 0, this.size[1] + 14);
+    }
+}
+
+function handleDescOnBounding(rect) {
+    if (!this.flags.collapsed && this.mouseOver)
+        rect[3] = this.size[1] + 20;
+}
+
+
+module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength, typeSwitchEnum, parseTypeSwitchEnum, handleDescDrawBackground, handleDescOnBounding};
 

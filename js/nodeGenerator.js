@@ -3,7 +3,7 @@ const path = require("path");
 const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
-const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength} = require("./util");
+const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding} = require("./util");
 
 const miscNodes = require("./nodes/misc");
 const constantNodes = require("./nodes/constants");
@@ -356,6 +356,9 @@ function init(extraLibraries) {
             console.log(this);
         };
 
+        LGraphNode.prototype.onDrawBackground = handleDescDrawBackground;
+        LGraphNode.prototype.onBounding = handleDescOnBounding;
+
         for (let n = 0; n < miscNodes.length; n++) {
             let nativeNode = miscNodes[n];
             LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
@@ -454,6 +457,8 @@ function getOrCreateBukkitClassNode(className) {
             this.optional_outputs.sort(optionalInputOutputSorter);
 
         this.nodeType = "BukkitClassNode";
+
+        this.desc = "Class Test Description";
 
         if (classData.isEvent) {
             this.classType = "event";
@@ -636,6 +641,8 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
         this.methodName = methodData.name;
         this.methodSignature = methodData.fullSignature;
         this.isMethodNode = true;
+
+        this.desc = "Method Test Description";
     }
 
     BukkitMethodNode.title = simpleClassName + (methodData.isStatic ? "." : "#") + methodData.fullFlatSignature;
@@ -705,6 +712,8 @@ function getOrCreateBukkitAbstractMethodNode(className, methodSignature) {
         this.methodSignature = methodData.fullSignature;
         this.isAbstractMethod = true;
         this.isAbstractMethodNode = true;
+
+        this.desc = "Abstract Method Test Description";
     }
 
     BukkitAbstractMethodNode.title = simpleClassName + "{" + methodData.fullFlatSignature + "}";
@@ -767,6 +776,8 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
         this.constructorName = constructorData.name;
         this.constructorSignature = constructorData.fullSignature;
         this.isConstructorNode = true;
+
+        this.desc = "Constructor Test Description";
     }
 
     BukkitConstructorNode.title = constructorData.fullFlatSignature;

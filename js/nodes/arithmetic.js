@@ -1,5 +1,5 @@
 const Colors = require("../colors");
-const {shapeAndColorsForSlotType, isPrimitiveType} = require("../util");
+const {shapeAndColorsForSlotType, isPrimitiveType, handleDescDrawBackground} = require("../util");
 
 const ArithmeticOperator = function () {
     this.classType = "native";
@@ -29,6 +29,8 @@ ArithmeticOperator.prototype.onDrawBackground = function (ctx) {
     ctx.textAlign = "center";
     ctx.fillText(this.operation, this.size[0] * 0.5, this.size[1] * 0.35 + LiteGraph.NODE_TITLE_HEIGHT);
     ctx.textAlign = "left";
+
+    handleDescDrawBackground(ctx);
 };
 
 ArithmeticOperator.prototype.getFields = function (output) {
