@@ -177,7 +177,7 @@ function parseTypeSwitchEnum(type) {
 }
 
 function handleDescDrawBackground(ctx) {
-    if (this.flags.collapsed)
+    if (this.flags&&this.flags.collapsed)
         return;
     if (!this.desc && !this.description)
         return;
@@ -189,12 +189,13 @@ function handleDescDrawBackground(ctx) {
 }
 
 function handleDescOnBounding(rect) {
-    if (this.flags.collapsed)
+    if (this.flags&&this.flags.collapsed)
         return;
     if (!this.desc && !this.description)
         return;
-    if (this.mouseOver)
-        rect[3] = this.size[1] + 20;
+    if (this.mouseOver) {
+        rect[3] = this.size[1] + 40;
+    }
 }
 
 
