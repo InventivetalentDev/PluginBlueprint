@@ -12,14 +12,11 @@ function StringConstant() {
 }
 
 StringConstant.prototype.color = Colors.STRING_OFF;
-StringConstant.prototype.onDrawBackground = function (ctx) {
-    this.outputs[0].label = this.properties.string;
-    handleDescDrawBackground(ctx);
-};
 StringConstant.prototype.getFields = function (output) {
     return ["java.lang.String " + output[0] + " = \"" + this.properties.string + "\""];
 };
 StringConstant.prototype.onPropertyChanged = function (k, p) {
+    this.outputs[0].label = this.properties.string;
     this.size = this.computeSize();
 };
 StringConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
@@ -36,13 +33,13 @@ function NumberConstant() {
 }
 
 NumberConstant.prototype.color = Colors.NUMBER_OFF;
-NumberConstant.prototype.onDrawBackground = function (ctx) {
-    this.outputs[0].label = this.properties.type + " " + this.properties.number;
-    this.outputs[0].type = this.properties.type;
-    handleDescDrawBackground(ctx);
-};
 NumberConstant.prototype.getFields = function (output) {
     return [this.properties.type + " " + output[0] + " = " + this.properties.number + getNumberSuffix(this.properties.type)];
+};
+NumberConstant.prototype.onPropertyChanged = function (k, p) {
+    this.outputs[0].label = this.properties.type + " " + this.properties.number;
+    this.outputs[0].type = this.properties.type;
+    this.size = this.computeSize();
 };
 NumberConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
@@ -57,12 +54,12 @@ function BooleanConstant() {
 }
 
 BooleanConstant.prototype.color = Colors.BOOLEAN_OFF;
-BooleanConstant.prototype.onDrawBackground = function (ctx) {
-    this.outputs[0].label = "" + this.properties.value;
-    handleDescDrawBackground(ctx);
-};
 BooleanConstant.prototype.getFields = function (output) {
     return ["boolean " + output[0] + " = " + this.properties.value];
+};
+BooleanConstant.prototype.onPropertyChanged = function (k, p) {
+    this.outputs[0].label = "" + this.properties.value;
+    this.size = this.computeSize();
 };
 BooleanConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
