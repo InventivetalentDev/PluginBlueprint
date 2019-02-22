@@ -77,7 +77,7 @@ FlipFlop.prototype.getFields = function (output) {
 FlipFlop.prototype.getMethodBody = function (input, output) {
     return "flipflop_" + this.id + " = " + output[2] + " = !flipflop_" + this.id + ";";
 };
-FlipFlop.prototype.getExecAfter = function (exec) {
+FlipFlop.prototype.getExecBefore = function (exec) {
     return "if(flipflop_" + this.id + ") {\n" +
         exec[0].join("\n") + "//A\n" +
         "} else {\n" +
