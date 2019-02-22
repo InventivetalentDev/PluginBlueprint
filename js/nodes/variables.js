@@ -14,7 +14,7 @@ function Set() {
 Set.prototype.onDrawBackground = function (ctx) {
     this.inputs[1].label = this.properties.name;
     this.inputs[1].type = parseTypeSwitchEnum(this.properties.type);
-    handleDescDrawBackground(ctx);
+    handleDescDrawBackground.call(this, ctx);
 };
 Set.prototype.getFields = function (output) {
     return [parseTypeSwitchEnum(this.properties.type) + " " + this.properties.name];
@@ -37,7 +37,7 @@ function Get() {
 Get.prototype.onDrawBackground = function (ctx) {
     this.outputs[0].label = this.properties.name;
     this.outputs[0].type = parseTypeSwitchEnum(this.properties.type);
-    handleDescDrawBackground(ctx);
+    handleDescDrawBackground.call(this, ctx);
 };
 Get.prototype.getMethodBody = function (input, output) {
     return output[0] + " = " + this.properties.name + ";";

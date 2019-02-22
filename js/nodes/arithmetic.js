@@ -30,7 +30,7 @@ ArithmeticOperator.prototype.onDrawBackground = function (ctx) {
     ctx.fillText(this.operation, this.size[0] * 0.5, this.size[1] * 0.35 + LiteGraph.NODE_TITLE_HEIGHT);
     ctx.textAlign = "left";
 
-    handleDescDrawBackground(ctx);
+    handleDescDrawBackground.call(this, ctx);
 };
 
 ArithmeticOperator.prototype.getFields = function (output) {

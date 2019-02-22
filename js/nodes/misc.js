@@ -17,7 +17,7 @@ function Cast() {
 Cast.title = "Cast";
 Cast.prototype.onDrawBackground = function (ctx) {
     this.outputs[1].label = "(" + this.properties.castTo + ")";
-    handleDescDrawBackground(ctx);
+    handleDescDrawBackground.call(this, ctx);
 };
 Cast.prototype.getFields = function (output) {
     return [this.properties.castTo + " " + output[1]];
@@ -48,7 +48,7 @@ function InstanceOf() {
 InstanceOf.title = "InstanceOf";
 InstanceOf.prototype.onDrawBackground = function (ctx) {
     this.outputs[1].label = "instanceof " + this.properties.type;
-    handleDescDrawBackground(ctx);
+    handleDescDrawBackground.call(this, ctx);
 };
 InstanceOf.prototype.getFields = function (output) {
     return ["boolean " + output[1]];
