@@ -355,26 +355,31 @@ function init(extraLibraries) {
         };
         LGraphNode.prototype.onDblClick = function () {
             console.log(this);
+        };
+        LGraphNode.prototype.onMouseDown = function (e) {
+            console.log(e);
 
-            let className = this.className;
-            if (!className) {
-                return;
+            if(e.shiftKey) {
+                let className = this.className;
+                if (!className) {
+                    return;
+                }
+                let url;
+                if (className.startsWith("org.bukkit.")) {
+                    url = "https://hub.spigotmc.org/javadocs/spigot/";
+                } else if (className.startsWith("java.")) {
+                    url = "https://docs.oracle.com/javase/8/docs/api/";
+                }
+                if (!url) {
+                    return;
+                }
+
+                url += className.split(".").join("/") + ".html";
+
+                /// TODO: link to individual fields/methods/etc.
+
+                shell.openExternal(url);
             }
-            let url;
-            if (className.startsWith("org.bukkit.")) {
-                url = "https://hub.spigotmc.org/javadocs/spigot/";
-            } else if (className.startsWith("java.")) {
-                url = "https://docs.oracle.com/javase/8/docs/api/";
-            }
-            if (!url) {
-                return;
-            }
-
-            url += className.split(".").join("/") + ".html";
-
-            /// TODO: link to individual fields/methods/etc.
-
-            shell.openExternal(url);
         };
 
         LGraphNode.prototype.onDrawBackground = handleDescDrawBackground;
