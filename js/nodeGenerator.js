@@ -4,7 +4,7 @@ const shell = require('electron').shell;
 const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
-const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding} = require("./util");
+const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding, isNumberType} = require("./util");
 
 const miscNodes = require("./nodes/misc");
 const constantNodes = require("./nodes/constants");
@@ -362,8 +362,8 @@ function init(extraLibraries) {
             }
             let url;
             if (className.startsWith("org.bukkit.")) {
-                url= "https://hub.spigotmc.org/javadocs/spigot/";
-            }else if(className.startsWith("java.")){
+                url = "https://hub.spigotmc.org/javadocs/spigot/";
+            } else if (className.startsWith("java.")) {
                 url = "https://docs.oracle.com/javase/8/docs/api/";
             }
             if (!url) {
@@ -927,7 +927,7 @@ function addNodeOutput(node, name, type, options, optional) {
 }
 
 function handleSlotDoubleClick(node, type, i, e) {
-    console.log("handleSlotDoubleClick", type);
+    console.log("handleSlotDoubleClick", type, i);
     let slot = type === "in" ? node.getInputInfo(i) : node.getOutputInfo(i);
     console.log(slot);
 
@@ -955,6 +955,12 @@ function handleSlotDoubleClick(node, type, i, e) {
             let nameSplit = node.className.split(".");
             let simpleName = nameSplit[nameSplit.length - 1];
             nodeName = getOrCreateBukkitConstructorNode(node.className, simpleName + "()");
+        } else if (slot.type === "boolean") {
+            nodeName = "constants/BooleanConstant";
+        } else if (slot.type === "string" || slot.type === "java.lang.String") {
+            nodeName = "constants/StringConstant";
+        } else if (isNumberType(slot.type)) {
+            nodeName = "constants/NumberConstant";
         }
     }
     if (nodeName) {
@@ -962,6 +968,8 @@ function handleSlotDoubleClick(node, type, i, e) {
         var n = LiteGraph.createNode(nodeName);
         n.pos = [e.canvasX + offsetX, e.canvasY + offsetY];
         canvas.graph.add(n);
+
+        console.log(n);
 
         if (type === "out" && n.inputs) {
             if (n.inputs[0].name === "REF") {// special case for abstract methods
@@ -972,8 +980,17 @@ function handleSlotDoubleClick(node, type, i, e) {
             }
         }
         if (type === "in" && n.outputs) {
-            n.connect(0, n, 0);// 0 = EXEC
-            n.connect(1, n, i);// 1 = THIS
+            if (nodeName === "constants/NumberConstant") {
+                n.properties["type"] = slot.type;
+            }
+            setTimeout(function () {
+                if (nodeName.startsWith("constants/")) {// constants don't have EXEC/THIS
+                    n.connect(0, node, i);
+                } else {
+                    n.connect(0, node, 0);// 0 = EXEC
+                    n.connect(1, node, i);// 1 = THIS
+                }
+            }, 10);// No idea why, but this seems to need a timeout to connect stuff properly
         }
     }
 }
