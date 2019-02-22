@@ -6,6 +6,7 @@ const {shapeAndColorsForSlotType, isPrimitiveType} = require("../util");
 
 function Switch() {
     this.classType = "native";
+    this.desc = "Switch code execution based on a condition";
     this.iconName = "code-branch";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("True (if)", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
@@ -30,6 +31,7 @@ Switch.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitl
 
 function ForLoop() {
     this.classType = "native";
+    this.desc = "A for-loop";
     this.iconName = "redo";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("FirstIndex", "int", shapeAndColorsForSlotType("int"));
@@ -62,6 +64,7 @@ ForLoop.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTit
 
 function FlipFlop() {
     this.classType = "native";
+    this.desc = "Each time executed, toggle which router (A/B) is executed, starting with A";
     this.iconName = "toggle-on";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 

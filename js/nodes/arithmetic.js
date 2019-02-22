@@ -55,6 +55,7 @@ function extend(ChildClass, ParentClass) {
 function Add() {
     this.operation = "+";
     this.iconName = "plus";
+    this.desc = "Add two numbers";
     this.init();
 }
 
@@ -64,6 +65,7 @@ function Add() {
 function Subtract() {
     this.operation = "-";
     this.iconName = "minus";
+    this.desc = "Subtract two numbers";
     this.init();
 }
 
@@ -73,6 +75,7 @@ function Subtract() {
 function Multiply() {
     this.operation = "*";
     this.iconName = "times";
+    this.desc = "Multiply two numbers";
     this.init();
 }
 
@@ -82,6 +85,7 @@ function Multiply() {
 function Divide() {
     this.operation = "/";
     this.iconName = "divide";
+    this.desc = "Divide two numbers";
     this.init();
 }
 
@@ -90,6 +94,8 @@ function Divide() {
 
 function Modulus() {
     this.operation = "%";
+    this.iconName = "percentage";
+    this.desc = "Calculate the modulus of two numbers";
     this.init();
 }
 

@@ -5,6 +5,7 @@ const {shapeAndColorsForSlotType, getNumberSuffix, handleDescDrawBackground} = r
 
 function StringConstant() {
     this.classType = "native";
+    this.desc = "A constant String";
     this.iconName = "align-left";
     this.addOutput("", "java.lang.String", shapeAndColorsForSlotType("java.lang.String"));
     this.addProperty("string", "", "string");
@@ -27,6 +28,7 @@ StringConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handle
 
 function NumberConstant() {
     this.classType = "native";
+    this.desc = "A constant Number";
     this.iconName = "sort-numeric-down";//TODO: find a better icon
     this.addOutput("", "int", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
     this.addProperty("type", "int", "enum", {values: ["byte", "char", "short", "int", "long", "float", "double"]});
@@ -48,6 +50,7 @@ NumberConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handle
 
 function BooleanConstant() {
     this.classType = "native";
+    this.desc = "A constant boolean";
     this.iconName = "toggle-on";
     this.addOutput("", "boolean", shapeAndColorsForSlotType("boolean"));
     this.addProperty("value", false, "boolean");
@@ -67,6 +70,7 @@ BooleanConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handl
 
 function Null() {
     this.classType = "native";
+    this.desc = "Null constant";
     this.addOutput("null", null, shapeAndColorsForSlotType("object"));
 }
 
