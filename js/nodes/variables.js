@@ -3,6 +3,7 @@ const {shapeAndColorsForSlotType, typeSwitchEnum, parseTypeSwitchEnum, handleDes
 
 function Set() {
     this.classType = "native";
+    this.desc = "Set the value of a variable";
     this.iconName = "sign-in-alt";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("myVariable", null);
@@ -26,6 +27,7 @@ Set.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBo
 
 function Get() {
     this.classType = "native";
+    this.desc = "Get the value of a variable";
     this.iconName = "sign-out-alt";
     this.addOutput("myVariable", null);
     this.addProperty("name", "myVariable", "string");

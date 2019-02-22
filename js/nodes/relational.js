@@ -7,6 +7,7 @@ const RelationalOperator = function () {
 };
 
 RelationalOperator.prototype.init = function (booleanInputs) {
+    this.desc = "Compare two numbers";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 

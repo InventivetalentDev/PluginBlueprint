@@ -6,6 +6,7 @@ const {shapeAndColorsForSlotType, isPrimitiveType, handleDescDrawBackground} = r
 
 function Cast() {
     this.classType = "native";
+    this.desc = "Cast an object to another";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("", null);
@@ -33,6 +34,7 @@ Cast.prototype.getExecAfter = function (exec) {
 
 function InstanceOf() {
     this.classType = "native";
+    this.desc = "Check if an object is an instance of a class";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
@@ -62,6 +64,7 @@ InstanceOf.prototype.getExecAfter = function (exec) {
 
 function StringFormat() {
     this.classType = "native";
+    this.desc = "Format a string containing placeholders (%s) with variables";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Format", "java.lang.String", shapeAndColorsForSlotType("java.lang.String"));
@@ -93,6 +96,7 @@ StringFormat.prototype.getMenuOptions = function () {
 
 function ConsoleLog() {
     this.classType = "native";
+    this.desc = "Log something to the console";
     this.iconName = "print";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("", null);
