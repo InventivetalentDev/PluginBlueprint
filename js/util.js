@@ -194,7 +194,7 @@ function handleDescOnBounding(rect) {
     if (!this.desc && !this.description)
         return;
     if (this.mouseOver) {
-        rect[3] = this.size[1] + (this.descBlockHeight || 40);
+        rect[3] = this.size[1] + this.descBlockHeight + 40;
     }
 }
 
