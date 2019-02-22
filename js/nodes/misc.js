@@ -1,11 +1,12 @@
 const Colors = require("../colors");
-const {shapeAndColorsForSlotType, isPrimitiveType} = require("../util");
+const {shapeAndColorsForSlotType, isPrimitiveType, handleDescDrawBackground} = require("../util");
 
 
 // Cast
 
 function Cast() {
     this.classType = "native";
+    this.desc = "Cast an object to another";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("", null);
@@ -14,8 +15,9 @@ function Cast() {
 }
 
 Cast.title = "Cast";
-Cast.prototype.onDrawBackground = function () {
+Cast.prototype.onDrawBackground = function (ctx) {
     this.outputs[1].label = "(" + this.properties.castTo + ")";
+    handleDescDrawBackground.call(this, ctx);
 };
 Cast.prototype.getFields = function (output) {
     return [this.properties.castTo + " " + output[1]];
@@ -32,6 +34,7 @@ Cast.prototype.getExecAfter = function (exec) {
 
 function InstanceOf() {
     this.classType = "native";
+    this.desc = "Check if an object is an instance of a class";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
@@ -43,8 +46,9 @@ function InstanceOf() {
 }
 
 InstanceOf.title = "InstanceOf";
-InstanceOf.prototype.onDrawBackground = function () {
+InstanceOf.prototype.onDrawBackground = function (ctx) {
     this.outputs[1].label = "instanceof " + this.properties.type;
+    handleDescDrawBackground.call(this, ctx);
 };
 InstanceOf.prototype.getFields = function (output) {
     return ["boolean " + output[1]];
@@ -60,6 +64,7 @@ InstanceOf.prototype.getExecAfter = function (exec) {
 
 function StringFormat() {
     this.classType = "native";
+    this.desc = "Format a string containing placeholders (%s) with variables";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Format", "java.lang.String", shapeAndColorsForSlotType("java.lang.String"));
@@ -91,6 +96,7 @@ StringFormat.prototype.getMenuOptions = function () {
 
 function ConsoleLog() {
     this.classType = "native";
+    this.desc = "Log something to the console";
     this.iconName = "print";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("", null);

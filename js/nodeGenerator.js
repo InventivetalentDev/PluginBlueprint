@@ -1,9 +1,10 @@
 const fs = require("fs");
 const path = require("path");
+const shell = require('electron').shell;
 const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
-const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength} = require("./util");
+const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding} = require("./util");
 
 const miscNodes = require("./nodes/misc");
 const constantNodes = require("./nodes/constants");
@@ -354,7 +355,30 @@ function init(extraLibraries) {
         };
         LGraphNode.prototype.onDblClick = function () {
             console.log(this);
+
+            let className = this.className;
+            if (!className) {
+                return;
+            }
+            let url;
+            if (className.startsWith("org.bukkit.")) {
+                url= "https://hub.spigotmc.org/javadocs/spigot/";
+            }else if(className.startsWith("java.")){
+                url = "https://docs.oracle.com/javase/8/docs/api/";
+            }
+            if (!url) {
+                return;
+            }
+
+            url += className.split(".").join("/") + ".html";
+
+            /// TODO: link to individual fields/methods/etc.
+
+            shell.openExternal(url);
         };
+
+        LGraphNode.prototype.onDrawBackground = handleDescDrawBackground;
+        LGraphNode.prototype.onBounding = handleDescOnBounding;
 
         for (let n = 0; n < miscNodes.length; n++) {
             let nativeNode = miscNodes[n];
@@ -454,6 +478,8 @@ function getOrCreateBukkitClassNode(className) {
             this.optional_outputs.sort(optionalInputOutputSorter);
 
         this.nodeType = "BukkitClassNode";
+
+        this.desc = classData.comment;
 
         if (classData.isEvent) {
             this.classType = "event";
@@ -636,6 +662,8 @@ function getOrCreateBukkitMethodNode(className, methodSignature) {
         this.methodName = methodData.name;
         this.methodSignature = methodData.fullSignature;
         this.isMethodNode = true;
+
+        this.desc = methodData.comment;
     }
 
     BukkitMethodNode.title = simpleClassName + (methodData.isStatic ? "." : "#") + methodData.fullFlatSignature;
@@ -705,6 +733,8 @@ function getOrCreateBukkitAbstractMethodNode(className, methodSignature) {
         this.methodSignature = methodData.fullSignature;
         this.isAbstractMethod = true;
         this.isAbstractMethodNode = true;
+
+        this.desc = methodData.comment;
     }
 
     BukkitAbstractMethodNode.title = simpleClassName + "{" + methodData.fullFlatSignature + "}";
@@ -767,6 +797,8 @@ function getOrCreateBukkitConstructorNode(className, constructorSignature) {
         this.constructorName = constructorData.name;
         this.constructorSignature = constructorData.fullSignature;
         this.isConstructorNode = true;
+
+        this.desc = constructorData.comment;
     }
 
     BukkitConstructorNode.title = constructorData.fullFlatSignature;

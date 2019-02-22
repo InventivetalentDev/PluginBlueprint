@@ -1,5 +1,5 @@
 const Colors = require("../colors");
-const {shapeAndColorsForSlotType} = require("../util");
+const {shapeAndColorsForSlotType, handleDescDrawBackground} = require("../util");
 
 const RelationalOperator = function () {
     this.classType = "native";
@@ -7,6 +7,7 @@ const RelationalOperator = function () {
 };
 
 RelationalOperator.prototype.init = function (booleanInputs) {
+    this.desc = "Compare two numbers";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
@@ -33,6 +34,8 @@ RelationalOperator.prototype.onDrawBackground = function (ctx) {
     ctx.textAlign = "center";
     ctx.fillText(this.operation, this.size[0] * 0.5, this.size[1] * 0.35 + LiteGraph.NODE_TITLE_HEIGHT);
     ctx.textAlign = "left";
+
+    handleDescDrawBackground.call(this, ctx);
 };
 
 RelationalOperator.prototype.getFields = function (output) {

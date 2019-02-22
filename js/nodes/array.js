@@ -4,6 +4,7 @@ const {shapeAndColorsForSlotType} = require("../util");
 
 function MakeArray() {
     this.classType = "native";
+    this.desc = "Make an array from a set of inputs";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Element", "java.lang.Object");
@@ -47,6 +48,7 @@ MakeArray.prototype.getExecAfter = function (exec) {
 
 function SetIndex() {
     this.classType = "native";
+    this.desc = "Set an array item at a specific index";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Array", null);
@@ -64,6 +66,7 @@ SetIndex.prototype.getExecAfter = function (exec) {
 
 function GetIndex() {
     this.classType = "native";
+    this.desc = "Get an item from an array from a specific index";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Array", null);
@@ -85,6 +88,7 @@ GetIndex.prototype.getExecAfter = function (exec) {
 
 function Length() {
     this.classType = "native";
+    this.desc = "Get the length of an array";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Array", null);

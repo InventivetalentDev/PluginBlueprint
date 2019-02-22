@@ -1,5 +1,5 @@
 const Colors = require("../colors");
-const {shapeAndColorsForSlotType, isPrimitiveType} = require("../util");
+const {shapeAndColorsForSlotType, isPrimitiveType, handleDescDrawBackground} = require("../util");
 
 const ArithmeticOperator = function () {
     this.classType = "native";
@@ -29,6 +29,8 @@ ArithmeticOperator.prototype.onDrawBackground = function (ctx) {
     ctx.textAlign = "center";
     ctx.fillText(this.operation, this.size[0] * 0.5, this.size[1] * 0.35 + LiteGraph.NODE_TITLE_HEIGHT);
     ctx.textAlign = "left";
+
+    handleDescDrawBackground.call(this, ctx);
 };
 
 ArithmeticOperator.prototype.getFields = function (output) {
@@ -53,6 +55,7 @@ function extend(ChildClass, ParentClass) {
 function Add() {
     this.operation = "+";
     this.iconName = "plus";
+    this.desc = "Add two numbers";
     this.init();
 }
 
@@ -62,6 +65,7 @@ function Add() {
 function Subtract() {
     this.operation = "-";
     this.iconName = "minus";
+    this.desc = "Subtract two numbers";
     this.init();
 }
 
@@ -71,6 +75,7 @@ function Subtract() {
 function Multiply() {
     this.operation = "*";
     this.iconName = "times";
+    this.desc = "Multiply two numbers";
     this.init();
 }
 
@@ -80,6 +85,7 @@ function Multiply() {
 function Divide() {
     this.operation = "/";
     this.iconName = "divide";
+    this.desc = "Divide two numbers";
     this.init();
 }
 
@@ -88,6 +94,8 @@ function Divide() {
 
 function Modulus() {
     this.operation = "%";
+    this.iconName = "percentage";
+    this.desc = "Calculate the modulus of two numbers";
     this.init();
 }
 
