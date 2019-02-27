@@ -24,6 +24,7 @@ NotGate.prototype.getMethodBody = function (input, output) {
 NotGate.prototype.getExecAfter = function (exec) {
     return exec[0].join("\n");
 };
+NotGate.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 
 // AndGate
@@ -50,6 +51,7 @@ AndGate.prototype.getMethodBody = function (input, output) {
 AndGate.prototype.getExecAfter = function (exec) {
     return exec[0].join("\n");
 };
+AndGate.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 
 // OrGate
@@ -76,6 +78,7 @@ OrGate.prototype.getMethodBody = function (input, output) {
 OrGate.prototype.getExecAfter = function (exec) {
     return exec[0].join("\n");
 };
+OrGate.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
 module.exports = [
     NotGate,
