@@ -32,7 +32,7 @@ function generateClassCode(graph, projectInfo) {
         classStore.init()
             .then(() => {
                 let libPromises = [];
-                if(projectInfo.libraries) {
+                if (projectInfo.libraries) {
                     for (let l = 0; l < projectInfo.libraries.length; l++) {
                         libPromises.push(classStore.loadLibrary(projectInfo.libraries[l]));
                     }
@@ -53,7 +53,7 @@ function generateClassCode(graph, projectInfo) {
                         if (graph._nodes[i].classType === "enum") {
                             generateCodeForEnumClassNode(graph, i, graph._nodes[i], classData);
                         }
-                    } else if (graph._nodes[i].nodeType === "BukkitMethodNode"||graph._nodes[i].nodeType === "BukkitAbstractMethodNode") {
+                    } else if (graph._nodes[i].nodeType === "BukkitMethodNode" || graph._nodes[i].nodeType === "BukkitAbstractMethodNode") {
                         let classData = classStore.getClass(graph._nodes[i].className);
                         let methodData = classStore.getMethod(graph._nodes[i].className, graph._nodes[i].methodSignature);
                         generateCodeForMethodNode(graph, i, graph._nodes[i], classData, methodData, graph._nodes[i].nodeType === "BukkitAbstractMethodNode");
@@ -291,7 +291,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
         if (!output) continue;
         if (!output.links) continue;
         if (output.links.length > 0) {
-            if (output.linkType === "method"||output.linkType==="staticMethod") continue;
+            if (output.linkType === "method" || output.linkType === "staticMethod") continue;
 
             if (output.type === "@EXEC" && output.linkType !== "abstractMethod") {
                 for (let l = 0; l < output.links.length; l++) {
@@ -406,7 +406,7 @@ function generateCodeForEnumClassNode(graph, n, node, classData) {
         if (!output) continue;
         if (!output.links) continue;
         if (output.links.length > 0) {
-            if (output.linkType === "method"||output.linkType === "staticMethod") continue;
+            if (output.linkType === "method" || output.linkType === "staticMethod") continue;
 
             fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + classData.qualifiedName + "." + output.enumName + ";");
         }
@@ -414,7 +414,7 @@ function generateCodeForEnumClassNode(graph, n, node, classData) {
 }
 
 function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbstractMethodNode) {
-    let code = "// "+(isAbstractMethodNode?"ABSTRACT":"")+" METHOD EXECUTION for " + classData.qualifiedName + (isAbstractMethodNode?"{":"#") + methodData.name +(isAbstractMethodNode?"}":"")+ "\n" +
+    let code = "// " + (isAbstractMethodNode ? "ABSTRACT" : "") + " METHOD EXECUTION for " + classData.qualifiedName + (isAbstractMethodNode ? "{" : "#") + methodData.name + (isAbstractMethodNode ? "}" : "") + "\n" +
         "private void node_" + node.id + "_exec() {\n" + debugCall(node.id);
 
     let execCode = "";
@@ -470,12 +470,12 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbst
             }
             if (node.inputs[i].name === "RETURN") {// abstract method return
                 fields.push("private " + node.inputs[i].type + nodeReturn(node.id) + ";");
-                if(linkInfo) {
+                if (linkInfo) {
                     code += nodeReturn(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) + ";\n";
-                }else{
-                    code += nodeReturn(node.id) + "=" + getNullForType(sourceOutput ? sourceOutput.type : null)+";\n";
+                } else {
+                    code += nodeReturn(node.id) + "=" + getNullForType(sourceOutput ? sourceOutput.type : null) + ";\n";
                 }
-                    break;
+                break;
             }
 
             if (!linkInfo || !sourceNode) {
@@ -581,7 +581,6 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
     code += params.join(",");
 
 
-
     if (classData.isAbstract) {
         code += ") {\n";
 
@@ -601,7 +600,7 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
                             methodParams.push(pType + " " + methodData.parameters[p].name);
                         }
                     }
-                    code += "    public "+methodData.returnType.qualifiedName+" " + methodData.name + "(" + methodParams.join(",") + ") {\n";
+                    code += "    public " + methodData.returnType.qualifiedName + " " + methodData.name + "(" + methodParams.join(",") + ") {\n";
                     let returnCode = "";
                     for (let l = 0; l < output.links.length; l++) {
                         let linkInfo = graph.links[output.links[l]];
@@ -616,7 +615,7 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
                         code += nodeExec(linkInfo.target_id) + ";\n";
 
                         if (methodData.returnType.qualifiedName !== "void") {
-                            returnCode = "return " + nodeReturn(linkInfo.target_id)+";\n";// can only return once
+                            returnCode = "return " + nodeReturn(linkInfo.target_id) + ";\n";// can only return once
                         }
                     }
                     code += returnCode + "\n";
@@ -626,7 +625,7 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
         }
 
         code += "};\n";
-    }else{
+    } else {
         code += ");\n";
     }
 

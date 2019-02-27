@@ -1,11 +1,11 @@
 const electron = require("electron");
-const app = electron.app?electron.app:electron.remote?electron.remote.app:null;
+const app = electron.app ? electron.app : electron.remote ? electron.remote.app : null;
 const path = require("path");
 const fs = require("fs-extra");
 const request = require("request");
 
 
-const INTERFACE_DUMMY_CONSTRUCTOR={
+const INTERFACE_DUMMY_CONSTRUCTOR = {
     "name": "....",
     "isClass": false,
     "isInterface": false,
@@ -43,19 +43,30 @@ function ClassDataStore() {
                     clazz.isEvent = clazz.qualifiedName.endsWith("Event");
                     clazz.isObject = !clazz.isEvent && !clazz.isEnum;
 
+                    if (clazz.comment) {
+                        clazz.comment = clazz.comment.split(".")[0];
+                    }
+
                     if (clazz.isInterface) {// Add dummy default constructor if it's an interface
                         let constr = Object.assign({}, INTERFACE_DUMMY_CONSTRUCTOR);
-                        constr.name=clazz.simpleName;
+                        constr.name = clazz.simpleName;
                         clazz.constructors.push(constr);
                     }
 
                     for (let f = 0; f < clazz.fields.length; f++) {
                         let field = Object.assign({}, clazz.fields[f]);
+                        if (field.comment) {
+                            field.comment = field.comment.split(".")[0];
+                        }
                         clazz.fieldsByName[field.name.toLowerCase()] = field;
                     }
                     for (let m = 0; m < clazz.methods.length; m++) {
                         let method = Object.assign({}, clazz.methods[m]);
                         method.paramsByName = {};
+
+                        if (method.comment) {
+                            method.comment = method.comment.split(".")[0];
+                        }
 
                         for (let p = 0; p < method.parameters.length; p++) {
                             let param = Object.assign({}, method.parameters[p]);
@@ -69,6 +80,10 @@ function ClassDataStore() {
                     for (let m = 0; m < clazz.constructors.length; m++) {
                         let constr = Object.assign({}, clazz.constructors[m]);
                         constr.paramsByName = {};
+
+                        if (constr.comment) {
+                            constr.comment = constr.comment.split(".")[0];
+                        }
 
                         for (let p = 0; p < constr.parameters.length; p++) {
                             let param = Object.assign({}, constr.parameters[p]);

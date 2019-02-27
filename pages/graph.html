@@ -51,18 +51,26 @@
                 color: white;
                 font-family: "Courier New", monospace;
                 font-size: 20px;
+                padding-top: 5px;
+                padding-bottom: 5px;
             }
 
             #helpBox .helpBox-shortcut {
                 height: 80%;
                 width: auto;
-                padding-top: 5px;
+                display: inline;
+                padding-left: 10px;
+                padding-right: 10px;
             }
 
             #helpBox .keypics {
-                height: 100%;
+                height: 95%;
                 width: auto;
                 vertical-align: middle;
+            }
+
+            #helpBox .keypics[data-type=key] {
+                height: 70%;
             }
         </style>
     </head>
@@ -74,7 +82,15 @@
         </div>
         <div id="helpBox">
             <div class="helpBox-shortcut">
-                <i class="keypics" data-type="mouse" data-color="dark" data-label="x2" data-fontFamily="RobotoMono">left</i>&nbsp;to search for elements to add
+                <i class="keypics" data-type="mouse" data-color="dark" data-label="x2" data-fontFamily="RobotoMono">left</i>&nbsp;Search / Auto-Link
+            </div>
+            <div class="helpBox-shortcut">
+                <i class="keypics" data-type="mouse" data-color="dark" data-fontFamily="RobotoMono">right</i>&nbsp;Menu
+            </div>
+            <div class="helpBox-shortcut">
+                <i class="keypics" data-type="key" data-color="dark">Ctrl</i>
+                +
+                <i class="keypics" data-type="mouse" data-color="dark" data-fontFamily="RobotoMono">left</i>&nbsp;Select
             </div>
         </div>
         <canvas id='mycanvas' width='1920' height='1080'></canvas>
@@ -310,6 +326,8 @@
             app.uncompiledChanges = 0;
 
             var graph = new LGraph();
+            if (!graph.config) graph.config = {};
+            graph.config.align_to_grid = true;
             graph.onNodeAdded = function (n) {
                 console.debug("[HISTORY] onNodeAdded");
                 if (n) {

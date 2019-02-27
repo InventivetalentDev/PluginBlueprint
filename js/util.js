@@ -176,6 +176,53 @@ function parseTypeSwitchEnum(type) {
     return type;
 }
 
+function handleDescDrawBackground(ctx) {
+    if (this.flags && this.flags.collapsed)
+        return;
+    if (!this.desc && !this.description)
+        return;
 
-module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength, typeSwitchEnum, parseTypeSwitchEnum};
+    if (this.mouseOver) {
+        ctx.fillStyle = "#AAA";
+        this.descBlockHeight = wrapCanvasText(ctx, (this.desc || this.description) + " [shift-click for more]", 0, this.size[1] + 14, this.size[0], 14);
+    }
+}
+
+function handleDescOnBounding(rect) {
+    if (this.flags && this.flags.collapsed)
+        return;
+    if (!this.desc && !this.description)
+        return;
+    if (this.mouseOver) {
+        rect[3] = this.size[1] + this.descBlockHeight + 40;
+    }
+}
+
+// https://codepen.io/bramus/pen/eZYqoO - apparently from https://www.html5canvastutorials.com/tutorials/html5-canvas-wrap-text-tutorial/, which isn't accessible
+function wrapCanvasText(context, text, x, y, maxWidth, lineHeight) {
+    let words = text.split(' ');
+    let line = '';
+
+    let textHeight = 0;
+    for (let n = 0; n < words.length; n++) {
+        let testLine = line + words[n] + ' ';
+        let metrics = context.measureText(testLine);
+        let testWidth = metrics.width;
+        if (testWidth > maxWidth && n > 0) {
+            context.fillText(line, x, y);
+            line = words[n] + ' ';
+            y += lineHeight;
+            textHeight += lineHeight;
+        } else {
+            line = testLine;
+        }
+    }
+    context.fillText(line, x, y);
+
+    // return text block height
+    return textHeight;
+}
+
+
+module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength, typeSwitchEnum, parseTypeSwitchEnum, handleDescDrawBackground, handleDescOnBounding};
 
