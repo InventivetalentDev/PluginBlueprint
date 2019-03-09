@@ -465,6 +465,7 @@ function createNewProject(arg, lib) {
         author: "inventivetalent",
         package: "my.awesome.plugin",
         version: "0.0.0",
+        type: "spigot",
         lastSave: 0,
         lastCompile: 0,
         editorVersion: app.getVersion(),
