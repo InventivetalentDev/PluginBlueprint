@@ -261,7 +261,11 @@ function checkFileAssociation() {
 }
 
 function readRecentProjects() {
-    fs.readFile(path.join(app.getPath("userData"), "recentProjects.pbd"), function (err, data) {
+    let recentProjectFile = path.join(app.getPath("userData"), "recentProjects.pbd");
+    if (!fs.existsSync(recentProjectFile)) {
+        return;
+    }
+    fs.readFile(recentProjectFile, function (err, data) {
         if (err) {
             console.warn(err);
             Sentry.captureException(err);
@@ -302,7 +306,7 @@ function readRecentProjects() {
             }
             updateJumpList();
         })
-    })
+    });
 }
 
 function writeRecentProjects() {
