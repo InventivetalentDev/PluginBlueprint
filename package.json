@@ -74,12 +74,12 @@
   "homepage": "https://pluginblueprint.net",
   "license": "BSD-3-Clause",
   "devDependencies": {
-    "electron": "^3.0.13",
-    "electron-builder": "^20.38.4",
-    "electron-installer-windows": "^1.1.0",
-    "electron-packager": "^12.2.0",
-    "electron-rebuild": "^1.8.2",
-    "mocha": "^5.2.0"
+    "electron": "3.1.11",
+    "electron-builder": "20.44.0",
+    "electron-installer-windows": "1.1.1",
+    "electron-packager": "12.2.0",
+    "electron-rebuild": "1.8.5",
+    "mocha": "5.2.0"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.6.3",
