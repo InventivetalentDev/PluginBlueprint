@@ -15,6 +15,18 @@ const arrayNodes = require("./nodes/array");
 const flowNodes = require("./nodes/flow");
 const logicNodes = require("./nodes/logic");
 
+const nodes = [
+    // category, import
+    ["native", require("./nodes/misc")],
+    ["arithmetic", require("./nodes/arithmetic")],
+    ["relational", require("./nodes/relational")],
+    ["constants", require("./nodes/constants")],
+    ["variables", require("./nodes/variables")],
+    ["arrays", require("./nodes/array")],
+    ["flow", require("./nodes/flow")],
+    ["logic", require("./nodes/logic")]
+];
+
 const classStore = new ClassDataStore();
 
 
@@ -385,30 +397,15 @@ function init(extraLibraries) {
         LGraphNode.prototype.onDrawBackground = handleDescDrawBackground;
         LGraphNode.prototype.onBounding = handleDescOnBounding;
 
-        for (let n = 0; n < miscNodes.length; n++) {
-            let nativeNode = miscNodes[n];
-            LiteGraph.registerNodeType("native/" + nativeNode.name, nativeNode);
-        }
-        for (let n = 0; n < arithmeticNodes.length; n++) {
-            LiteGraph.registerNodeType("arithmetic/" + arithmeticNodes[n].name, arithmeticNodes[n]);
-        }
-        for (let n = 0; n < relationalNodes.length; n++) {
-            LiteGraph.registerNodeType("relational/" + relationalNodes[n].name, relationalNodes[n]);
-        }
-        for (let n = 0; n < constantNodes.length; n++) {
-            LiteGraph.registerNodeType("constants/" + constantNodes[n].name, constantNodes[n]);
-        }
-        for (let n = 0; n < variableNodes.length; n++) {
-            LiteGraph.registerNodeType("variables/" + variableNodes[n].name, variableNodes[n]);
-        }
-        for (let n = 0; n < arrayNodes.length; n++) {
-            LiteGraph.registerNodeType("arrays/" + arrayNodes[n].name, arrayNodes[n]);
-        }
-        for (let n = 0; n < flowNodes.length; n++) {
-            LiteGraph.registerNodeType("flow/" + flowNodes[n].name, flowNodes[n]);
-        }
-        for (let n = 0; n < logicNodes.length; n++) {
-            LiteGraph.registerNodeType("logic/" + logicNodes[n].name, logicNodes[n]);
+        for (let c = 0; c < nodes.length; c++) {
+            let e = nodes[c];
+            let category = e[0];
+            let nods = e[1];
+
+            for (let n = 0; n < nods.length; n++) {
+                let node = nods[n];
+                LiteGraph.registerNodeType(category + "/" + node.name, node);
+            }
         }
 
         classStore.init().then(() => {
