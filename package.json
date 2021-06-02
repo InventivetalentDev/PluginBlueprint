@@ -4,6 +4,7 @@
   "description": "UI to create Bukkit/Spigot plugins",
   "main": "main.js",
   "scripts": {
+    "postinstall": "electron-builder install-app-deps",
     "test": "mocha",
     "start": "electron . --debug",
     "build": "electron-packager . --out=dist/win --platform=win32 --arch=x64 --icon=assets/images/favicon.ico --asar=true --overwrite",
@@ -14,7 +15,6 @@
     "dist:all": "electron-builder -wl",
     "rebuild": "electron-rebuild"
   },
-  "postinstall": "electron-builder install-app-deps",
   "files": [
     "**/*",
     "data",
