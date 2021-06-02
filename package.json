@@ -85,7 +85,7 @@
     "@fortawesome/fontawesome-free": "^5.6.3",
     "@fortawesome/fontawesome-svg-core": "^1.2.12",
     "@fortawesome/free-solid-svg-icons": "^5.6.3",
-    "@sentry/electron": "^0.12.1",
+    "@sentry/electron": "^0.17.0",
     "adm-zip": "^0.4.13",
     "deep-equal": "^1.0.1",
     "discord-rich-presence": "0.0.7",
