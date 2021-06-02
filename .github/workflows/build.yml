@@ -2,7 +2,20 @@ name: Build
 on: [push, pull_request]
 
 jobs:
-  build_linux:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@master
+      with:
+        node-version: 14
+    - name: install dependencies
+      run: npm install
+    - name: build
+      run: npm run build
+      
+
+  dist_linux:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -15,7 +28,7 @@ jobs:
       run: npm run dist:linux
 
 
-  build_win:
+  dist_win:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
