@@ -92,7 +92,7 @@
     "electron-progressbar": "^1.1.0",
     "electron-prompt": "^1.3.0",
     "fs-extra": "^7.0.1",
-    "isomorphic-git": "^0.51.6",
+    "isomorphic-git": "^1.0.0",
     "jquery": "^3.3.1",
     "key.pics": "^1.0.2",
     "keytar": "^4.3.0",
