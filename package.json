@@ -1,6 +1,6 @@
 {
   "name": "pluginblueprint",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "UI to create Bukkit/Spigot plugins",
   "main": "main.js",
   "scripts": {
