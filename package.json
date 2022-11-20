@@ -78,7 +78,7 @@
     "electron-builder": "^22.0.0",
     "electron-installer-windows": "^1.1.0",
     "electron-packager": "^12.2.0",
-    "electron-rebuild": "^1.8.2",
+    "electron-rebuild": "^3.0.0",
     "mocha": "^5.2.0"
   },
   "dependencies": {
