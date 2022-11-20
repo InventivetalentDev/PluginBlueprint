@@ -95,7 +95,7 @@
     "isomorphic-git": "^0.51.6",
     "jquery": "^3.3.1",
     "key.pics": "^1.0.2",
-    "keytar": "^4.3.0",
+    "keytar": "^7.0.0",
     "litegraph.js": "git+https://github.com/InventivetalentDev/litegraph.js.git",
     "materialize-css": "^1.0.0",
     "node-notifier": "^5.3.0",
