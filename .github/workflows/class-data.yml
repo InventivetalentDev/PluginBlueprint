@@ -1,0 +1,61 @@
+name: Class data
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Paper Minecraft version (empty selects latest stable)
+        type: string
+        required: false
+      force:
+        description: Regenerate even when the Minecraft version is unchanged
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - id: resolve
+        env:
+          VERSION: ${{ inputs.version }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          args=(--resolve-only)
+          if [ -n "$VERSION" ]; then args+=(--version "$VERSION"); fi
+          node tools/classdata/generate.mjs "${args[@]}" > "$RUNNER_TEMP/classdata-version.json"
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const resolved = JSON.parse(fs.readFileSync(`${process.env.RUNNER_TEMP}/classdata-version.json`, 'utf8'));
+          const file = 'data/classes/paper.json';
+          const first = fs.existsSync(file) ? fs.readFileSync(file, 'utf8').split('\n')[0] : '';
+          const current = first ? JSON.parse(first.slice(0, first.lastIndexOf(',"size":')) + '}').meta.minecraftVersion : null;
+          const needed = process.env.FORCE === 'true' || current !== resolved.minecraftVersion;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, Object.entries({ ...resolved, needed }).map(([k, v]) => `${k}=${v}\n`).join(''));
+          if (!needed) console.log(`Class data is current for Paper ${resolved.minecraftVersion}.`);
+          JS
+      - if: steps.resolve.outputs.needed == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ steps.resolve.outputs.javaVersion }}
+      - if: steps.resolve.outputs.needed == 'true'
+        env:
+          VERSION: ${{ steps.resolve.outputs.minecraftVersion }}
+        run: |
+          node tools/classdata/generate.mjs --version "$VERSION"
+          node --test tools/classdata/test/
+      - if: steps.resolve.outputs.needed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: classdata/paper-${{ steps.resolve.outputs.minecraftVersion }}
+          title: Update class data to Paper ${{ steps.resolve.outputs.minecraftVersion }} (build ${{ steps.resolve.outputs.build }})
+          body: Regenerates Paper, Adventure, and JDK class data from source. The class-data checks passed.
+          add-paths: data/classes/
