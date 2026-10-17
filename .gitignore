@@ -1,12 +1,12 @@
-*.idea/
+.idea/
 *.iml
 *.iws
-*.settings
-*bin
-*.classpath
-*.project
-*.gitignore
-*doc
+.settings/
+.classpath
+.project
 
-node_modules
-dist/*
+node_modules/
+dist/
+
+tools/classdata/.cache/
+tools/classdata/build/
