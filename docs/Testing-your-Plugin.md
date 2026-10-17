@@ -5,6 +5,9 @@ The server uses your last compiled jar.
 
 ## Compile and start the server
 
+Starting the test server means you accept the [Minecraft EULA](https://aka.ms/MinecraftEULA).
+The app starts the server with `-Dcom.mojang.eula.agree=true`.
+
 1. Choose **Compile → Generate Code, Compile, Package**.
 2. Choose **Run → Start Server**.
 3. Wait for startup to finish in the log window.
@@ -76,9 +79,3 @@ This closes the log window and terminates the server process directly.
 Closing the app also stops the server.
 
 To request a normal console shutdown, type `stop` in the log window and press Enter.
-
-## Accept the Minecraft EULA
-
-Starting the test server means you accept the
-[Minecraft EULA](https://aka.ms/MinecraftEULA).
-The app starts the server with `-Dcom.mojang.eula.agree=true`.

@@ -2,14 +2,14 @@
 
 # PluginBlueprint
 
-PluginBlueprint is a visual editor for Paper 26.3 plugins for Minecraft 26.3.
+PluginBlueprint is a visual editor for Paper plugins (Minecraft 26.3).
 You create plugins by adding and connecting nodes, without writing code.
 
 ![Join-message graph connecting PlayerJoinEvent, Player, StringFormat, and sendRichMessage](docs/images/join-message.png)
 
 ## Download
 
-Download PluginBlueprint 2.0.0 from
+Download the latest version from
 [GitHub Releases](https://github.com/InventivetalentDev/PluginBlueprint/releases/latest).
 
 - Windows: `.exe` installer.
@@ -23,9 +23,13 @@ Download PluginBlueprint 2.0.0 from
 
 The documentation source is in [`docs/`](docs/Home.md).
 
+## Support
+
+PluginBlueprint is free and open source. If it helps you, you can [pay what you want](https://inventivetalent.shop/l/pluginblueprint?layout=profile).
+
 ## Requirements
 
-- Internet access for the first Java and Paper setup.
+- Internet access when you create a project (to download or check the Paper server, and Java if needed).
 - Java 25 or newer to compile. If a suitable JDK is missing, the app offers to download one.
 
 ## Development

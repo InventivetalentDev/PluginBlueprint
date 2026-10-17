@@ -15,8 +15,7 @@ The editor builds for Paper 26.3, so a 1.x Spigot graph may need replacement nod
 
 ### Different editor version
 
-If the middle number of the stored editor version differs from the running
-editor's version, the app shows this warning:
+If the project was saved by a different editor version, the app may show this warning first:
 
 > The project you're trying to open was created using a different PluginBlueprint version.
 
@@ -48,16 +47,16 @@ when the server files in `lib/` are replaced.
 
 1. Find nodes marked as errors. If their methods no longer exist in Paper 26.3,
    replace or delete them.
-2. For chat messages, replace `sendMessage(String)` calls with
-   `sendRichMessage(String)` calls. Connect the message and `EXEC` links again.
-3. Choose **File → Save**.
-4. Choose **Compile → Generate Code, Compile, Package**.
-5. Follow [Testing your plugin](Testing-your-Plugin.md) to check your updated graph.
+2. Choose **File → Save**.
+3. Choose **Compile → Generate Code, Compile, Package**.
+4. Follow [Testing your plugin](Testing-your-Plugin.md) to check your updated graph.
 
 Deprecated methods still work in old graphs. The method-browsing menu hides
 them, but a class node's **Outputs** can still list them.
 Deprecation alone does not mean a node's method has been removed.
-`sendRichMessage(String)` reads MiniMessage tags; see the
+`sendMessage(String)` still works in Paper 26.3. To use colors and formatting,
+you can replace it with `sendRichMessage(String)`, which reads MiniMessage tags.
+See the
 [hello command example](Examples.md#create-a-hello-command) for a replacement pattern.
 
 Updating the project target does not restore methods that Paper no longer has.

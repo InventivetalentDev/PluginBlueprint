@@ -56,8 +56,6 @@ Save the file, then use **File → Import Snippet** to add it to your project.
 
 ### Try it
 
-This recipe was checked by compiling only. Use these steps to check it in-game:
-
 1. Choose **Compile → Generate Code, Compile, Package**.
 2. Choose **Run → Start Server**.
 3. Follow [Testing your plugin](Testing-your-Plugin.md) to join from Minecraft 26.3.
@@ -154,8 +152,6 @@ Save the file, then use **File → Import Snippet** to add it to your project.
 
 ### Try it
 
-This recipe was checked by compiling only. Use these steps to check both branches:
-
 1. Choose **Compile → Generate Code, Compile, Package**, then **Run → Start Server**.
 2. Join from Minecraft 26.3 using [Testing your plugin](Testing-your-Plugin.md).
    Use a player who is not an operator for the first check.
@@ -189,7 +185,7 @@ Save the file, then use **File → Import Snippet** to add it to your project.
    `Player` output `EXEC` to `Switch` input `EXEC`.
 5. Add an `ItemStack` class node and double-click its `of(Material, int)` output.
    This creates the static method node `ItemStack.of(Material, int)`.
-6. Add a `Material` node. Through **Properties**, set its value to `BREAD`.
+6. Add a `Material` node. Through **Properties**, set its `en` property to `BREAD`.
    Connect its output to the `of` input `type`.
 7. Double-click the `of` input `amount` to create a Number constant.
    Through **Properties**, set `type` to `int` and `number` to `16`.
@@ -207,7 +203,7 @@ Save the file, then use **File → Import Snippet** to add it to your project.
 
 ### Try it
 
-This recipe was checked by compiling only. You need an account that has never
+You need an account that has never
 joined this test server to check the first-join branch.
 
 1. Choose **Compile → Generate Code, Compile, Package**.

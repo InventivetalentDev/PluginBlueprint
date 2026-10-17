@@ -1,18 +1,14 @@
 # PluginBlueprint 2.0
 
-PluginBlueprint is a visual editor for Paper 26.3 plugins for Minecraft 26.3.
+PluginBlueprint is a visual editor for Paper plugins (Minecraft 26.3).
 You add and connect nodes to build a plugin without writing code.
 
 ## What's new in 2.0
 
-- Build plugins for Paper 26.3.
-- Let the app find Java or download it, then set up the Paper server.
-- Start with five verified example graphs and downloadable snippets.
-- Use the app without telemetry.
-
-All five examples were built, compiled, imported from their snippets, and
-compiled again. The hello command and timed broadcast also ran on Paper 26.3.
-The three examples that need a player were checked by compiling only.
+- Builds plugins for Paper 26.3.
+- Finds Java or downloads it, and sets up the Paper test server for you.
+- Five example plugins, with snippets you can import.
+- No analytics or crash reporting.
 
 ## Read the documentation
 
@@ -26,3 +22,5 @@ The three examples that need a player were checked by compiling only.
    setup, compile, and server problems.
 5. [Updating from version 1](Updating-from-Version-1.md): back up a 1.x project
    and update its target and nodes for Paper 26.3.
+
+PluginBlueprint is free and open source. If it helps you, you can [pay what you want](https://inventivetalent.shop/l/pluginblueprint?layout=profile).

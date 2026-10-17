@@ -21,7 +21,7 @@ The app builds plugins for Paper 26.3 and needs Java 25 or newer to compile.
    chmod +x PluginBlueprint-*.AppImage
    ```
 
-You need internet for the initial Java and Paper setup.
+You need internet when you create a project.
 If a suitable JDK is missing, the app offers to download one.
 A JDK is the Java Development Kit used to compile your plugin.
 
@@ -32,8 +32,11 @@ if the first launch is blocked.
 
 ### macOS
 
-1. Open **System Settings → Privacy & Security**.
-2. Click **Open Anyway**.
+1. Open the app. macOS says it was not opened.
+2. Click **Done**.
+3. Open **System Settings → Privacy & Security**.
+4. Scroll to the **Security** section and click **Open Anyway**.
+5. Confirm with your password or Touch ID, then click **Open**.
 
 ### Windows
 

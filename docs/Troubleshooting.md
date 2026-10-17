@@ -9,9 +9,16 @@ For the full setup procedure, see [Getting started](Getting-Started.md).
 
 Cause: the release apps are unsigned.
 
-1. On macOS, open **System Settings → Privacy & Security** and click **Open Anyway**.
-2. On Windows, when **Windows protected your PC** appears, click **More info**,
-   then **Run anyway**.
+On macOS:
+
+1. Open the app. macOS says it was not opened.
+2. Click **Done**.
+3. Open **System Settings → Privacy & Security**.
+4. Scroll to the **Security** section and click **Open Anyway**.
+5. Confirm with your password or Touch ID, then click **Open**.
+
+On Windows, when **Windows protected your PC** appears, click **More info**,
+then **Run anyway**.
 
 ### Java 25 is required to compile plugins.
 
