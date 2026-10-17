@@ -22,7 +22,6 @@ let errWin;
 let editorWin;
 let commandWin;
 
-
 let debug = false;
 let unsavedChanges = 0;
 let uncompiledChanges = 0;
@@ -43,7 +42,6 @@ function init() {
         "PluginBlueprint, Version " + app.getVersion() + "\n" +
         "Copyright (c) 2018, Haylee Schaefer\n" +
         "All rights reserved.\n");
-
 
     console.log(process.argv);
     process.argv.forEach((val, index) => {
@@ -112,7 +110,6 @@ function showWindow() {
     });
 
     readRecentProjects();
-
 }
 
 
@@ -243,7 +240,6 @@ function updateJumpList() {
     ])
 }
 
-
 ipcMain.on("openGraph", function (event, arg) {
     if (win) {
         win.loadFile('pages/graph.html');
@@ -266,7 +262,6 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
         }
     }
     let pathSplit = projectPath.split("\\");
-
 
     let name = pathSplit[pathSplit.length - 1];
     prompt({
@@ -429,8 +424,6 @@ ipcMain.on("createNewProject", function (event, arg) {
 
 
 ipcMain.on("showOpenProject", function (event, arg) {
-
-
     let p = dialog.showOpenDialogSync({
         properties: ["openFile"],
         filters: [
@@ -627,7 +620,6 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
         currentProjectPath = null;
         unsavedChanges = 0;
         uncompiledChanges = 0;
-
     });
 });
 
@@ -654,7 +646,6 @@ function saveCodeToFile(code) {
             return reject();
         }
         if (!code) return reject();
-
 
         fs.emptyDir(path.join(currentProjectPath, "src"), function (err) {
             fs.mkdirs(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\")), function (err) {
@@ -712,7 +703,6 @@ function makePluginYml() {
 
 function compile() {
     return new Promise((resolve, reject) => {
-
         javaCompiler.testForJavac().then(() => {
             console.log("compile: " + Date.now());
             fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
@@ -733,7 +723,6 @@ function compile() {
 
 function pack() {
     return new Promise((resolve, reject) => {
-
         console.log("package: " + Date.now());
         fs.emptyDir(path.join(currentProjectPath, "output"), function (err) {
             javaCompiler.package(currentProjectPath, currentProject).then(() => {

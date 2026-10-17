@@ -386,7 +386,6 @@
             var canvas = new LGraphCanvas("#mycanvas", graph);
             console.log(canvas);
 
-
             ipcRenderer.send("getProjectInfo");
 
             window.addEventListener("resize", function () {
@@ -778,7 +777,6 @@
                     canvas.selectNode(node);
                     canvas.centerOnNode(node);
                     canvas.setZoom(2);
-
                 }
             });
 
