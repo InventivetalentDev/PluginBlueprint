@@ -585,21 +585,22 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
                     let methodParams = [];
                     if (methodData.parameters) {
                         for (let p = 0; p < methodData.parameters.length; p++) {
-                            let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
+                            let pType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName + methodData.parameters[p].type.dimension;
                             console.log(methodData.parameters[p]);
                             console.log(pType);
                             methodParams.push(pType + " " + methodData.parameters[p].name);
                         }
                     }
-                    code += "    public " + methodData.returnType.qualifiedName + " " + methodData.name + "(" + methodParams.join(",") + ") {\n";
+                    let returnType = methodData.returnType.typeVariable ? "java.lang.Object" : methodData.returnType.qualifiedName + methodData.returnType.dimension;
+                    code += "    public " + returnType + " " + methodData.name + "(" + methodParams.join(",") + ") {\n";
                     let returnCode = "";
                     for (let l = 0; l < output.links.length; l++) {
                         let linkInfo = graph.links[output.links[l]];
                         if (!linkInfo) continue;
                         if (methodData.parameters) {
                             for (let p = 0; p < methodData.parameters.length; p++) {
-                                let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
-                                fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
+                                let pType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName + methodData.parameters[p].type.dimension;
+                                fields.push("private " + pType + " " + nodeOutput(linkInfo.target_id, 1 + p) + ";");
                                 code += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
                             }
                         }

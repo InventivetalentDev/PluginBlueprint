@@ -33,6 +33,7 @@ function ClassDataStore() {
                 }
 
                 data = JSON.parse(data);
+                if (fileName === "paper") this.meta = data.meta;
 
                 for (let c = 0; c < data.classes.length; c++) {
                     let clazz = Object.assign({}, data.classes[c]);
@@ -107,10 +108,13 @@ function ClassDataStore() {
 
 
 ClassDataStore.prototype.init = function () {
-    return Promise.all([
-        this.loadClassFile("java"),
-        this.loadClassFile("spigot")
-    ]);
+    if (!this.initPromise) {
+        this.initPromise = Promise.all([
+            this.loadClassFile("java"),
+            this.loadClassFile("paper")
+        ]);
+    }
+    return this.initPromise;
 };
 
 ClassDataStore.prototype.size = function () {
