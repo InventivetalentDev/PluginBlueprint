@@ -111,7 +111,8 @@
             });
 
             ipcRenderer.on("log", function (event, arg) {
-                let content = arg.content.replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
+                // Server output can contain player chat, so it must never be parsed as HTML
+                let content = arg.content.replace(/\x1b\[[0-9;]*m/g, "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
                 if (arg.hasNode) {
                     content = content.replace(/node_([0-9]+)/gm, '<a class="node-ref" data-node="$1">node_$1</a>');
                 }

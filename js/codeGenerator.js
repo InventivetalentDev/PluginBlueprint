@@ -464,7 +464,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbst
                 if (linkInfo) {
                     code += nodeReturn(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) + ";\n";
                 } else {
-                    code += nodeReturn(node.id) + "=" + getNullForType(sourceOutput ? sourceOutput.type : null) + ";\n";
+                    code += nodeReturn(node.id) + "=" + getNullForType(node.inputs[i].type) + ";\n";
                 }
                 break;
             }

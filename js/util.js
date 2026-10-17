@@ -34,7 +34,7 @@ function getNullForType(type) {
             return "0";
         }
         if (type === "char") {
-            return "''";
+            return "'\\0'";
         }
     }
     return "null";

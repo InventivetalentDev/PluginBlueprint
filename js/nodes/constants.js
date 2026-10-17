@@ -13,7 +13,7 @@ function StringConstant() {
 
 StringConstant.prototype.color = Colors.STRING_OFF;
 StringConstant.prototype.getFields = function (output) {
-    return ["java.lang.String " + output[0] + " = \"" + this.properties.string + "\""];
+    return ["java.lang.String " + output[0] + " = " + JSON.stringify(this.properties.string)];
 };
 StringConstant.prototype.onPropertyChanged = function (k, p) {
     this.outputs[0].label = this.properties.string;
