@@ -804,7 +804,7 @@ function nodeExec(nodeId) {
 }
 
 function debugCall(nodeId) {
-    return debug ? "java.lang.System.out.println(\"pb_debug_exec=" + nodeId + "\");/** Debug call **/\n" : "";
+    return debug ? "getLogger().info(\"pb_debug_exec=" + nodeId + "\");/** Debug call **/\n" : "";
 }
 
 module.exports = {

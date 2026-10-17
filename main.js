@@ -732,7 +732,8 @@ async function compile(progressBar) {
     currentProject.lastCompile = Date.now();
 }
 
-async function pack() {
+async function pack(progressBar) {
+    await ensureJdk(progressBar);
     console.log("package: " + Date.now());
     await fs.emptyDir(path.join(currentProjectPath, "output"));
     await javaCompiler.package(currentProjectPath, currentProject, jdk);
@@ -813,7 +814,7 @@ async function generateCompilePackage(arg, progressBar) {
     }
     if (arg.pack) {
         progressBar.detail = "Packaging...";
-        await pack();
+        await pack(progressBar);
         progressBar.value++;
     }
 }
@@ -1007,7 +1008,7 @@ ipcMain.on("reloadPlugin", function (event, arg) {
 });
 
 async function reloadPlugin() {
-    if (!currentProject) return;
+    if (!currentProject || !serverStarter.isRunning()) return;
     console.log("Reloading plugin...");
     await serverStarter.stopServer();
     await serverStarter.copyPlugin(currentProjectPath, currentProject, true);

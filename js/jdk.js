@@ -67,7 +67,7 @@ async function downloadJdk(major, jdkDir, onProgress) {
             await fs.close(file);
         }
         if (hash.digest("hex") !== pkg.checksum) throw new Error("JDK SHA-256 mismatch");
-        await fs.ensureDir(target);
+        await fs.emptyDir(target);
         let tar = process.platform === "win32" ? path.join(process.env.SystemRoot, "System32", "tar.exe") : "tar";
         await run(tar, ["-xf", archive, "-C", target]);
         let folders = (await fs.readdir(target, {withFileTypes: true})).filter(entry => entry.isDirectory());

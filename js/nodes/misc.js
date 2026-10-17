@@ -107,7 +107,7 @@ ConsoleLog.prototype.getFields = function (output) {
     return [];
 };
 ConsoleLog.prototype.getMethodBody = function (input, output) {
-    return "java.lang.System.out.println(" + input[1] + ");";
+    return "getLogger().info(java.lang.String.valueOf(" + input[1] + "));";
 };
 ConsoleLog.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 

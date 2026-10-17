@@ -35,6 +35,8 @@ async function ensureServer({libDir, cacheDir, minecraftVersion, java, onProgres
         await fs.writeFile(cachedJar, bytes);
     }
     await copyFile(cachedJar, serverJar);
+    await fs.remove(path.join(libDir, "libraries"));
+    await fs.remove(path.join(libDir, "versions"));
     if (onProgress) onProgress("Unpacking Paper…");
     await run(java, ["-Dpaperclip.patchonly=true", "-jar", "paper.jar"], {cwd: libDir});
 }
