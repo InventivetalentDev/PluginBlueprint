@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const shell = require('electron').shell;
-const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
+const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../assets/lib/litegraph/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
 const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding, isNumberType} = require("./util");
@@ -292,7 +292,7 @@ function showOptionalSlotMenu(v, opts, e, prev_menu, node) {
     return false;
 }
 
-function init(extraLibraries) {
+function init() {
     return new Promise((resolve => {
         // Clear default node types
         LiteGraph.registered_node_types = {};
@@ -411,19 +411,8 @@ function init(extraLibraries) {
         classStore.init().then(() => {
             console.log("Generating & Registering Nodes...");
 
-            if (extraLibraries && extraLibraries.length > 0) {
-                let libPromises = [];
-                for (let l = 0; l < extraLibraries.length; l++) {
-                    libPromises.push(classStore.loadLibrary(extraLibraries[l]));
-                }
-                Promise.all(libPromises).then(() => {
-                    ensureNodeRegistration();
-                    resolve();
-                })
-            } else {
-                ensureNodeRegistration();
-                resolve();
-            }
+            ensureNodeRegistration();
+            resolve();
         });
     }))
 }
@@ -1000,13 +989,5 @@ function handleSlotDoubleClick(node, type, i, e) {
 module.exports = {
     init: init,
     getOrCreateBukkitClassNode: getOrCreateBukkitClassNode,
-    getOrCreateBukkitMethodNode: getOrCreateBukkitMethodNode,
-    addLibrary: function (lib) {
-        return new Promise((resolve, reject) => {
-            classStore.loadLibrary(lib).then(() => {
-                ensureNodeRegistration();
-                resolve();
-            }).catch(reject);
-        })
-    }
+    getOrCreateBukkitMethodNode: getOrCreateBukkitMethodNode
 };

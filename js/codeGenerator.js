@@ -1,5 +1,5 @@
 const fs = require("fs");
-const {LiteGraph} = require("../node_modules/litegraph.js/build/litegraph");
+const {LiteGraph} = require("../assets/lib/litegraph/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
 const {getNullForType} = require("./util");
@@ -30,15 +30,6 @@ function generateClassCode(graph, projectInfo) {
     return new Promise((resolve) => {
         debug = projectInfo.debug;
         classStore.init()
-            .then(() => {
-                let libPromises = [];
-                if (projectInfo.libraries) {
-                    for (let l = 0; l < projectInfo.libraries.length; l++) {
-                        libPromises.push(classStore.loadLibrary(projectInfo.libraries[l]));
-                    }
-                }
-                return Promise.all(libPromises);
-            })
             .then(() => {
                 console.log(graph);
                 for (let i = 0; i < graph._nodes.length; i++) {

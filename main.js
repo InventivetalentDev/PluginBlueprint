@@ -1,21 +1,15 @@
-const {app, BrowserWindow, ipcMain, dialog, Notification, shell, crashReporter} = require('electron');
-const {LiteGraph} = require("litegraph.js");
-const NodeGenerator = require("./js/nodeGenerator");
-const CodeGenerator = require("./js/codeGenerator");
+const {app, BrowserWindow, ipcMain, dialog, Notification, shell} = require('electron');
 const javaCompiler = require("./js/javaCompiler");
 const serverStarter = require("./js/serverStarter");
-const googleAnalytics = require("./js/analytics");
 const versionControl = require("./js/versionControl");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
-const notifier = require("node-notifier");
-const request = require("request");
-const Sentry = require("@sentry/electron");
 const ProgressBar = require('electron-progressbar');
 const {copyFile} = require("./js/util");
 const AdmZip = require("adm-zip");
-const RPC = require("discord-rich-presence");
+
+require("@electron/remote/main").initialize();
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
 const APP_MODEL_ID = "inventivetalent.PluginBlueprint";
@@ -27,11 +21,15 @@ let logWin;
 let errWin;
 let editorWin;
 let commandWin;
-let libraryWin;
-
-let richPresence;
 
 let debug = false;
+let unsavedChanges = 0;
+let uncompiledChanges = 0;
+
+ipcMain.on("setChangeState", function (event, arg) {
+    if (arg.unsaved !== undefined) unsavedChanges = arg.unsaved;
+    if (arg.uncompiled !== undefined) uncompiledChanges = arg.uncompiled;
+});
 
 let currentProject;
 let currentProjectPath;
@@ -45,17 +43,6 @@ function init() {
         "Copyright (c) 2018, Haylee Schaefer\n" +
         "All rights reserved.\n");
 
-    crashReporter.start({
-        productName: "PluginBlueprint",
-        companyName: "inventivetalent",
-        submitURL: "https://submit.backtrace.io/inventivetalent/194573923afb55a5b91ad7cda2868bbefaf0df605ae377a7067af7bd44f88e27/minidump",
-        uploadToServer: true
-    });
-    Sentry.init({
-        release: "PluginBlueprint@" + app.getVersion(),
-        dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'
-    });
-
     console.log(process.argv);
     process.argv.forEach((val, index) => {
         if (val === "--debug") {
@@ -66,26 +53,22 @@ function init() {
 
     // Create the browser window.
     win = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         title: DEFAULT_TITLE + " " + app.getVersion(),
         width: 1200,
         height: 800,
         show: false,
-        icon: path.join(__dirname, 'assets/images/favicon.ico'),
+        icon: path.join(__dirname, 'build/icon.png'),
         backgroundColor: "#373737",
     });
+    require("@electron/remote/main").enable(win.webContents);
 
-    googleAnalytics.init().then(analytics => {
-        analytics.set("ds", "app");
-        analytics.set("debugEnabled", debug);
-        analytics.set("appVersion", app.getVersion());
-
-        showWindow();
-    });
+    showWindow();
 }
 
 function showWindow() {
-    app.unsavedChanges = 0;
-    app.uncompiledChanges = 0;
+    unsavedChanges = 0;
+    uncompiledChanges = 0;
 
     // and load the index.html of the app.
     win.loadFile('index.html');
@@ -100,15 +83,13 @@ function showWindow() {
         }
 
         checkFileAssociation();
-        updateRichPresence();
-        global.analytics.screenview("Home", app.getName(), app.getVersion()).send();
     });
 
     win.on("close", function (e) {
-        if (app.unsavedChanges > 0) {
-            let c = dialog.showMessageBox({
+        if (unsavedChanges > 0) {
+            let c = dialog.showMessageBoxSync({
                 type: "question",
-                message: "You have " + app.unsavedChanges + " unsaved changes. Are you sure you want to exit?",
+                message: "You have " + unsavedChanges + " unsaved changes. Are you sure you want to exit?",
                 buttons: ["Yes", "No"],
                 icon: path.join(__dirname, 'assets/images/logo-x64.png')
             });
@@ -129,16 +110,6 @@ function showWindow() {
     });
 
     readRecentProjects();
-
-    // Init Discord Rich Presence
-    richPresence = RPC("532503320108072960");
-    richPresence.on("error", (err) => {
-        console.warn(err);
-        global.analytics.event("DiscordRPC", "failed").send();
-    });
-    richPresence.on("connected", () => {
-        global.analytics.event("DiscordRPC", "connected").send();
-    });
 }
 
 
@@ -166,7 +137,6 @@ app.on('activate', () => {
 
 process.on('uncaughtException', function (error) {
     console.error(error);
-    Sentry.captureException(error);
 });
 
 // In this file you can include the rest of your app's specific main process
@@ -190,7 +160,6 @@ function readRecentProjects() {
     fs.readFile(recentProjectFile, function (err, data) {
         if (err) {
             console.warn(err);
-            Sentry.captureException(err);
             return;
         }
         data = JSON.parse(data);
@@ -242,7 +211,6 @@ function writeRecentProjects() {
     fs.writeFile(path.join(app.getPath("userData"), "recentProjects.pbd"), JSON.stringify(paths), "utf-8", function (err) {
         if (err) {
             console.warn(err);
-            Sentry.captureException(err);
         }
     });
 }
@@ -272,25 +240,6 @@ function updateJumpList() {
     ])
 }
 
-function updateRichPresence() {
-    if (richPresence) {
-        if (currentProjectPath && currentProject) {
-            richPresence.updatePresence({
-                state: "Blueprinting",
-                details: "Editing " + currentProject.name,
-                largeImageKey: "large_default",
-                startTimestamp: Date.now(),// TODO: probably inaccurate to always use the current time
-            })
-        } else {
-            richPresence.updatePresence({
-                state: "In Project Selection",
-                largeImageKey: "large_gray",
-                startTimestamp: Date.now(),// TODO: probably inaccurate to always use the current time
-            })
-        }
-    }
-}
-
 ipcMain.on("openGraph", function (event, arg) {
     if (win) {
         win.loadFile('pages/graph.html');
@@ -298,7 +247,7 @@ ipcMain.on("openGraph", function (event, arg) {
 });
 
 ipcMain.on("showCreateNewProject", function (event, arg) {
-    let projectPath = dialog.showOpenDialog({
+    let projectPath = dialog.showOpenDialogSync({
         properties: ["openDirectory"]
     });
     console.log(projectPath);
@@ -313,12 +262,6 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
         }
     }
     let pathSplit = projectPath.split("\\");
-
-    try {
-        global.analytics.event("Project", "Start creating new").send();
-    } catch (e) {
-        console.warn(e);
-    }
 
     let name = pathSplit[pathSplit.length - 1];
     prompt({
@@ -336,10 +279,10 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
                 message: "Please select the location of a valid Spigot or Paper Server executable (usually spigot.jar)",
                 buttons: ["Select", "I don't have one"],
                 icon: path.join(__dirname, 'assets/images/logo-x64.png')
-            }, (r) => {
+            }).then(({response: r}) => {
                 console.log(r);
                 if (r === 0) {
-                    let libPath = dialog.showOpenDialog({
+                    let libPath = dialog.showOpenDialogSync({
                         properties: ["openFile"],
                         filters: [
                             {name: 'Spigot JAR file', extensions: ['jar']}
@@ -409,7 +352,6 @@ function createNewProject(arg, lib) {
                     console.error("Failed to create project file");
                     console.error(err);
                     dialog.showErrorBox("Error", "Failed to create PluginBlueprint project in that directory");
-                    Sentry.captureException(err);
                     return;
                 }
                 currentProjectPath = arg.path;
@@ -438,7 +380,6 @@ function createNewProject(arg, lib) {
                         if (err) {
                             console.error("Failed to create graph file");
                             console.error(err);
-                            Sentry.captureException(err);
                             return;
                         }
 
@@ -465,11 +406,8 @@ function createNewProject(arg, lib) {
                                 win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
                                 progressBar.value++;
                             }
-                            updateRichPresence();
-                            global.analytics.event("Project", "New created").send();
                         }).catch(err => {
                             console.error(err);
-                            Sentry.captureException(err);
                         })
                     })
                 });
@@ -486,13 +424,7 @@ ipcMain.on("createNewProject", function (event, arg) {
 
 
 ipcMain.on("showOpenProject", function (event, arg) {
-    try {
-        global.analytics.event("Project", "Show File Selector").send();
-    } catch (e) {
-        console.warn(e);
-    }
-
-    let p = dialog.showOpenDialog({
+    let p = dialog.showOpenDialogSync({
         properties: ["openFile"],
         filters: [
             {name: 'Plugin Blueprint Projects', extensions: ['pbp']}
@@ -521,19 +453,12 @@ function openProject(arg) {
     if (!fs.existsSync(projectFilePath)) {
         console.error("No project file found");
         dialog.showErrorBox("Not found", "Could not find a PluginBlueprint project in that directory");
-        Sentry.captureException(err);
         return;
-    }
-    try {
-        global.analytics.event("Project", "Open Project").send();
-    } catch (e) {
-        console.warn(e);
     }
     fs.readFile(projectFilePath, "utf-8", function (err, data) {
         if (err) {
             console.error("Failed to read project file");
             console.error(err);
-            Sentry.captureException(err);
             return;
         }
         data = JSON.parse(data);
@@ -567,11 +492,8 @@ function openProject(arg) {
                     win.loadFile('pages/graph.html');
                     win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
                 }
-                updateRichPresence();
-                global.analytics.event("Project", "Open Project").send();
             }).catch(err => {
                 console.error(err);
-                Sentry.captureException(err);
             })
         }
 
@@ -587,12 +509,12 @@ function openProject(arg) {
                 detail: "It might not be compatible with the current version, so please proceed carefully and create a backup first. (Project Version: " + fileVersion + ", Editor Version: " + appVersion + ")",
                 buttons: ["Proceed Anyway", "Open Project Directory to create backup", "Cancel"],
                 defaultId: 1
-            }, (r) => {
+            }).then(({response: r}) => {
                 console.log(r);
                 if (r === 0) {// Proceed Anyway
                     doOpen();
                 } else if (r === 1) {// Open directory
-                    shell.openItem(arg);
+                    shell.openPath(arg);
                 } else {// cancel
                 }
             });
@@ -626,10 +548,8 @@ ipcMain.on("updateProjectInfo", function (event, arg) {
         if (err) {
             console.error("Failed to write project file");
             console.error(err);
-            Sentry.captureException(err);
             return;
         }
-        updateRichPresence();
     })
 });
 
@@ -641,7 +561,6 @@ ipcMain.on("getGraphData", function (event, arg) {
         if (err) {
             console.error("Failed to read graph file");
             console.error(err);
-            Sentry.captureException(err);
             return;
         }
 
@@ -664,7 +583,6 @@ function saveGraphData(arg, cb) {
             if (err) {
                 console.error("Failed to save graph file");
                 console.error(err);
-                Sentry.captureException(err);
                 return;
             }
 
@@ -679,7 +597,6 @@ function saveProject(cb) {
         if (err) {
             console.error("Failed to write project file");
             console.error(err);
-            Sentry.captureException(err);
             return;
         }
         if (cb) cb();
@@ -701,10 +618,8 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
         win.setTitle(DEFAULT_TITLE);
         currentProject = null;
         currentProjectPath = null;
-        app.unsavedChanges = 0;
-        app.uncompiledChanges = 0;
-
-        updateRichPresence();
+        unsavedChanges = 0;
+        uncompiledChanges = 0;
     });
 });
 
@@ -732,25 +647,17 @@ function saveCodeToFile(code) {
         }
         if (!code) return reject();
 
-        try {
-            global.analytics.event("Code", "Save to File").send();
-        } catch (e) {
-            console.warn(e);
-        }
-
         fs.emptyDir(path.join(currentProjectPath, "src"), function (err) {
             fs.mkdirs(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\")), function (err) {
                 if (err) {
                     console.error("Failed to save code file");
                     console.error(err);
-                    Sentry.captureException(err);
                     return;
                 }
                 fs.writeFile(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\"), "GeneratedPlugin.java"), code, "utf-8", function (err) {
                     if (err) {
                         console.error("Failed to save code file");
                         console.error(err);
-                        Sentry.captureException(err);
                         return;
                     }
 
@@ -761,7 +668,6 @@ function saveCodeToFile(code) {
                         if (err) {
                             console.error("Failed to save manifest file");
                             console.error(err);
-                            Sentry.captureException(err);
                             return;
                         }
 
@@ -797,12 +703,6 @@ function makePluginYml() {
 
 function compile() {
     return new Promise((resolve, reject) => {
-        try {
-            global.analytics.event("Code", "Compile").send();
-        } catch (e) {
-            console.warn(e);
-        }
-
         javaCompiler.testForJavac().then(() => {
             console.log("compile: " + Date.now());
             fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
@@ -823,12 +723,6 @@ function compile() {
 
 function pack() {
     return new Promise((resolve, reject) => {
-        try {
-            global.analytics.event("Code", "Pack").send();
-        } catch (e) {
-            console.warn(e);
-        }
-
         console.log("package: " + Date.now());
         fs.emptyDir(path.join(currentProjectPath, "output"), function (err) {
             javaCompiler.package(currentProjectPath, currentProject).then(() => {
@@ -844,6 +738,7 @@ function showCustomErrorDialog(error, title, message) {
     errWin = null;
 
     errWin = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         parent: win,
         width: 1000,
         height: 600,
@@ -851,13 +746,15 @@ function showCustomErrorDialog(error, title, message) {
         show: false,
         resizable: true,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/images/favicon.ico')
+        icon: path.join(__dirname, 'build/icon.png')
     });
+    require("@electron/remote/main").enable(errWin.webContents);
     errWin.setMenu(null);
     errWin.setTitle(title || "An Error occurred!");
-    errWin.loadFile('pages/error.html');
-    errWin.theError = error;
-    errWin.theMessage = message;
+    errWin.loadFile('pages/error.html', {query: {
+        error: typeof error === "string" ? error : error.message || error.msg,
+        message: message || ""
+    }});
     errWin.show();
     // Open the DevTools.
     if (debug) {
@@ -916,13 +813,13 @@ async function generateCompilePackage(arg, progressBar) {
 }
 
 ipcMain.on("openOutputDir", function (event, arg) {
-    shell.openItem(path.join(currentProjectPath, "output"));
-    global.analytics.event("Project", "Open Output Directory").send();
+    shell.openPath(path.join(currentProjectPath, "output"));
 });
 
 ipcMain.on("openProjectInfoEditor", function (event, arg) {
     console.log("openProjectInfoEditor");
     let child = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         parent: win,
         title: DEFAULT_TITLE,
         width: 600,
@@ -931,20 +828,21 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
         show: false,
         resizable: false,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/icons/favicon.ico')
+        icon: path.join(__dirname, 'build/icon.png')
     });
+    require("@electron/remote/main").enable(child.webContents);
     editorWin = child;
     child.on("close", () => {
         editorWin = null;
     });
     child.loadFile('pages/infoEditor.html');
     child.show();
-    global.analytics.screenview("Info Editor", app.getName(), app.getVersion()).event("Project", "Open Info Editor").send();
 });
 
 ipcMain.on("openCommandEditor", function (event, arg) {
     console.log("openCommandEditor");
     let child = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         parent: win,
         title: DEFAULT_TITLE,
         width: 600,
@@ -953,19 +851,18 @@ ipcMain.on("openCommandEditor", function (event, arg) {
         show: false,
         resizable: false,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/icons/favicon.ico')
+        icon: path.join(__dirname, 'build/icon.png')
     });
-    child.custom = {
-        command: arg.command,
-        index: arg.index
-    };
+    require("@electron/remote/main").enable(child.webContents);
     commandWin = child;
     child.on("close", () => {
         commandWin = null;
     });
-    child.loadFile('pages/commandEditor.html');
+    child.loadFile('pages/commandEditor.html', {query: {custom: JSON.stringify({
+        command: arg.command,
+        index: arg.index
+    })}});
     child.show();
-    global.analytics.screenview("Command Editor", app.getName(), app.getVersion()).event("Project", "Open Command Editor").send();
 });
 
 ipcMain.on("saveCommand", function (event, arg) {
@@ -1000,6 +897,7 @@ ipcMain.on("startServer", function (event, arg) {
     }
 
     logWin = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         parent: win,
         width: 800,
         height: 1000,
@@ -1007,17 +905,13 @@ ipcMain.on("startServer", function (event, arg) {
         show: false,
         resizable: true,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/images/favicon.ico')
+        icon: path.join(__dirname, 'build/icon.png')
     });
+    require("@electron/remote/main").enable(logWin.webContents);
     logWin.setMenu(null);
     logWin.setTitle("PluginBlueprint Test Server");
     logWin.loadFile('pages/log.html');
     logWin.show();
-    try {
-        global.analytics.screenview("Server Log", app.getName(), app.getVersion()).event("Project", "Start Server").send();
-    } catch (e) {
-        console.warn(e);
-    }
     // Open the DevTools.
     if (debug) {
         logWin.webContents.openDevTools({
@@ -1098,14 +992,13 @@ function reloadPlugin() {
     if (!currentProject) return;
     console.log("Reloading plugin...");
     serverStarter.sendCommandToInstance("pluginblueprint unload " + currentProject.name, () => {
-        serverStarter.copyPlugin(currentProjectPath, currentProject, true, true, true).then(() => {
+        serverStarter.copyPlugin(currentProjectPath, currentProject, true, true).then(() => {
             serverStarter.sendCommandToInstance("pluginblueprint load " + currentProject.name, () => {
                 console.log("Plugin reloaded!");
                 showNotification("Plugin reloaded!");
             })
         })
     });
-    global.analytics.event("Project", "Reload Plugin").send();
 }
 
 ipcMain.on("highlightNode", function (event, arg) {
@@ -1127,8 +1020,8 @@ function showExportDialog() {
             name: "ZIP File",
             extensions: ["zip"]
         }]
-    }, (file) => {
-        if (!file) return;
+    }).then(({canceled, filePath: file}) => {
+        if (canceled || !file) return;
         exportProject(file);
     })
 }
@@ -1139,7 +1032,6 @@ function exportProject(output) {
     zip.addLocalFile(path.join(currentProjectPath, "project.pbp"));
     zip.addLocalFile(path.join(currentProjectPath, "graph.pbg"));
     zip.writeZip(output);
-    global.analytics.event("Project", "Export").send();
 }
 
 ipcMain.on("exportSnippet", function (event, arg) {
@@ -1149,8 +1041,8 @@ ipcMain.on("exportSnippet", function (event, arg) {
             name: "PluginBlueprint Snippet",
             extensions: ["pbs"]
         }]
-    }, (file) => {
-        if (!file) return;
+    }).then(({canceled, filePath: file}) => {
+        if (canceled || !file) return;
         fs.writeFile(file, JSON.stringify(arg), function (err) {
             if (err) throw err;
         })
@@ -1164,8 +1056,8 @@ ipcMain.on("showImportSnippet", function (event, arg) {
             name: "PluginBlueprint Snippet",
             extensions: ["pbs"]
         }]
-    }, (files) => {
-        if (!files || files.length === 0) return;
+    }).then(({canceled, filePaths: files}) => {
+        if (canceled || !files || files.length === 0) return;
         importSnippet(files[0]);
     });
 });
@@ -1197,7 +1089,6 @@ ipcMain.on("gitAddAndCommit", function (event, arg) {
                 }).catch((err) => {
                     console.error(err);
                     dialog.showErrorBox("Error", err ? err.message : err);
-                    Sentry.captureException(err);
                     event.sender.send("committed");//TODO: might need a different channel
                 })
             } else {
@@ -1222,7 +1113,6 @@ ipcMain.on("gitPush", function (event, arg) {
                     }).catch(err => {
                         console.error(err);
                         dialog.showErrorBox("Error", err ? err.message : err);
-                        Sentry.captureException(err);
                         event.sender.send("pushed");//TODO: different event
                     });
 
@@ -1249,7 +1139,6 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
                     }).catch((err) => {
                         console.error(err);
                         dialog.showErrorBox("Error", err ? err.message : err);
-                        Sentry.captureException(err);
                         event.sender.send("remoteChanged");// TODO: different event
                     });
                 } else {
@@ -1260,46 +1149,6 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
     });
 });
 
-ipcMain.on("showLibrarySelector", function (event) {
-    let child = new BrowserWindow({
-        parent: win,
-        title: DEFAULT_TITLE,
-        width: 600,
-        height: 300,
-        modal: true,
-        show: false,
-        resizable: false,
-        backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/icons/favicon.ico')
-    });
-    libraryWin = child;
-    child.on("close", () => {
-        libraryWin = null;
-    });
-    child.loadFile('pages/librarySelector.html');
-    if (debug) {
-        child.webContents.openDevTools({
-            mode: "detach"
-        });
-    }
-    child.show();
-    global.analytics.screenview("Library Selector", app.getName(), app.getVersion()).event("Project", "Open Library Selector").send();
-});
-
-ipcMain.on("addLibrary", function (event, arg) {
-    console.log("addLibrary", arg);
-    if (!currentProject) return;
-    if (!currentProject.libraries) currentProject.libraries = [];
-    if (currentProject.libraries.indexOf(arg) === -1) {
-        currentProject.libraries.push(arg);
-    }
-    saveProject(function () {
-        if (win) {
-            win.webContents.send("libraryAdded", arg);
-        }
-    });
-});
-
 ipcMain.on("checkUpdate", function (event) {
     checkUpdate().then(u => {
         event.sender.send("updateInfo", u);
@@ -1307,40 +1156,38 @@ ipcMain.on("checkUpdate", function (event) {
 });
 
 function checkUpdate() {
-    return new Promise(resolve => {
-        request("https://pluginblueprint.net/checkupdate.php", function (err, res, body) {
-            if (err || !body || body.length > 10/* invalid response content */) {
-                resolve({
-                    hasUpdate: false
-                });
-                return;
-            }
+    return fetch("https://api.github.com/repos/InventivetalentDev/PluginBlueprint/releases/latest", {
+        headers: {"User-Agent": "PluginBlueprint/" + app.getVersion()}
+    }).then(response => {
+        if (response.status !== 200) return {hasUpdate: false};
+        return response.json().then(release => {
             let currentVersion = app.getVersion();
-            resolve({
-                hasUpdate: body > currentVersion,
-                appVersion: currentVersion,
-                updateVersion: body
-            })
-        })
+            let updateVersion = release.tag_name.replace(/^v/, "");
+            let currentParts = currentVersion.split(".").map(Number);
+            let updateParts = updateVersion.split(".").map(Number);
+            let hasUpdate = false;
+            for (let i = 0; i < Math.max(currentParts.length, updateParts.length); i++) {
+                let current = currentParts[i] || 0;
+                let update = updateParts[i] || 0;
+                if (current !== update) {
+                    hasUpdate = update > current;
+                    break;
+                }
+            }
+            return {hasUpdate, appVersion: currentVersion, updateVersion};
+        });
+    }).catch(e => {
+        console.error(e);
+        return {hasUpdate: false};
     });
 }
 
 function showNotification(body, title) {
-
-    notifier.notify({
-        appName: "org.inventivetalent.pluginblueprint",
+    let notification = new Notification({
         title: title || "PluginBlueprint",
-        message: body || "-message-",
-        icon: path.join(__dirname, "assets/images/PluginBlueprint-x512.png"),
-        sound: false
-    }, function (err, res) {
-        console.log(err);
-        console.log(res);
+        body: body || "-message-",
+        icon: path.join(__dirname, "build/icon.png")
     });
-    // }
-
-    return {
-        close: function () {
-        }
-    }
+    notification.show();
+    return notification;
 }

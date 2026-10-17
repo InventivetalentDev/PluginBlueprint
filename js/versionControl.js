@@ -1,22 +1,23 @@
 const git = require("isomorphic-git");
 const fs = require("fs");
-git.plugins.set("fs", fs);
+const http = require("isomorphic-git/http/node");
 const path = require("path");
 const prompt = require("electron-prompt");
-const keytar = require("keytar");
+const {app, safeStorage} = require("electron");
 const {copyFile} = require("./util");
 
 function init(projectPath) {
     return new Promise((resolve, reject) => {
         copyFile(path.join(__dirname, "../assets/projectGitignore.txt"), path.join(projectPath, ".gitignore"))
             .then(() => {
-                return git.init({dir: projectPath})
+                return git.init({fs, dir: projectPath})
             })
             .then(() => {
-                return git.add({dir: projectPath, filepath: "."})
+                return git.add({fs, dir: projectPath, filepath: "."})
             })
             .then(() => {
                 return git.commit({
+                    fs,
                     dir: projectPath,
                     message: "Initial commit",
                     author: {
@@ -35,7 +36,7 @@ function init(projectPath) {
 
 function openOrInit(projectPath) {
     return new Promise((resolve, reject) => {
-        git.listFiles({dir: projectPath}).then((files) => {
+        git.listFiles({fs, dir: projectPath}).then((files) => {
             console.log("git files:", files);
             if (!files || files.length === 0) {// no repo here
                 init(projectPath).then(resolve).catch(reject);
@@ -48,17 +49,18 @@ function openOrInit(projectPath) {
 
 function addAllAndCommit(projectPath, project, msg) {
     return new Promise((resolve, reject) => {
-        git.statusMatrix({dir: projectPath})
+        git.statusMatrix({fs, dir: projectPath})
             .then((status) => {// https://isomorphic-git.org/docs/en/snippets#git-add-a-
                 return Promise.all(
                     status.map(([filepath, , worktreeStatus]) =>
                         // isomorphic-git may report a changed file as unmodified, so always add if not removing
-                        worktreeStatus ? git.add({dir: projectPath, filepath: filepath}) : git.remove({dir: projectPath, filepath: filepath})
+                        worktreeStatus ? git.add({fs, dir: projectPath, filepath: filepath}) : git.remove({fs, dir: projectPath, filepath: filepath})
                     )
                 );
             })
             .then(() => {
                 return git.commit({
+                    fs,
                     dir: projectPath,
                     message: msg || "N/A",
                     author: {
@@ -75,47 +77,51 @@ function addAllAndCommit(projectPath, project, msg) {
 }
 
 function listRemotes(projectPath) {
-    return git.listRemotes({dir: projectPath})
+    return git.listRemotes({fs, dir: projectPath})
 }
 
 function setRemote(projectPath, url) {
-    return git.addRemote({dir: projectPath, remote: "origin", url: url, force: true});
+    return git.addRemote({fs, dir: projectPath, remote: "origin", url: url, force: true});
 }
 
 function push(projectPath, project) {
     return getOrRequestCredentials(project)
         .then((creds) => {
             return git.push({
+                fs,
                 dir: projectPath,
-                username: creds.u,
-                password: creds.p
+                http,
+                onAuth: () => ({username: creds.u, password: creds.p})
             })
         })
 }
 
 function getOrRequestCredentials(project) {
-    return new Promise((resolve, reject) => {
-        if (project && project.gitUser) {
-            keytar.getPassword("pluginblueprint-git-" + project.name, project.gitUser).then(p => {
-                resolve({
+    return Promise.resolve().then(() => {
+        let credentialFile = path.join(app.getPath("userData"), "git-credentials.json");
+        let service = "pluginblueprint-git-" + project.name;
+        let credentials = {};
+        let canEncrypt = safeStorage.isEncryptionAvailable();
+        if (canEncrypt && fs.existsSync(credentialFile)) {
+            credentials = JSON.parse(fs.readFileSync(credentialFile, "utf-8"));
+            if (project.gitUser && credentials[service] && credentials[service][project.gitUser]) {
+                return {
                     u: project.gitUser,
-                    p: p
-                });
-            })
-        } else {
-            requestCredentials().then(c => {
-                project.gitUser = c.u;
-                keytar.setPassword("pluginblueprint-git-" + project.name, c.u, c.p).then(() => {
-                    resolve({
-                        u: c.u,
-                        p: c.p
-                    });
-                })
-            }).catch(reject);
+                    p: safeStorage.decryptString(Buffer.from(credentials[service][project.gitUser], "base64"))
+                };
+            }
         }
-    })
+        return requestCredentials().then(c => {
+            project.gitUser = c.u;
+            if (canEncrypt) {
+                if (!credentials[service]) credentials[service] = {};
+                credentials[service][c.u] = safeStorage.encryptString(c.p).toString("base64");
+                fs.writeFileSync(credentialFile, JSON.stringify(credentials), "utf-8");
+            }
+            return c;
+        });
+    });
 }
-
 
 function requestCredentials() {
     return new Promise((resolve, reject) => {

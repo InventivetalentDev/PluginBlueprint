@@ -30,9 +30,7 @@
         </div>
         <script>
             const {ipcRenderer, shell} = require("electron");
-            const {getCurrentWindow} = require("electron").remote;
             const $ = require("jquery");
-            const Sentry = require("@sentry/electron");
 
 
             String.prototype.replaceAll = function (search, replacement) {
@@ -40,14 +38,11 @@
                 return target.replace(new RegExp(search, 'g'), replacement);
             };
 
-            $(document).ready(function () {
-                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
-            });
-
-            let msg = getCurrentWindow().theMessage;
+            const params = new URLSearchParams(location.search);
+            let msg = params.get("message");
             $("#message").text(msg || "Please make sure you didn't forget to connect any of the nodes - you can also click on the highlighted nodes below to check which might cause the problems.");
 
-            let error = getCurrentWindow().theError;
+            let error = params.get("error");
             let message = typeof error === "string" ? error : error.message || error.msg;
             message = message.replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
             message = message.replace(/node_([0-9]+)/gm, '<a class="node-ref" data-node="$1">node_$1</a>');

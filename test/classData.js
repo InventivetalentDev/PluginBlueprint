@@ -8,6 +8,7 @@ const classStore = new ClassDataStore();
 
 describe("ClassStore", function () {
     before(function (done) {
+        this.timeout(30000);
         classStore.init().then(() => {
             done();
         });
