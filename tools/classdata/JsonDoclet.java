@@ -136,7 +136,6 @@ public class JsonDoclet implements Doclet {
         constructors.sort(Comparator.comparing(e -> signature(e, false)));
         methods.sort(Comparator.comparing((ExecutableElement e) -> e.getSimpleName().toString()).thenComparing(e -> signature(e, false)));
         fields.sort(Comparator.comparing(e -> e.getSimpleName().toString()));
-        Collections.sort(constants);
         result.put("constructors", constructors.stream().map(this::executableData).toList());
         result.put("methods", methods.stream().map(this::executableData).toList());
         result.put("fields", fields.stream().map(this::fieldData).toList());

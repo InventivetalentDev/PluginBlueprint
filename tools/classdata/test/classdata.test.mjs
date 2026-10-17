@@ -66,3 +66,7 @@ test('inheritance matches the legacy relationship arrays', () => {
 test('Adventure sources include Component.text(String)', () => {
     assert.equal(method('net.kyori.adventure.text.Component', 'text', '(java.lang.String)').isStatic, true);
 });
+
+test('enum constants keep source declaration order', () => {
+    assert.deepEqual(classes.get('org.bukkit.GameMode').enumConstants, ['CREATIVE', 'SURVIVAL', 'ADVENTURE', 'SPECTATOR']);
+});
