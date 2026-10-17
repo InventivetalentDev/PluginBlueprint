@@ -1,5 +1,5 @@
 const electron = require("electron");
-const app = electron.app || electron.remote.app;
+const app = electron.app || require("@electron/remote").app;
 const path = require("path");
 const fs = require("fs-extra");
 const {exec, spawn} = require("child_process");
@@ -8,27 +8,18 @@ const {copyFile} = require("./util");
 let running = false;
 let instance = null;
 
-function copyPlugin(projectPath, projectInfo, skipEmpty, skipReloadHelper, skipLibraries) {
+function copyPlugin(projectPath, projectInfo, skipEmpty, skipReloadHelper) {
     let projectName = projectInfo.name;
     return new Promise((resolve, reject) => {
         function doCopy() {
             copyFile(path.join(projectPath, "output", projectName + ".jar"), path.join(projectPath, "lib", "plugins", projectName + ".jar"))// copy plugin
                 .then(() => {
-                    if (skipReloadHelper && (skipLibraries || !projectInfo.libraries || projectInfo.libraries.length === 0)) {
+                    if (skipReloadHelper) {
                         resolve()
                     } else {
                         copyFile(path.join(__dirname, "../assets/lib/livereload.jar"), path.join(projectPath, "lib", "plugins", "livereload.jar"))// copy livereload helper plugin
                             .then(() => {
-                                if (skipLibraries || !projectInfo.libraries || projectInfo.libraries.length === 0) {
-                                    resolve();
-                                } else {
-                                    let libPromises = [];
-                                    for (let l = 0; l < projectInfo.libraries.length; l++) {
-                                        libPromises.push(copyFile(path.join(app.getPath("userData"), "jjdoc-binaries", projectInfo.libraries[l] + ".jar"), path.join(projectPath, "lib", "plugins", projectInfo.libraries[l] + ".jar")));
-                                    }
-                                    Promise.all(libPromises)
-                                        .then(resolve).catch(reject);
-                                }
+                                resolve();
                             }).catch(reject);
                     }
                 }).catch(reject);

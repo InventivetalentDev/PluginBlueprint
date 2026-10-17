@@ -9,3 +9,14 @@
 
 
 ![](https://i.imgur.com/f986ivP.png)
+
+## Development
+
+Use Node.js 24.
+
+```sh
+npm ci        # Install dependencies.
+npm start     # Start the app.
+npm test      # Run the tests.
+npm run dist  # Build an installer for your platform.
+```

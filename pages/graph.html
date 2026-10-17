@@ -1,6 +1,6 @@
 <html>
     <head>
-        <link rel="stylesheet" href="../node_modules/litegraph.js/css/litegraph.css">
+        <link rel="stylesheet" href="../assets/lib/litegraph/litegraph.css">
         <style>
             html, body {
                 font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -96,14 +96,12 @@
         <canvas id='mycanvas' width='1920' height='1080'></canvas>
         <script>
             const {ipcRenderer} = require("electron");
-            const {app, Menu, getCurrentWindow, getGlobal} = require("electron").remote;
-            const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
+            const {app, Menu, getCurrentWindow} = require("@electron/remote");
+            const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../assets/lib/litegraph/litegraph");
             const NodeGenerator = require("../js/nodeGenerator");
             const CodeGenerator = require("../js/codeGenerator");
             const History = require("../js/history");
-            const analytics = getGlobal("analytics");
             const $ = require("jquery");
-            const Sentry = require("@sentry/electron");
             const KeyPics = require("key.pics");
             const {updateLinkColors} = require("../js/util");
 
@@ -192,11 +190,6 @@
                         {
                             label: "Edit Project Information", click: () => {
                                 ipcRenderer.send("openProjectInfoEditor");
-                            }
-                        },
-                        {
-                            label: "Add Library", click: () => {
-                                ipcRenderer.send("showLibrarySelector");
                             }
                         },
                         {
@@ -322,8 +315,9 @@
             let history = new History();
             history.pause();
 
-            app.unsavedChanges = 0;
-            app.uncompiledChanges = 0;
+            let unsavedChanges = 0;
+            let uncompiledChanges = 0;
+            ipcRenderer.send("setChangeState", {unsaved: unsavedChanges, uncompiled: uncompiledChanges});
 
             var graph = new LGraph();
             if (!graph.config) graph.config = {};
@@ -335,8 +329,9 @@
                 }
                 if (history) {
                     if (!history.paused) {
-                        app.unsavedChanges++;
-                        app.uncompiledChanges++;
+                        unsavedChanges++;
+                        uncompiledChanges++;
+                        ipcRenderer.send("setChangeState", {unsaved: unsavedChanges, uncompiled: uncompiledChanges});
                     }
                     history.track(JSON.stringify(graph.serialize()));
 
@@ -349,14 +344,14 @@
                 }
                 updateTitle();
                 refreshHistoryState();
-                analytics.event("Graph", "Add Node", n.type).send();
             };
             graph.onNodeRemoved = function (n) {
                 console.debug("[HISTORY] onNodeRemoved");
                 if (history) {
                     if (!history.paused) {
-                        app.unsavedChanges++;
-                        app.uncompiledChanges++;
+                        unsavedChanges++;
+                        uncompiledChanges++;
+                        ipcRenderer.send("setChangeState", {unsaved: unsavedChanges, uncompiled: uncompiledChanges});
                     }
                     history.track(JSON.stringify(graph.serialize()));
 
@@ -364,14 +359,14 @@
                 }
                 updateTitle();
                 refreshHistoryState();
-                analytics.event("Graph", "Remove Node", n.type).send();
             };
             graph.onConnectionChange = function () {
                 console.debug("[HISTORY] onConnectionChange");
                 if (history) {
                     if (!history.paused) {
-                        app.unsavedChanges++;
-                        app.uncompiledChanges++;
+                        unsavedChanges++;
+                        uncompiledChanges++;
+                        ipcRenderer.send("setChangeState", {unsaved: unsavedChanges, uncompiled: uncompiledChanges});
                     }
                     history.track(JSON.stringify(graph.serialize()));
 
@@ -391,20 +386,6 @@
             var canvas = new LGraphCanvas("#mycanvas", graph);
             console.log(canvas);
 
-            $(document).ready(function () {
-                Sentry.init({
-                    dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246',
-                    beforeSend(event) {
-                        // Check if it is an exception, if so, show the report dialog
-                        if (event.exception) {
-                            Sentry.showReportDialog();
-                        }
-                        return event;
-                    }
-                });
-
-                analytics.event("Graph", "Open Editor").pageview("/graph", "", "Graph").send();
-            });
 
             ipcRenderer.send("getProjectInfo");
 
@@ -667,16 +648,13 @@
 
                 if (!nodesInitialized) {
                     console.log("Initializing Bukkit Node generator...");
-                    NodeGenerator.init(projectInfo.libraries || []).then(() => {
+                    NodeGenerator.init().then(() => {
                         nodesInitialized = true;
                         ipcRenderer.send("getGraphData");
 
                         graph.start(100);
                     });
                 }
-            });
-            ipcRenderer.on("libraryAdded", function (event, arg) {
-                NodeGenerator.addLibrary(arg);
             });
             ipcRenderer.on("graphData", function (event, arg) {
                 if (!arg) {
@@ -693,7 +671,8 @@
             });
             ipcRenderer.on("generateDone", function (event, arg) {
                 $("#overlay").fadeOut();
-                app.uncompiledChanges = 0;
+                uncompiledChanges = 0;
+                ipcRenderer.send("setChangeState", {uncompiled: uncompiledChanges});
 
                 for (let i = 0; i < graph._nodes.length; i++) {
                     delete graph._nodes[i].has_errors;
@@ -707,7 +686,8 @@
             });
             ipcRenderer.on("graphDataSaved", function (event, arg) {
                 $("#overlay").fadeOut();
-                app.unsavedChanges = 0;
+                unsavedChanges = 0;
+                ipcRenderer.send("setChangeState", {unsaved: unsavedChanges});
                 updateTitle();
             });
 
@@ -753,7 +733,7 @@
             }
 
             function updateTitle() {
-                getCurrentWindow().setTitle("PluginBlueprint Editor [" + projectInfo.name + (app.unsavedChanges > 0 && app.uncompiledChanges > 0 ? "**" : (app.unsavedChanges > 0 || app.uncompiledChanges > 0 ? "*" : "")) + "]");
+                getCurrentWindow().setTitle("PluginBlueprint Editor [" + projectInfo.name + (unsavedChanges > 0 && uncompiledChanges > 0 ? "**" : (unsavedChanges > 0 || uncompiledChanges > 0 ? "*" : "")) + "]");
             }
 
             ipcRenderer.on("debugCall", function (event, arg) {
@@ -799,7 +779,6 @@
                     canvas.centerOnNode(node);
                     canvas.setZoom(2);
 
-                    analytics.event("Graph", "Highlight Node").send();
                 }
             });
 

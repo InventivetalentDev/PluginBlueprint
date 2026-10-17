@@ -53,10 +53,8 @@
         <input id="cmdInput" type="text" autofocus onblur="this.focus()">
         <script>
             const {ipcRenderer, shell} = require("electron");
-            const {Menu, getCurrentWindow, getGlobal} = require("electron").remote;
-            const analytics = getGlobal("analytics");
+            const {Menu, getCurrentWindow} = require("@electron/remote");
             const $ = require("jquery");
-            const Sentry = require("@sentry/electron");
 
 
             String.prototype.replaceAll = function (search, replacement) {
@@ -66,10 +64,6 @@
 
             let followLog = true;
 
-            $(document).ready(function () {
-                Sentry.init({dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'});
-                analytics.pageview("/infoEditor", "", "Info Editor").send();
-            });
 
             getCurrentWindow().setMenu(Menu.buildFromTemplate([
                 {
