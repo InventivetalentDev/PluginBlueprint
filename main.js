@@ -1,4 +1,6 @@
 const {app, BrowserWindow, ipcMain, dialog, Notification, shell} = require('electron');
+const paper = require("./js/paper");
+const {findJdk, downloadJdk} = require("./js/jdk");
 const javaCompiler = require("./js/javaCompiler");
 const serverStarter = require("./js/serverStarter");
 const versionControl = require("./js/versionControl");
@@ -13,6 +15,38 @@ require("@electron/remote/main").initialize();
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
 const APP_MODEL_ID = "inventivetalent.PluginBlueprint";
+const jdkDir = path.join(app.getPath("userData"), "jdk");
+const paperCacheDir = path.join(app.getPath("userData"), "paper");
+let jdk;
+
+async function ensureJdk(progressBar) {
+    if (jdk) return jdk;
+    let major = paper.getDataMeta().javaVersion;
+    jdk = await findJdk(major, jdkDir);
+    if (!jdk) {
+        let {response} = await dialog.showMessageBox({
+            type: "question",
+            message: "PluginBlueprint needs Java " + major + " to build plugins. Download it now (about 200 MB)?",
+            buttons: ["Download", "Cancel"]
+        });
+        if (response !== 0) throw new Error("Java " + major + " is required to compile plugins.");
+        jdk = await downloadJdk(major, jdkDir, fraction => {
+            if (progressBar) progressBar.detail = "Downloading Java " + major + ": " + Math.round(fraction * 100) + "%";
+        });
+    }
+    return jdk;
+}
+
+async function ensureProjectServer(progressBar) {
+    await ensureJdk(progressBar);
+    await paper.ensureServer({
+        libDir: path.join(currentProjectPath, "lib"),
+        cacheDir: paperCacheDir,
+        minecraftVersion: currentProject.minecraftVersion,
+        java: jdk.java,
+        onProgress: text => { if (progressBar) progressBar.detail = text; }
+    });
+}
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -125,6 +159,10 @@ app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit()
     }
+});
+
+app.on("will-quit", () => {
+    serverStarter.killInstance();
 });
 
 app.on('activate', () => {
@@ -261,9 +299,7 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
             return;
         }
     }
-    let pathSplit = projectPath.split("\\");
-
-    let name = pathSplit[pathSplit.length - 1];
+    let name = path.basename(projectPath);
     prompt({
         title: "Give your project a name",
         label: "Project Name",
@@ -274,46 +310,12 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
             name = r;
             console.log(name);
 
-            dialog.showMessageBox({
-                title: "Select spigot.jar location",
-                message: "Please select the location of a valid Spigot or Paper Server executable (usually spigot.jar)",
-                buttons: ["Select", "I don't have one"],
-                icon: path.join(__dirname, 'assets/images/logo-x64.png')
-            }).then(({response: r}) => {
-                console.log(r);
-                if (r === 0) {
-                    let libPath = dialog.showOpenDialogSync({
-                        properties: ["openFile"],
-                        filters: [
-                            {name: 'Spigot JAR file', extensions: ['jar']}
-                        ]
-                    });
-                    console.log(libPath);
-                    if (!libPath || libPath.length === 0) {
-                        return;
-                    }
-                    if (Array.isArray(libPath)) {
-                        libPath = libPath[0];
-                        if (!libPath || libPath.length === 0) {
-                            return;
-                        }
-                    }
-
-                    createNewProject({
-                        path: projectPath,
-                        name: name
-                    }, libPath)
-                } else {
-                    shell.openExternal("https://www.spigotmc.org/wiki/buildtools/#running-buildtools");
-                }
-            });
-
-
+            createNewProject({path: projectPath, name: name});
         }
     })
 });
 
-function createNewProject(arg, lib) {
+function createNewProject(arg) {
     let projectFilePath = path.join(arg.path, "project.pbp");
     if (fs.existsSync(projectFilePath)) {
         dialog.showErrorBox("Project exists", "There is already a PluginBlueprint project in that directory");
@@ -334,7 +336,8 @@ function createNewProject(arg, lib) {
         author: "inventivetalent",
         package: "my.awesome.plugin",
         version: "0.0.0",
-        type: "spigot",
+        type: "paper",
+        minecraftVersion: paper.getDataMeta().minecraftVersion,
         lastSave: 0,
         lastCompile: 0,
         editorVersion: app.getVersion(),
@@ -346,7 +349,7 @@ function createNewProject(arg, lib) {
         progressBar.detail = "Creating project files...";
 
         setTimeout(function () {
-            fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
+            fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", async (err) => {
                 progressBar.value++;
                 if (err) {
                     console.error("Failed to create project file");
@@ -367,60 +370,55 @@ function createNewProject(arg, lib) {
                 fs.mkdirSync(path.join(arg.path, "output"));
                 fs.mkdirSync(path.join(arg.path, "lib"));
 
-                progressBar.detail = "Copying server .jar file...";
+                try {
+                    await ensureProjectServer(progressBar);
+                } catch (err) {
+                    console.error(err);
+                    dialog.showErrorBox("Server setup failed", err.message);
+                }
+                progressBar.value++;
+                progressBar.detail = "Setting up graph file...";
 
-                let rs = fs.createReadStream(lib);
-                let ws = fs.createWriteStream(path.join(currentProjectPath, "lib", "spigot.jar"));
-                ws.on("close", function () {
+                fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
                     progressBar.value++;
-                    progressBar.detail = "Setting up graph file...";
+                    if (err) {
+                        console.error("Failed to create graph file");
+                        console.error(err);
+                        return;
+                    }
 
-                    fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
+                    recentProjects.unshift({
+                        path: currentProjectPath,
+                        name: currentProject.name,
+                        editorVersion: currentProject.editorVersion
+                    });
+                    writeRecentProjects();
+
+                    app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
+                    updateJumpList();
+
+                    progressBar.detail = "Creating initial commit...";
+
+                    versionControl.init(currentProjectPath).then(repo => {
                         progressBar.value++;
-                        if (err) {
-                            console.error("Failed to create graph file");
-                            console.error(err);
-                            return;
-                        }
+                        console.log(repo);
 
-                        recentProjects.unshift({
-                            path: currentProjectPath,
-                            name: currentProject.name,
-                            editorVersion: currentProject.editorVersion
-                        });
-                        writeRecentProjects();
+                        progressBar.detail = "Done!";
 
-                        app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
-                        updateJumpList();
-
-                        progressBar.detail = "Creating initial commit...";
-
-                        versionControl.init(currentProjectPath).then(repo => {
+                        if (win) {
+                            win.loadFile('pages/graph.html');
+                            win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
                             progressBar.value++;
-                            console.log(repo);
-
-                            progressBar.detail = "Done!";
-
-                            if (win) {
-                                win.loadFile('pages/graph.html');
-                                win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
-                                progressBar.value++;
-                            }
-                        }).catch(err => {
-                            console.error(err);
-                        })
+                        }
+                    }).catch(err => {
+                        console.error(err);
                     })
-                });
-                rs.pipe(ws);
+                })
 
             });
         }, 500);
     });
 }
-
-ipcMain.on("createNewProject", function (event, arg) {
-    createNewProject(arg);
-});
 
 
 ipcMain.on("showOpenProject", function (event, arg) {
@@ -497,6 +495,23 @@ function openProject(arg) {
             })
         }
 
+        async function updateAndOpen() {
+            let meta = paper.getDataMeta();
+            if (data.type !== "paper" || data.minecraftVersion !== meta.minecraftVersion) {
+                let {response} = await dialog.showMessageBox({
+                    type: "question",
+                    message: `This project targets ${data.type === "paper" ? "Paper " + data.minecraftVersion : "Spigot"}. PluginBlueprint now builds plugins for Paper ${meta.minecraftVersion}.`,
+                    detail: "Update the project? The server files in lib/ are replaced on the next compile. Nodes for methods that no longer exist are marked as errors.",
+                    buttons: ["Update and open", "Cancel"]
+                });
+                if (response !== 0) return;
+                data.type = "paper";
+                data.minecraftVersion = meta.minecraftVersion;
+                await fs.writeFile(projectFilePath, JSON.stringify(data), "utf-8");
+            }
+            doOpen();
+        }
+
         let appVersion = app.getVersion() || "x.x.x";
         let appVersionSplit = appVersion.split(".");
         let fileVersion = data.editorVersion || "y.y.y";
@@ -512,14 +527,14 @@ function openProject(arg) {
             }).then(({response: r}) => {
                 console.log(r);
                 if (r === 0) {// Proceed Anyway
-                    doOpen();
+                    updateAndOpen().catch(err => dialog.showErrorBox("Error", err.message));
                 } else if (r === 1) {// Open directory
                     shell.openPath(arg);
                 } else {// cancel
                 }
             });
         } else {
-            doOpen();
+            updateAndOpen().catch(err => dialog.showErrorBox("Error", err.message));
         }
 
     })
@@ -648,17 +663,18 @@ function saveCodeToFile(code) {
         if (!code) return reject();
 
         fs.emptyDir(path.join(currentProjectPath, "src"), function (err) {
-            fs.mkdirs(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\")), function (err) {
+            if (err) return reject(err);
+            fs.mkdirs(path.join(currentProjectPath, "src", ...currentProject.package.split(".")), function (err) {
                 if (err) {
                     console.error("Failed to save code file");
                     console.error(err);
-                    return;
+                    return reject(err);
                 }
-                fs.writeFile(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\"), "GeneratedPlugin.java"), code, "utf-8", function (err) {
+                fs.writeFile(path.join(currentProjectPath, "src", ...currentProject.package.split("."), "GeneratedPlugin.java"), code, "utf-8", function (err) {
                     if (err) {
                         console.error("Failed to save code file");
                         console.error(err);
-                        return;
+                        return reject(err);
                     }
 
                     console.log("savedCode: " + Date.now());
@@ -668,7 +684,7 @@ function saveCodeToFile(code) {
                         if (err) {
                             console.error("Failed to save manifest file");
                             console.error(err);
-                            return;
+                            return reject(err);
                         }
 
                         resolve();
@@ -682,55 +698,46 @@ function saveCodeToFile(code) {
 
 function makePluginYml() {
     if (!currentProject.buildNumber) currentProject.buildNumber = 0;
-    let yml = "name: " + currentProject.name +
-        "\ndescription: " + currentProject.description +
-        "\nversion: " + currentProject.version + (currentProject.debug ? ("-b" + ++currentProject.buildNumber) : "") +
-        "\nmain: " + currentProject.package + ".GeneratedPlugin" +
-        "\nauthor: " + currentProject.author +
-        "\nsoftdepend: [" + (currentProject.softdepend || []).join(",") + "]" +
-        "\ngenerator: PluginBlueprint " + app.getVersion() +
-        "\napi-version: 1.13\n";
+    let yml = "name: " + JSON.stringify(currentProject.name) +
+        "\ndescription: " + JSON.stringify(currentProject.description) +
+        "\nversion: " + JSON.stringify(currentProject.version + (currentProject.debug ? ("-b" + ++currentProject.buildNumber) : "")) +
+        "\nmain: " + JSON.stringify(currentProject.package + ".GeneratedPlugin") +
+        "\nauthor: " + JSON.stringify(currentProject.author) +
+        "\nsoftdepend: [" + (currentProject.softdepend || []).map(value => JSON.stringify(value)).join(",") + "]" +
+        "\ngenerator: " + JSON.stringify("PluginBlueprint " + app.getVersion()) +
+        "\napi-version: '" + currentProject.minecraftVersion + "'\n";
     if (currentProject.commands) {
         yml += "commands:\n";
         for (let i = 0; i < currentProject.commands.length; i++) {
-            yml += "  " + currentProject.commands[i].name + ":\n";
-            yml += "    description: " + currentProject.commands[i].description + "\n";
-            yml += "    usage: " + currentProject.commands[i].usage + "\n";
+            let command = currentProject.commands[i];
+            yml += "  " + JSON.stringify(command.name) + ":\n";
+            yml += "    description: " + JSON.stringify(command.description) + "\n";
+            yml += "    usage: " + JSON.stringify(command.usage) + "\n";
+            let aliases = typeof command.aliases === "string" ? command.aliases.split(",") : command.aliases || [];
+            aliases = aliases.map(alias => alias.trim()).filter(Boolean);
+            if (aliases.length) yml += "    aliases: [" + aliases.map(alias => JSON.stringify(alias)).join(",") + "]\n";
         }
     }
     return yml;
 }
 
-function compile() {
-    return new Promise((resolve, reject) => {
-        javaCompiler.testForJavac().then(() => {
-            console.log("compile: " + Date.now());
-            fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
-                javaCompiler.compile(currentProjectPath, currentProject).then((result) => {
-                    let pluginYml = makePluginYml();
-                    fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), pluginYml, function (err) {
-                        console.log("compiled: " + Date.now());
-                        currentProject.lastCompile = Date.now();
-                        resolve();
-                    })
-                }).catch(reject);
-            });
-        }).catch(() => {
-            dialog.showErrorBox("javac not found", "Could not find javac executable. Please download the Java Development Kit and make sure javac is in your Environment Variables. (See https://yeleha.co/pb-jdk for details)");
-        })
-    })
+async function compile(progressBar) {
+    await ensureProjectServer(progressBar);
+    console.log("compile: " + Date.now());
+    await fs.emptyDir(path.join(currentProjectPath, "classes"));
+    await javaCompiler.compile(currentProjectPath, currentProject, jdk, paper.getDataMeta().javaVersion,
+        paper.getClasspath(path.join(currentProjectPath, "lib")));
+    await fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), makePluginYml());
+    console.log("compiled: " + Date.now());
+    currentProject.lastCompile = Date.now();
 }
 
-function pack() {
-    return new Promise((resolve, reject) => {
-        console.log("package: " + Date.now());
-        fs.emptyDir(path.join(currentProjectPath, "output"), function (err) {
-            javaCompiler.package(currentProjectPath, currentProject).then(() => {
-                console.log("packaged: " + Date.now());
-                resolve();
-            }).catch(reject);
-        });
-    })
+async function pack(progressBar) {
+    await ensureJdk(progressBar);
+    console.log("package: " + Date.now());
+    await fs.emptyDir(path.join(currentProjectPath, "output"));
+    await javaCompiler.package(currentProjectPath, currentProject, jdk);
+    console.log("packaged: " + Date.now());
 }
 
 function showCustomErrorDialog(error, title, message) {
@@ -802,12 +809,12 @@ async function generateCompilePackage(arg, progressBar) {
     }
     if (arg.compile) {
         progressBar.detail = "Compiling...";
-        await compile();
+        await compile(progressBar);
         progressBar.value++;
     }
     if (arg.pack) {
         progressBar.detail = "Packaging...";
-        await pack();
+        await pack(progressBar);
         progressBar.value++;
     }
 }
@@ -878,7 +885,7 @@ ipcMain.on("saveCommand", function (event, arg) {
     }
 });
 
-ipcMain.on("startServer", function (event, arg) {
+ipcMain.on("startServer", async function (event, arg) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
@@ -918,61 +925,73 @@ ipcMain.on("startServer", function (event, arg) {
             mode: "detach"
         });
     }
-    let port = "";
-    serverStarter.copyPlugin(currentProjectPath, currentProject).then(() => {
-        serverStarter.startServer(currentProjectPath,
-            (out) => {
-                if (logWin) {
-                    // sometimes multiple lines are combined into one output, so split it here
-                    let split = out.split("\n");
-                    for (let i = 0; i < split.length; i++) {
-                        let log = split[i];
-
-                        if (log.indexOf("Starting Minecraft server on") !== -1) {
-                            port = log.substr(24/* strip timestamp & start of string */).split(":")[1];
-                        }
-                        if (log.indexOf("Done (") !== -1 && log.indexOf("For help, type") !== -1) {
-                            showNotification("Test Server running on port " + port);
-                        }
-
-
-                        if (log.indexOf("pb_debug_exec") !== -1) {
-                            if (win) win.webContents.send("debugCall", {
-                                type: "exec",
-                                node: parseInt(log.split("pb_debug_exec=")[1])
-                            });
-                            continue;// don't log
-                        }
-
-                        let logData = {
-                            type: "out",
-                            content: log
-                        };
-                        if (log.indexOf("Caused by:") === 0) {
-                            logData.href = "https://www.google.com/search?q=" + log;
-                        }
-                        if (log.indexOf(currentProject.package) !== -1) {
-                            if (log.indexOf("node_") !== -1) {
-                                logData.hasNode = true;
-
-                                if (win) win.webContents.send("logError", log);
-                            }
-                        }
-
-                        logWin.webContents.send("log", logData);
-                    }
-                }
-            },
-            (err) => {
-                if (logWin) {
-                    logWin.webContents.send("log", {
-                        type: "err",
-                        content: err
-                    })
-                }
-            });
-    })
+    try {
+        await ensureProjectServer({set detail(text) {
+            if (logWin) logWin.webContents.send("log", {type: "out", content: text});
+        }});
+        await serverStarter.copyPlugin(currentProjectPath, currentProject);
+        startProjectServer();
+    } catch (err) {
+        logServerError(err.message);
+        showCustomErrorDialog(err, "Server Error");
+    }
 });
+
+function startProjectServer() {
+    let port = "";
+    serverStarter.startServer(currentProjectPath, jdk.java,
+        (out) => {
+            if (logWin) {
+                // sometimes multiple lines are combined into one output, so split it here
+                let split = out.split("\n");
+                for (let i = 0; i < split.length; i++) {
+                    let log = split[i];
+
+                    if (log.indexOf("Starting Minecraft server on") !== -1) {
+                        port = log.substr(24/* strip timestamp & start of string */).split(":")[1];
+                    }
+                    if (log.indexOf("Done (") !== -1 && log.indexOf("For help, type") !== -1) {
+                        showNotification("Test Server running on port " + port);
+                    }
+
+
+                    if (log.indexOf("pb_debug_exec") !== -1) {
+                        if (win) win.webContents.send("debugCall", {
+                            type: "exec",
+                            node: parseInt(log.split("pb_debug_exec=")[1])
+                        });
+                        continue;// don't log
+                    }
+
+                    let logData = {
+                        type: "out",
+                        content: log
+                    };
+                    if (log.indexOf("Caused by:") === 0) {
+                        logData.href = "https://www.google.com/search?q=" + log;
+                    }
+                    if (log.indexOf(currentProject.package) !== -1) {
+                        if (log.indexOf("node_") !== -1) {
+                            logData.hasNode = true;
+
+                            if (win) win.webContents.send("logError", log);
+                        }
+                    }
+
+                    logWin.webContents.send("log", logData);
+                }
+            }
+        }, logServerError);
+}
+
+function logServerError(err) {
+    if (logWin) {
+        logWin.webContents.send("log", {
+            type: "err",
+            content: err
+        })
+    }
+}
 
 ipcMain.on("sendServerCommand", function (event, arg) {
     serverStarter.sendCommandToInstance(arg);
@@ -985,20 +1004,17 @@ ipcMain.on("stopServer", function (event, arg) {
 });
 
 ipcMain.on("reloadPlugin", function (event, arg) {
-    reloadPlugin();
+    reloadPlugin().catch(err => showCustomErrorDialog(err, "Server Error"));
 });
 
-function reloadPlugin() {
-    if (!currentProject) return;
+async function reloadPlugin() {
+    if (!currentProject || !serverStarter.isRunning()) return;
     console.log("Reloading plugin...");
-    serverStarter.sendCommandToInstance("pluginblueprint unload " + currentProject.name, () => {
-        serverStarter.copyPlugin(currentProjectPath, currentProject, true, true).then(() => {
-            serverStarter.sendCommandToInstance("pluginblueprint load " + currentProject.name, () => {
-                console.log("Plugin reloaded!");
-                showNotification("Plugin reloaded!");
-            })
-        })
-    });
+    await serverStarter.stopServer();
+    await serverStarter.copyPlugin(currentProjectPath, currentProject, true);
+    startProjectServer();
+    console.log("Plugin reloaded!");
+    showNotification("Plugin reloaded!");
 }
 
 ipcMain.on("highlightNode", function (event, arg) {
