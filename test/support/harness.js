@@ -20,6 +20,7 @@ const CodeGenerator = require(path.join(REPO, "js/codeGenerator"));
 async function setup() {
     if (!global.__pbInit) { global.__pbInit = true; await NodeGenerator.init(); }
     const graph = new LGraph();
+    graph.last_node_id = 1;
     global.graph = graph;
     return graph;
 }
@@ -72,16 +73,9 @@ function loadSnippet(graph, snippet) {
         graph.add(node, true);
     }
     for (const l of data.links) {
-        const newId = graph.last_link_id++;
+        const newId = ++graph.last_link_id;
         newLinkIdMap[l.id] = newId;
-        graph.links[newId] = {
-            id: newId,
-            origin_id: newNodeIdMap[l.oId],
-            origin_slot: l.oSlot,
-            target_id: newNodeIdMap[l.tId],
-            target_slot: l.tSlot,
-            type: l.type
-        };
+        graph.links[newId] = new LiteGraph.LLink(newId, l.type, newNodeIdMap[l.oId], l.oSlot, newNodeIdMap[l.tId], l.tSlot);
     }
     for (const n of data.nodes) {
         if (n.inputs) {

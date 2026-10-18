@@ -383,10 +383,13 @@
                 updateLinkColors(slotType, node, slot);
             };
 
-            LGraphCanvas.search_filter = true;
             LGraphCanvas.search_limit = 100;
             LiteGraph.NODE_TITLE_COLOR = "#d0d0d0";
+            LiteGraph.DEFAULT_GROUP_FONT_SIZE = 24;
+            LiteGraph.search_show_all_on_open = false;
             var canvas = new LGraphCanvas("#mycanvas", graph);
+            canvas.allow_reconnect_links = false;
+            canvas.onShowNodePanel = function () {};
             console.log(canvas);
 
             ipcRenderer.send("getProjectInfo");
@@ -394,7 +397,11 @@
             window.addEventListener("resize", function () {
                 canvas.resize();
             });
-            $("body")[0].addEventListener("keydown", canvas.processKey.bind(canvas));
+            $("body")[0].addEventListener("keydown", function (event) {
+                if (event.target !== canvas.canvas) {
+                    canvas.processKey(event);
+                }
+            });
             canvas.resize();
 
 
@@ -537,7 +544,7 @@
                     nodes: nodes,
                     links: links,
                     groups: groups,
-                    zoom: canvas.scale
+                    zoom: canvas.ds.scale
                 }
             }
 
@@ -574,16 +581,9 @@
                 for (let j = 0; j < data.links.length; j++) {
                     let l = data.links[j];
 
-                    let newId = graph.last_link_id++;
+                    let newId = ++graph.last_link_id;
                     newLinkIdMap[l.id] = newId;
-                    graph.links[newId] = {
-                        id: newId,
-                        origin_id: newNodeIdMap[l.oId],
-                        origin_slot: l.oSlot,
-                        target_id: newNodeIdMap[l.tId],
-                        target_slot: l.tSlot,
-                        type: l.type
-                    }
+                    graph.links[newId] = new LiteGraph.LLink(newId, l.type, newNodeIdMap[l.oId], l.oSlot, newNodeIdMap[l.tId], l.tSlot);
                 }
                 for (let i = 0; i < data.nodes.length; i++) {
                     let n = data.nodes[i];

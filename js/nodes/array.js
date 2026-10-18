@@ -12,7 +12,7 @@ function MakeArray() {
 
     this.addProperty("type", "java.lang.Object", "string");
 
-    this.optional_inputs = [["Element", null, {}]];
+    this.optional_inputs = [["Element", null, {removable: true}]];
 }
 
 MakeArray.title = "MakeArray";

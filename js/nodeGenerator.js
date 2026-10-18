@@ -33,6 +33,8 @@ LiteGraph.isValidConnection = function (outputType, inputType) {
     if (inputType === "java.lang.Object") return outputType !== "@EXEC";
     return isValidConnection.apply(this, arguments);
 };
+// The editor does not use slot-type search, so skip registry sorting for each slot.
+LiteGraph.registerNodeAndSlotType = function () {};
 
 
 const inputOutputSorter = function (a, b) {
@@ -127,7 +129,7 @@ function onEventAdd(node, options, e, prevMenu) {
         let nodeName = getOrCreateBukkitClassNode(v.value);
         var node = LiteGraph.createNode(nodeName);
         if (node) {
-            node.pos = canvas.convertEventToCanvas(first_event);
+            node.pos = canvas.convertEventToCanvasOffset(first_event);
             canvas.graph.add(node);
         }
     }
@@ -174,7 +176,7 @@ function onObjectAdd(node, options, e, prevMenu) {
         let nodeName = getOrCreateBukkitClassNode(v.value);
         var node = LiteGraph.createNode(nodeName);
         if (node) {
-            node.pos = canvas.convertEventToCanvas(first_event);
+            node.pos = canvas.convertEventToCanvasOffset(first_event);
             canvas.graph.add(node);
         }
     }
@@ -250,7 +252,7 @@ function onMethodAdd(node, options, e, prevMenu) {
         var node = LiteGraph.createNode(nodeName);
         console.log(node);
         if (node) {
-            node.pos = canvas.convertEventToCanvas(first_event);
+            node.pos = canvas.convertEventToCanvasOffset(first_event);
             canvas.graph.add(node);
         }
     }
@@ -375,6 +377,16 @@ function init() {
             ];
         };
         LGraphNode.prototype.onConfigure = function () {
+            for (let i = 0; this.inputs && i < this.inputs.length; i++) {
+                if (this.inputs[i].locked === false) {
+                    this.inputs[i].removable = true;
+                }
+            }
+            for (let i = 0; this.outputs && i < this.outputs.length; i++) {
+                if (this.outputs[i].locked === false) {
+                    this.outputs[i].removable = true;
+                }
+            }
             this.size = this.computeSize();
         };
         LGraphNode.prototype.onInputDblClick = function (i, e) {
@@ -905,6 +917,7 @@ function addNodeInput(node, name, type, options, optional) {
     }
 
     if (optional) {
+        options.removable = true;
         node.optional_inputs.push([name, type, options]);
     } else {
         node.addInput(name, type, options);
@@ -932,6 +945,7 @@ function addNodeOutput(node, name, type, options, optional) {
     if (!options.locked) options.locked = !optional;
     options.nameLocked = true;
     if (optional) {
+        options.removable = true;
         node.optional_outputs.push([name, type, options]);
     } else {
         node.addOutput(name, type, options);

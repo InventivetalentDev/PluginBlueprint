@@ -27,7 +27,7 @@ ArithmeticOperator.prototype.onDrawBackground = function (ctx) {
     ctx.font = "40px Arial";
     ctx.fillStyle = "#CCC";
     ctx.textAlign = "center";
-    ctx.fillText(this.operation, this.size[0] * 0.5, this.size[1] * 0.35 + LiteGraph.NODE_TITLE_HEIGHT);
+    ctx.fillText(this.operation, this.size[0] * 0.5, this.size[1] * 0.5 + 10);
     ctx.textAlign = "left";
 
     handleDescDrawBackground.call(this, ctx);
