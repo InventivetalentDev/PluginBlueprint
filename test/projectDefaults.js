@@ -29,6 +29,9 @@ describe("ProjectDefaults", function () {
         ["Élodie Smith", "Café!", "me.elodiesmith.cafe"],
         ["3 Authors", "42Blocks", "me.x3authors.x42blocks"],
         ["@A.B-C_", "A + B", "me.abc.ab"],
+        ["Class", "New", "me.classauthor.newplugin"],
+        ["true", "null", "me.trueauthor.nullplugin"],
+        ["_", "_", "me.author.plugin"],
         ["", "", "me.author.plugin"],
         ["!!!", "☃", "me.author.plugin"]
     ]) {
