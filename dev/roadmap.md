@@ -97,15 +97,15 @@ Moved to Later (2026-10-18). Context isolation with a preload script, no `@elect
 
 ## Phase 3: cheap wins and core features
 
-- [ ] **A2 Static field and constant nodes** (S–M). Pseudo-enums for `Sound`, `NamedTextColor`, `Attribute` and `PotionEffectType`; constants such as `PersistentDataType.STRING`, `DataComponentTypes.*`, `RegistryKey.*` and `LifecycleEvents.COMMANDS`.
-- [ ] **A3 Event options** (S). `priority` and `ignoreCancelled` on event nodes, and a "Cancel event" node.
-- [ ] **A5 Editor toolbar and ergonomics** (S). In-page Save / Build & Reload / Test / Stop buttons, autosave, shortcuts, undo for node moves, find-in-graph, note nodes and titles, and no stats overlay.
-- [ ] **B1 Validate before compiling** (M). Plain-language problems shown on the nodes, translated javac errors, and javac line numbers mapped to nodes through a line map recorded during codegen.
-- [ ] **B2 Commands done right** (M). One entry node per command, typed arguments, players-only, permissions, return value and tab completion, generated through `registerCommand(BasicCommand)`. Brigadier later.
-- [ ] **B5a Keep `src/` and add resources** (S). Generate only `GeneratedPlugin.java`, compile everything in `src/`, and pack `resources/` into the jar.
-- [ ] **B7 config.yml** (M). A Config tab, automatic `saveDefaultConfig()`, a typed "Config value" node, and a reload subcommand.
-- [ ] **D2 Onboarding and defaults** (S). No `inventivetalent` default author, a package derived from the plugin name, a first-run checklist, EULA consent, and an "Install on your server" guide.
-- [ ] **D3 plugin.yml completeness** (S–M). `permissions:`, `depend`, `loadbefore`, `libraries`, `website`, `authors`, `prefix`.
+- [x] **A2 Static field and constant nodes** (S–M). Pseudo-enums for `Sound`, `NamedTextColor`, `Attribute` and `PotionEffectType`; constants such as `PersistentDataType.STRING`, `DataComponentTypes.*`, `RegistryKey.*` and `LifecycleEvents.COMMANDS`.
+- [x] **A3 Event options** (S). `priority` and `ignoreCancelled` on event nodes, and a "Cancel event" node.
+- [x] **A5 Editor toolbar and ergonomics** (S). In-page Save / Build & Reload / Test / Stop buttons, autosave, shortcuts, undo for node moves, find-in-graph, note nodes and titles, and no stats overlay.
+- [x] **B1 Validate before compiling** (M). Plain-language problems shown on the nodes, translated javac errors, and javac line numbers mapped to nodes through a line map recorded during codegen. Done (2026-10-18): javac lines map to the node whose generated method contains them, read from the generated source, so codegen output didn't change.
+- [x] **B2 Commands done right** (M). One entry node per command, typed arguments, players-only, permissions, return value and tab completion, generated through `registerCommand(BasicCommand)`. Brigadier later. Done (2026-10-18): `BasicCommand.execute` returns nothing, so failures send their own usage or permission message instead of a return value.
+- [x] **B5a Keep `src/` and add resources** (S). Generate only `GeneratedPlugin.java`, compile everything in `src/`, and pack `resources/` into the jar.
+- [x] **B7 config.yml** (M). A Config tab, automatic `saveDefaultConfig()`, a typed "Config value" node, and a reload subcommand. Done (2026-10-18) with a Reload config node instead of a subcommand, by decision. The build writes `config.yml` into the jar, not into `resources/`, so a hand-written file is never overwritten.
+- [x] **D2 Onboarding and defaults** (S). No `inventivetalent` default author, a package derived from the plugin name, a first-run checklist, EULA consent, and an "Install on your server" guide.
+- [x] **D3 plugin.yml completeness** (S–M). `permissions:`, `depend`, `loadbefore`, `libraries`, `website`, `authors`, `prefix`.
 
 ## Phase 4: search, types and building blocks
 
