@@ -88,6 +88,9 @@ Do this right after L1, while Phase 1's golden tests guard behaviour.
 - Run tests through the TypeScript build. Snapshots must stay identical.
 - Plan it as one setup track (tooling and shared types), then parallel tracks by area: main process, generators, built-in nodes, renderer pages.
 
+- [x] Setup track done 2026-10-18: code lives in `src/`, `tsc` (TypeScript 7) builds `out/`, the app runs from `out/main.js`, and shared types for class data, the node contract and litegraph are in `src/types/`. Tests, the dev app and a packaged macOS build were verified.
+- [ ] Area tracks: main process, generators, built-in nodes, renderer pages. Then turn `allowJs` off.
+
 ### E1 Electron hardening (M)
 
 Moved to Later (2026-10-18). Context isolation with a preload script, no `@electron/remote`, a Content Security Policy, and navigation guards.
