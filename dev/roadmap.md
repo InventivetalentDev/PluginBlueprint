@@ -20,45 +20,45 @@ Phase 1 comes first because 2.0 can't ship with these bugs, and its golden tests
 
 ## Phase 1: release blockers and a safety net
 
-Codex batch `phase1`, three parallel tracks. The files of each track don't overlap.
+Codex batch `phase1`, three parallel tracks. The files of each track don't overlap. Done on 2026-10-18 and merged into `codex/phase1`.
 
 ### Track `editor` (pages and litegraph)
 
-- [ ] **macOS menus.** Save, Compile, Run, Git and Edit Project Information are missing on macOS, because `BrowserWindow.setMenu` works only on Windows and Linux. Use `Menu.setApplicationMenu` for the focused window on macOS, with an app menu and working Cut/Copy/Paste.
-- [ ] **Link-ID collision after a snippet import.** This includes every new project's starter graph. `pages/graph.html:574` uses `++graph.last_link_id`, but litegraph uses `last_link_id++`.
-- [ ] **Context menus and property dialogs open at (0,0).** Electron 44 sends `PointerEvent`, and `litegraph.js:8095` rejects anything that isn't exactly a `MouseEvent`.
-- [ ] **Property edits are not tracked.** Edits get no unsaved marker and no undo step, and they are lost on close.
-- [ ] Context-menu wheel scrolling goes the wrong way at 0.1× speed; long menus run off-screen.
-- [ ] The error window doesn't wrap lines (`pages/error.html:47`).
-- [ ] SAVE buttons sit below the window edge in the info editor and the command editor.
-- [ ] Snippet export includes links whose other end isn't selected (`pages/graph.html:501`).
-- [ ] An empty Soft-Depend field writes `softdepend: [""]`.
-- [ ] The Debug checkbox label matches its new meaning (see A4).
+- [x] **macOS menus.** Save, Compile, Run, Git and Edit Project Information are missing on macOS, because `BrowserWindow.setMenu` works only on Windows and Linux. Use `Menu.setApplicationMenu` for the focused window on macOS, with an app menu and working Cut/Copy/Paste.
+- [x] **Link-ID collision after a snippet import.** This includes every new project's starter graph. `pages/graph.html:574` uses `++graph.last_link_id`, but litegraph uses `last_link_id++`.
+- [x] **Context menus and property dialogs open at (0,0).** Electron 44 sends `PointerEvent`, and `litegraph.js:8095` rejects anything that isn't exactly a `MouseEvent`.
+- [x] **Property edits are not tracked.** Edits get no unsaved marker and no undo step, and they are lost on close.
+- [x] Context-menu wheel scrolling goes the wrong way at 0.1× speed; long menus run off-screen.
+- [x] The error window doesn't wrap lines (`pages/error.html:47`).
+- [x] SAVE buttons sit below the window edge in the info editor and the command editor.
+- [x] Snippet export includes links whose other end isn't selected (`pages/graph.html:501`).
+- [x] An empty Soft-Depend field writes `softdepend: [""]`.
+- [x] The Debug checkbox label matches its new meaning (see A4).
 
 ### Track `codegen` (generators, nodes, tests)
 
-- [ ] **A1 Golden codegen tests.** Snapshot the Java for the five docs examples and one graph per fixed bug. Compile the snapshots with javac in CI on Linux.
-- [ ] **JavaPlugin method nodes generate broken syntax**: `node_2.saveDefaultConfig(}` (`js/codeGenerator.js:481-506`).
-- [ ] **Variables:** `Get` never compiles, two `Set` nodes declare the same field twice, and `Set` has no EXEC out.
-- [ ] **Type variables:** method parameters and RETURN typed `T`/`V` are emitted as `private V …`. Erase them to `java.lang.Object`, and let `Object` inputs accept any value.
-- [ ] **onTabComplete:** the RETURN field gets a comma-joined type list, and the override is never emitted.
-- [ ] **onCommand** always returns `true`. Return the graph's RETURN value.
-- [ ] **Unconnected parameters** emit a bare `null`/`0`. Emit a typed default such as `(org.bukkit.Location) null`.
-- [ ] **Enum nodes:** getters emit `Material.undefined`, and instance methods are called statically.
-- [ ] **Event classification:** abstract events without a handler list, and classes that aren't Bukkit events (`ClickEvent`), are offered as events and break plugin enable.
-- [ ] `StringFormat` and `Switch` with an unlinked input produce invalid Java. FlipFlop starts on B.
-- [ ] Double-clicking a method output doesn't connect EXEC.
-- [ ] Module-level code arrays are reset at the start of a run, so a failed run can't leak into the next one.
-- [ ] **A4 Debug as a runtime flag:** every trace call is guarded by `PB_DEBUG = Boolean.getBoolean("pluginblueprint.debug")`.
+- [x] **A1 Golden codegen tests.** Snapshot the Java for the five docs examples and one graph per fixed bug. Compile the snapshots with javac in CI on Linux.
+- [x] **JavaPlugin method nodes generate broken syntax**: `node_2.saveDefaultConfig(}` (`js/codeGenerator.js:481-506`).
+- [x] **Variables:** `Get` never compiles, two `Set` nodes declare the same field twice, and `Set` has no EXEC out.
+- [x] **Type variables:** method parameters and RETURN typed `T`/`V` are emitted as `private V …`. Erase them to `java.lang.Object`, and let `Object` inputs accept any value.
+- [x] **onTabComplete:** the RETURN field gets a comma-joined type list, and the override is never emitted.
+- [x] **onCommand** always returns `true`. Return the graph's RETURN value.
+- [x] **Unconnected parameters** emit a bare `null`/`0`. Emit a typed default such as `(org.bukkit.Location) null`.
+- [x] **Enum nodes:** getters emit `Material.undefined`, and instance methods are called statically.
+- [x] **Event classification:** abstract events without a handler list, and classes that aren't Bukkit events (`ClickEvent`), are offered as events and break plugin enable.
+- [x] `StringFormat` and `Switch` with an unlinked input produce invalid Java. FlipFlop starts on B.
+- [x] Double-clicking a method output doesn't connect EXEC.
+- [x] Module-level code arrays are reset at the start of a run, so a failed run can't leak into the next one.
+- [x] **A4 Debug as a runtime flag:** every trace call is guarded by `PB_DEBUG = Boolean.getBoolean("pluginblueprint.debug")`.
 
 ### Track `server` (main process and test server)
 
-- [ ] **Start Server deletes every other jar in `lib/plugins`.** Replace only this plugin's jar.
-- [ ] **A4 (server half):** pass `-Dpluginblueprint.debug=true` when the project's Debug option is on, and drop the `-bN` version suffix.
-- [ ] Stop, window close and quit stop the server gracefully (`stop`, then wait, then kill). Answering "No" to the unsaved-changes prompt no longer kills the server.
-- [ ] Start Server while a server is running waits for it to stop instead of showing an error.
-- [ ] Remove the dead `-DIReallyKnowWhatIAmDoingISwear` flag, and parse server output by complete lines.
-- [ ] Recent Projects has no duplicates. The editor-version warning compares major and minor versions. `getProjectInfo` no longer writes `isNewProject` into `project.pbp`. Creating a project in a folder that already has `src/` or `lib/` no longer hangs.
+- [x] **Start Server deletes every other jar in `lib/plugins`.** Replace only this plugin's jar.
+- [x] **A4 (server half):** pass `-Dpluginblueprint.debug=true` when the project's Debug option is on, and drop the `-bN` version suffix.
+- [x] Stop, window close and quit stop the server gracefully (`stop`, then wait, then kill). Answering "No" to the unsaved-changes prompt no longer kills the server.
+- [x] Start Server while a server is running waits for it to stop instead of showing an error.
+- [x] Remove the dead `-DIReallyKnowWhatIAmDoingISwear` flag, and parse server output by complete lines.
+- [x] Recent Projects has no duplicates. The editor-version warning compares major and minor versions. `getProjectInfo` no longer writes `isNewProject` into `project.pbp`. Creating a project in a folder that already has `src/` or `lib/` no longer hangs.
 
 ## Phase 2: foundations
 
@@ -133,3 +133,4 @@ Context isolation with a preload script, no `@electron/remote`, a Content Securi
 
 - 2026-10-18: TypeScript migration and litegraph upgrade move up to Phase 2, before feature work.
 - 2026-10-18: Phase 1 runs as three Codex tracks: `editor`, `codegen`, `server`.
+- 2026-10-18: The Debug checkbox is a runtime trace flag. Every jar contains `if (PB_DEBUG)` trace calls, which log only when the server runs with `-Dpluginblueprint.debug=true`, so every jar is safe to publish. The plugin.yml `-bN` version suffix is gone.
