@@ -162,6 +162,44 @@ cases.flipflop = graph => {
     H.link(flip, "isA", state, 1);
 };
 
+cases["static-constant"] = graph => {
+    const event = H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
+    const player = H.add(graph, "org.bukkit.entity.Player");
+    H.link(event, "EXEC", player, "EXEC");
+    H.link(event, H.addOptOut(event, "getPlayer"), player, "REF");
+    const sound = H.add(graph, "org.bukkit.Sound#static:org.bukkit.Sound", {field: "ENTITY_PLAYER_LEVELUP"});
+    const playOutput = H.addOptOut(player, "playSound(Location, Sound, float, float)");
+    const play = H.add(graph, player.outputs[playOutput].type);
+    H.link(player, playOutput, play, "REF");
+    H.link(player, "EXEC", play, "EXEC");
+    H.link(player, H.addOptOut(player, "getLocation"), play, "location");
+    H.link(sound, 0, play, "sound");
+    const volume = H.add(graph, "constants/NumberConstant", {type: "float", number: 1});
+    H.link(volume, 0, play, "volume");
+    H.link(volume, 0, play, "pitch");
+    const attribute = H.add(graph, "org.bukkit.attribute.Attribute#static:org.bukkit.attribute.Attribute", {field: "MAX_HEALTH"});
+    const attributeOutput = H.addOptOut(player, "getAttribute(Attribute)");
+    const get = H.add(graph, player.outputs[attributeOutput].type);
+    H.link(player, attributeOutput, get, "REF");
+    H.link(play, "EXEC", get, "EXEC");
+    H.link(attribute, 0, get, "attribute");
+};
+cases["event-options"] = graph => {
+    H.add(graph, "org.bukkit.event.block.BlockBreakEvent", {priority: "HIGH", ignoreCancelled: true});
+    H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
+};
+cases["cancel-event"] = graph => {
+    const event = H.add(graph, "org.bukkit.event.block.BlockBreakEvent");
+    const cancel = H.add(graph, "events/CancelEvent");
+    H.link(event, "EXEC", cancel, "EXEC");
+    H.link(event, "THIS", cancel, "event");
+    H.link(cancel, "EXEC", H.add(graph, "native/ConsoleLog"), "EXEC");
+};
+cases["note-ignored"] = graph => {
+    cases["join-message"](graph);
+    H.add(graph, "annotations/Note", {text: "Welcome players\nKeep the greeting short."});
+};
+
 describe("Codegen", function () {
     this.timeout(30000);
     before(async function () {
@@ -173,6 +211,7 @@ describe("Codegen", function () {
             const graph = await H.setup();
             build(graph);
             const code = (await H.gen(graph, true)).replace(/\r\n/g, "\n");
+            if (name === "note-ignored") assert.strictEqual(code, fs.readFileSync(path.join(snapshotDir, "join-message.java"), "utf8"));
             const file = path.join(snapshotDir, name + ".java");
             if (process.env.UPDATE_SNAPSHOTS === "1") fs.writeFileSync(file, code);
             else assert.strictEqual(code, fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n"));
@@ -198,5 +237,110 @@ describe("Codegen", function () {
         assert.strictEqual(classStore.getClass("org.bukkit.event.player.PlayerJoinEvent").isEvent, true);
         assert.strictEqual(classStore.getClass("org.bukkit.event.player.PlayerEvent").isEvent, false);
         assert.strictEqual(classStore.getClass("net.kyori.adventure.text.event.ClickEvent").isEvent, false);
+    });
+    it("keeps constant dropdowns separate by type and excludes enums and deprecated fields", async function () {
+        const graph = await H.setup();
+        const sound = H.add(graph, "org.bukkit.Sound#static:org.bukkit.Sound");
+        assert.strictEqual(sound.title, "Sound");
+        assert.strictEqual((sound.inputs || []).length, 0);
+        assert.strictEqual(sound.outputs.length, 1);
+        assert.strictEqual(sound.outputs[0].type, "org.bukkit.Sound");
+        assert.strictEqual(sound.outputs[0].linkType, "staticField");
+        assert.strictEqual(sound.outputs[0].label, "[" + sound.properties.field + "]");
+        const values = sound.properties_info.find(p => p.name === "field").values;
+        assert(values.includes("ENTITY_PLAYER_LEVELUP"));
+        for (const name of values) {
+            const field = classStore.getField("org.bukkit.Sound", name);
+            assert(field.isStatic && !field.isDeprecated);
+        }
+        sound.setProperty("field", "ENTITY_PLAYER_LEVELUP");
+        assert.strictEqual(sound.outputs[0].label, "[ENTITY_PLAYER_LEVELUP]");
+        const valued = H.add(graph, "io.papermc.paper.datacomponent.DataComponentTypes#static:io.papermc.paper.datacomponent.DataComponentType.Valued");
+        const nonValued = H.add(graph, "io.papermc.paper.datacomponent.DataComponentTypes#static:io.papermc.paper.datacomponent.DataComponentType.NonValued");
+        assert.strictEqual(valued.title, "DataComponentTypes: Valued");
+        assert.strictEqual(nonValued.title, "DataComponentTypes: NonValued");
+        assert.notStrictEqual(valued.outputs[0].type, nonValued.outputs[0].type);
+        assert.strictEqual(Object.keys(H.LiteGraph().registered_node_types).some(type => type.startsWith("org.bukkit.Material#static:")), false);
+    });
+    it("keeps constant selections and Note text and size when saving and loading", async function () {
+        const graph = await H.setup();
+        const constant = H.add(graph, "org.bukkit.persistence.PersistentDataType#static:org.bukkit.persistence.PersistentDataType", {field: "STRING"});
+        const note = H.add(graph, "annotations/Note", {text: "First line\nSecond line"});
+        assert.strictEqual(note.widgets[0].value, "First line\nSecond line");
+        note.size = [400, 200];
+        graph.configure(graph.serialize());
+        const restored = graph.getNodeById(constant.id);
+        const restoredNote = graph.getNodeById(note.id);
+        assert.strictEqual(restored.properties.field, "STRING");
+        assert.strictEqual(restored.outputs[0].label, "[STRING]");
+        assert.strictEqual(restoredNote.properties.text, "First line\nSecond line");
+        assert.deepStrictEqual(Array.from(restoredNote.size), [400, 200]);
+        assert.strictEqual(restoredNote.resizable, true);
+        assert.strictEqual((restoredNote.inputs || []).length, 0);
+        assert.strictEqual((restoredNote.outputs || []).length, 0);
+        assert.strictEqual(restoredNote.widgets[0].options.multiline, true);
+    });
+    it("wraps Note text and preserves explicit line breaks", async function () {
+        const graph = await H.setup();
+        const note = H.add(graph, "annotations/Note", {text: "one two three\nfour\n\nfive"});
+        note.size = [70, 160];
+        const lines = [];
+        const context = {save() {}, restore() {}, measureText: text => ({width: text.length * 8}), fillText: (text, x, y) => lines.push([text, x, y])};
+        note.onDrawBackground(context);
+        assert.deepStrictEqual(lines.map(line => line[0]), ["one", "two", "three", "four", "", "five"]);
+        assert.deepStrictEqual(lines.map(line => line[2]), [50, 68, 86, 104, 122, 140]);
+        note.flags.collapsed = true;
+        note.onDrawBackground(context);
+        assert.strictEqual(lines.length, 6);
+    });
+    it("offers cancellation only for cancellable events, including inherited interfaces", async function () {
+        const graph = await H.setup();
+        const cancel = H.add(graph, "events/CancelEvent");
+        const cancellableClasses = new Set(classStore.getAllImplementingAndExtendingClasses("org.bukkit.event.Cancellable"));
+        let inherited = 0;
+        for (const clazz of Object.values(classStore.classStore).filter(clazz => clazz.isEvent)) {
+            const event = H.add(graph, clazz.qualifiedName);
+            assert.strictEqual(event.properties.priority, "NORMAL");
+            assert.deepStrictEqual(event.properties_info.find(p => p.name === "priority").values, ["LOWEST", "LOW", "NORMAL", "HIGH", "HIGHEST", "MONITOR"]);
+            if (cancellableClasses.has(clazz.qualifiedName)) {
+                assert.strictEqual(event.properties.ignoreCancelled, false);
+                H.link(event, "THIS", cancel, "event");
+                if (!clazz.interfaces.includes("org.bukkit.event.Cancellable")) inherited++;
+            } else {
+                assert.strictEqual(event.properties.ignoreCancelled, undefined);
+                assert.strictEqual(event.connect(H.outIdx(event, "THIS"), cancel, H.inIdx(cancel, "event")), null);
+            }
+        }
+        assert(inherited > 0);
+        assert.strictEqual(H.LiteGraph().isValidConnection("@EXEC", "org.bukkit.event.Cancellable"), false);
+    });
+    it("omits default or missing event options from annotations", async function () {
+        const graph = await H.setup();
+        const event = H.add(graph, "org.bukkit.event.block.BlockBreakEvent");
+        for (const [priority, ignoreCancelled, annotation] of [
+            [undefined, undefined, ""], ["NORMAL", false, ""],
+            ["LOWEST", false, "(priority = org.bukkit.event.EventPriority.LOWEST)"],
+            ["NORMAL", true, "(ignoreCancelled = true)"],
+            ["MONITOR", true, "(priority = org.bukkit.event.EventPriority.MONITOR, ignoreCancelled = true)"]
+        ]) {
+            event.properties = {};
+            if (priority !== undefined) event.properties.priority = priority;
+            if (ignoreCancelled !== undefined) event.properties.ignoreCancelled = ignoreCancelled;
+            const code = await H.gen(graph);
+            assert(code.includes("@org.bukkit.event.EventHandler" + annotation + "\n"));
+        }
+    });
+    it("continues execution when clearing cancellation or leaving the event input unconnected", async function () {
+        const graph = await H.setup();
+        cases["cancel-event"](graph);
+        const cancel = graph._nodes.find(node => node.type === "events/CancelEvent");
+        assert.strictEqual(cancel.properties.cancel, true);
+        cancel.setProperty("cancel", false);
+        const code = await H.gen(graph);
+        assert(code.includes(".setCancelled(false);\nnode_4_exec();"));
+        cancel.disconnectInput(H.inIdx(cancel, "event"));
+        const unconnected = await H.gen(graph);
+        assert(!unconnected.includes(".setCancelled("));
+        assert(unconnected.includes("private void node_3_exec()"));
     });
 });

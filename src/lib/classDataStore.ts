@@ -148,6 +148,15 @@ class ClassDataStore {
         if (!className) return null;
         return this.classStore[className.toLowerCase()];
     }
+
+    isAssignableTo(className: string, targetClass: string): boolean {
+        if (className.toLowerCase() === targetClass.toLowerCase()) return true;
+        const clazz = this.getClass(className);
+        if (!clazz) return false;
+        return clazz.interfaces.some(name => this.isAssignableTo(name, targetClass)) ||
+            !!(clazz.superclass && this.isAssignableTo(clazz.superclass, targetClass));
+    }
+
     getField(className: string | null | undefined, fieldName: string | null | undefined): FieldData | null | undefined {
         if (!className || !fieldName) return null;
         let clazz = this.classStore[className.toLowerCase()];

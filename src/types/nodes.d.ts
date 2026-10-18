@@ -27,6 +27,8 @@ export interface NativeNode extends LGraphNode {
         number?: number;
         value?: boolean;
         castTo?: string;
+        cancel?: boolean;
+        text?: string;
     };
     getFields?(output: string[]): string[];
     getMethodBody?(input: (string | null)[], output: string[]): string;

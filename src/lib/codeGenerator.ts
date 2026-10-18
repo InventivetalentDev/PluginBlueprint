@@ -15,7 +15,7 @@ interface CodegenNode extends LGraphNode {
     methodSignature?: string;
     constructorSignature?: string;
     isAbstractMethod?: boolean;
-    properties: {en?: string};
+    properties: {en?: string; field?: string; priority?: string; ignoreCancelled?: boolean};
     getOutputExpression?: NativeNode["getOutputExpression"];
 }
 
@@ -54,7 +54,12 @@ function generateClassCode(graph: CodegenGraph, projectInfo: {package: string}) 
             .then(() => {
                 console.log(graph);
                 for (let i = 0; i < graph._nodes.length; i++) {
-                    if (graph._nodes[i].nodeType === "BukkitClassNode") {
+                    if (graph._nodes[i].type === "annotations/Note") continue;
+                    if (graph._nodes[i].nodeType === "BukkitStaticFieldNode") {
+                        const node = graph._nodes[i];
+                        const field = classStore.getField(node.className, node.properties.field)!;
+                        fields.push("private " + javaType(field.type) + nodeOutput(node.id, 0) + " = " + node.className + "." + field.name + ";");
+                    } else if (graph._nodes[i].nodeType === "BukkitClassNode") {
                         let classData = classStore.getClass(graph._nodes[i].className)!;
                         if (graph._nodes[i].classType === "event") {
                             generateCodeForEventClassNode(graph, i, graph._nodes[i], classData);
@@ -174,8 +179,13 @@ function generateClassCode(graph: CodegenGraph, projectInfo: {package: string}) 
 }
 
 function generateCodeForEventClassNode(graph: CodegenGraph, n: number, node: CodegenNode, classData: ClassData) {
+    const options = [];
+    if (node.properties.priority && node.properties.priority !== "NORMAL") {
+        options.push("priority = org.bukkit.event.EventPriority." + node.properties.priority);
+    }
+    if (node.properties.ignoreCancelled === true) options.push("ignoreCancelled = true");
     let code = "" +
-        "@org.bukkit.event.EventHandler\n" +
+        "@org.bukkit.event.EventHandler" + (options.length ? "(" + options.join(", ") + ")" : "") + "\n" +
         "public void on" + node.id + "(" + node.type + " event) {\n" + debugCall(node.id);
 
     fields.push("private " + node.type + " " + nodeV(node.id) + ";");
