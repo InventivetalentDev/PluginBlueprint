@@ -18,6 +18,16 @@ export interface SlotOptions {
 
 export interface NativeNode extends LGraphNode {
     classType: "native";
+    operation?: string;
+    init?(booleanInputs?: boolean): void;
+    properties: {
+        type?: string;
+        name?: string;
+        string?: string;
+        number?: number;
+        value?: boolean;
+        castTo?: string;
+    };
     getFields?(output: string[]): string[];
     getMethodBody?(input: (string | null)[], output: string[]): string;
     getExecBefore?(exec: string[][], output: string[]): string;
@@ -25,3 +35,6 @@ export interface NativeNode extends LGraphNode {
     getOutputExpression?(slot: number): string;
     getMenuOptions?(graphCanvas: LGraphCanvas): ContextMenuItem[];
 }
+
+export type NodeFunction = (this: NativeNode) => void;
+export type NodeModule = NodeFunction[];

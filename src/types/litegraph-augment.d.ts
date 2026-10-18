@@ -1,12 +1,19 @@
 import "../../assets/lib/litegraph/litegraph";
 import type {INodeSlot, LGraphGroup, LGraphNode, LGraphNodeConstructor, Vector2, Vector4} from "../../assets/lib/litegraph/litegraph";
 import type {SlotOptions} from "./nodes";
+import type {IconName, IconPrefix} from "@fortawesome/fontawesome-svg-core";
 
 export type SlotType = string | number | null;
 export type OptionalSlot = [name: string, type: SlotType, options?: Partial<INodeSlot>] | null;
 
 declare module "../../assets/lib/litegraph/litegraph" {
     interface LGraphNode {
+        desc?: string;
+        description?: string;
+        descBlockHeight?: number;
+        iconName?: IconName;
+        iconColor?: string;
+        iconPrefix?: IconPrefix;
         optional_inputs?: OptionalSlot[];
         optional_outputs?: OptionalSlot[];
         onDrawTitleBox?(ctx: CanvasRenderingContext2D, titleHeight: number, size: Vector2, scale: number): void;
@@ -21,6 +28,10 @@ declare module "../../assets/lib/litegraph/litegraph" {
     }
 
     interface INodeSlot extends SlotOptions {}
+
+    interface LLink {
+        color?: string;
+    }
 }
 
 export interface LiteGraphExtras {

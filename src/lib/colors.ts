@@ -1,4 +1,4 @@
-module.exports = {
+const Colors = {
     EVENT: "#800080",
     OBJECT: "#7c372a",
     FUNCTION: "#286674",
@@ -31,3 +31,5 @@ module.exports = {
     EXEC_OFF: "#911500",
     EXEC_ON: "#f62000"
 };
+
+export = Colors;

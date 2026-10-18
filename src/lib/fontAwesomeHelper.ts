@@ -1,9 +1,11 @@
-const {library, icon, findIconDefinition} = require('@fortawesome/fontawesome-svg-core');
-const {fas} = require('@fortawesome/free-solid-svg-icons');
+import {library, icon, findIconDefinition} from '@fortawesome/fontawesome-svg-core';
+import {fas} from '@fortawesome/free-solid-svg-icons';
+import type {IconName, IconPrefix} from '@fortawesome/fontawesome-svg-core';
+import type {LGraphNode, Vector2} from '../../assets/lib/litegraph/litegraph';
 
 library.add(fas);
 
-function drawFontAwesomeIcon(node, ctx, iconName, x, y, size, color = "white", prefix = "far") {
+function drawFontAwesomeIcon(node: LGraphNode, ctx: CanvasRenderingContext2D, iconName: IconName, x: number, y: number, size: number, color = "white", prefix: IconPrefix = "far") {
     let def = findIconDefinition({prefix: prefix, iconName: iconName});
     if (!def) return;
     let icn = icon(def, {
@@ -12,7 +14,7 @@ function drawFontAwesomeIcon(node, ctx, iconName, x, y, size, color = "white", p
         }
     });
     ctx.fillStyle = color;
-    let path = new Path2D(icn.icon[4]);
+    let path = new Path2D(icn.icon[4] as string);
     // path.moveTo(x, y);
     ctx.save();
     ctx.translate(x, y);
@@ -21,11 +23,11 @@ function drawFontAwesomeIcon(node, ctx, iconName, x, y, size, color = "white", p
     ctx.restore();
 }
 
-function handleDrawTitleBox(ctx, titleHeight, size, scale) {
+function handleDrawTitleBox(this: LGraphNode, ctx: CanvasRenderingContext2D, titleHeight: number, size: Vector2, scale: number) {
     if (!this.iconName) return;
     if (scale > 0.5) {
         drawFontAwesomeIcon(this, ctx, this.iconName, 4, -titleHeight + 4, 0.025, this.iconColor || "white", this.iconPrefix || "fas")
     }
 }
 
-module.exports = {drawFontAwesomeIcon, handleDrawTitleBox};
+export {drawFontAwesomeIcon, handleDrawTitleBox};

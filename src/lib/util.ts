@@ -1,10 +1,13 @@
-const Colors = require("./colors");
-const fs = require("fs");
+import Colors = require("./colors");
+import fs = require("fs");
+import type {INodeSlot, LGraphNode, Vector4} from "../../assets/lib/litegraph/litegraph";
+import type {TypeRef} from "../types/classData";
+import type {SlotType} from "../types/litegraph-augment";
 
 const typeSwitchEnum = ["string", "byte", "char", "short", "int", "long", "float", "double", "any"];
 
-function copyFile(src, dest) {
-    return new Promise((resolve, reject) => {
+function copyFile(src: string, dest: string) {
+    return new Promise<void>((resolve, reject) => {
         console.debug("copy ", src, "->", dest);
         if (!fs.existsSync(src)) {
             reject();
@@ -22,7 +25,7 @@ function copyFile(src, dest) {
     })
 }
 
-function getNullForType(type, dimension = "") {
+function getNullForType(type: string | null | undefined, dimension = "") {
     if (!type) return "null";
     if (dimension !== "") return "(" + type + dimension + ") null";
     switch (type) {
@@ -38,20 +41,20 @@ function getNullForType(type, dimension = "") {
     }
 }
 
-function javaType(type) {
+function javaType(type: TypeRef) {
     return (type.typeVariable ? "java.lang.Object" : type.qualifiedName) + type.dimension;
 }
 
-function guessTypeFromValue(value) {
+function guessTypeFromValue(value: unknown) {
     if (value) {
-        if ("true" === value || "false" === "value") {
+        if ("true" === value || ("false" as string) === "value") {
             return "boolean";
         }
 
     }
 }
 
-function shapeAndColorsForSlotType(slotType, extraInfo) {
+function shapeAndColorsForSlotType(slotType: SlotType, extraInfo?: Partial<INodeSlot>): Partial<INodeSlot> {
     if (!extraInfo) extraInfo = {};
 
     if (slotType === "@EXEC") {
@@ -118,15 +121,15 @@ function shapeAndColorsForSlotType(slotType, extraInfo) {
 }
 
 
-function isPrimitiveType(type) {
+function isPrimitiveType(type: SlotType | undefined) {
     return type === "byte" || type === "short" || type === "int" || type === "long" || type === "float" || type === "double" || type === "char" || type === "boolean";
 }
 
-function isNumberType(type) {
+function isNumberType(type: SlotType | undefined) {
     return type === "byte" || type === "short" || type === "int" || type === "long" || type === "float" || type === "double";
 }
 
-function getNumberSuffix(type) {
+function getNumberSuffix(type: string | TypeRef | null | undefined) {
     if (type) {
         if (typeof type !== "string") {
             type = type.qualifiedName;
@@ -144,12 +147,12 @@ function getNumberSuffix(type) {
     return "";
 }
 
-function updateLinkColors(slotType, node, slot) {
+function updateLinkColors(slotType: number, node: LGraphNode, slot: number) {
     if (slotType === LiteGraph.OUTPUT) {
         let out = node.outputs[slot];
         if (out && out.links) {
             for (let i = 0; i < out.links.length; i++) {
-                let color = LGraphCanvas.link_type_colors[out.type] || LGraphCanvas.link_type_colors[out.linkType];
+                let color = LGraphCanvas.link_type_colors[out.type] || LGraphCanvas.link_type_colors[out.linkType!];
                 if (color) {
                     let link = graph.links[out.links[i]];
                     if (link) {
@@ -161,7 +164,7 @@ function updateLinkColors(slotType, node, slot) {
     }
 }
 
-function scrollSpeedForLength(length) {
+function scrollSpeedForLength(length: number) {
     let scrollSpeed = 0.1;
     if (length > 20) scrollSpeed = 0.2;
     if (length > 40) scrollSpeed = 0.3;
@@ -169,7 +172,7 @@ function scrollSpeedForLength(length) {
     return scrollSpeed;
 }
 
-function parseTypeSwitchEnum(type) {
+function parseTypeSwitchEnum(type: string | null | undefined) {
     if (!type || type === "any") {
         type = "java.lang.Object"
     } else if (type === "string") {
@@ -178,7 +181,7 @@ function parseTypeSwitchEnum(type) {
     return type;
 }
 
-function handleDescDrawBackground(ctx) {
+function handleDescDrawBackground(this: LGraphNode, ctx: CanvasRenderingContext2D) {
     if (this.flags && this.flags.collapsed)
         return;
     if (!this.desc && !this.description)
@@ -190,18 +193,18 @@ function handleDescDrawBackground(ctx) {
     }
 }
 
-function handleDescOnBounding(rect) {
+function handleDescOnBounding(this: LGraphNode, rect: Vector4) {
     if (this.flags && this.flags.collapsed)
         return;
     if (!this.desc && !this.description)
         return;
     if (this.mouseOver) {
-        rect[3] = this.size[1] + this.descBlockHeight + 40;
+        rect[3] = this.size[1] + this.descBlockHeight! + 40;
     }
 }
 
 // https://codepen.io/bramus/pen/eZYqoO - apparently from https://www.html5canvastutorials.com/tutorials/html5-canvas-wrap-text-tutorial/, which isn't accessible
-function wrapCanvasText(context, text, x, y, maxWidth, lineHeight) {
+function wrapCanvasText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
     let words = text.split(' ');
     let line = '';
 
@@ -226,5 +229,5 @@ function wrapCanvasText(context, text, x, y, maxWidth, lineHeight) {
 }
 
 
-module.exports = {copyFile, getNullForType, javaType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength, typeSwitchEnum, parseTypeSwitchEnum, handleDescDrawBackground, handleDescOnBounding};
+export {copyFile, getNullForType, javaType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength, typeSwitchEnum, parseTypeSwitchEnum, handleDescDrawBackground, handleDescOnBounding};
 

@@ -1,13 +1,14 @@
-const {Menu, getCurrentWindow} = require("@electron/remote");
+import {Menu, getCurrentWindow} from "@electron/remote";
+import type {MenuItem, MenuItemConstructorOptions} from "electron";
 
-function setWindowMenu(template) {
+function setWindowMenu(template: (MenuItemConstructorOptions | MenuItem)[]) {
     if (process.platform !== "darwin") {
         const menu = Menu.buildFromTemplate(template);
         getCurrentWindow().setMenu(menu);
         return menu;
     }
 
-    const items = [{role: "appMenu"}, ...template, {role: "windowMenu"}];
+    const items: (MenuItemConstructorOptions | MenuItem)[] = [{role: "appMenu"}, ...template, {role: "windowMenu"}];
     if (!template.some(function (item) { return item.label === "Edit"; })) {
         const fileIndex = template.findIndex(function (item) { return item.label === "File"; });
         items.splice(fileIndex === -1 ? 1 : fileIndex + 2, 0, {role: "editMenu"});
@@ -34,4 +35,4 @@ function setWindowMenu(template) {
     return menu;
 }
 
-module.exports = setWindowMenu;
+export = setWindowMenu;
