@@ -20,36 +20,16 @@ const KeyPics = require("key.pics") as typeof import("key.pics");
 import {updateLinkColors} from "../lib/util";
 import type {LiteGraphExtras} from "../types/litegraph-augment";
 import type {ProjectInfo, Snippet} from "../types/project";
-import type {LGraphGroup, LGraphNode as GraphNode, LGraph as Graph, Vector2} from "../../assets/lib/litegraph/litegraph";
+import type {LGraphGroup, LGraphNode as GraphNode, LGraph as Graph} from "../../assets/lib/litegraph/litegraph";
 
 type PageGraph = Pick<Graph, keyof Graph> & {
     _nodes: GraphNode[];
     _groups: LGraphGroup[];
     _version: number;
 };
-type EditorHistory = History<string>;
-
-declare module "../../assets/lib/litegraph/litegraph" {
-    interface LGraph {
-        onNodeRemoved(node: LGraphNode): void;
-        onConnectionChange(): void;
-        add(group: LGraphGroup): void;
-    }
-
-    interface LGraphCanvas {
-        setZoom(value: number, center?: Vector2): void;
-    }
-
-    interface LGraphNode {
-        triggerSlot(slot: number, param?: unknown, link_id?: number): void;
-    }
-}
 
 declare global {
-    interface History extends EditorHistory {}
-
     interface Window {
-        readonly history: globalThis.History;
         LiteGraph: typeof LiteGraph;
         LGraphCanvas: typeof LGraphCanvas;
         graph: typeof graph;
@@ -277,7 +257,6 @@ let isNewProject: boolean | undefined = false;
 
 let history = new History<string>();
 Object.defineProperty(window, "history", {value: history, writable: true, configurable: true});
-Object.assign(window, {history});
 history.pause();
 
 let unsavedChanges = 0;

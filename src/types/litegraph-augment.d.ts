@@ -22,11 +22,19 @@ declare module "../../assets/lib/litegraph/litegraph" {
         onBounding?(rect: Vector4): void;
         onInputDblClick?(slot: number, event: MouseEvent): void;
         onOutputDblClick?(slot: number, event: MouseEvent): void;
+        triggerSlot(slot: number, param?: unknown, link_id?: number): void;
     }
 
     interface LGraph {
         onNodeConnectionChange?(slotType: number, node: LGraphNode, slot: number, otherNode?: LGraphNode, otherSlot?: number): void;
         onNodePropertyChanged?(node: LGraphNode, property: string, value: unknown): void;
+        onNodeRemoved(node: LGraphNode): void;
+        onConnectionChange(): void;
+        add(group: LGraphGroup): void;
+    }
+
+    interface LGraphCanvas {
+        setZoom(value: number, center?: Vector2): void;
     }
 
     interface INodeSlot extends SlotOptions {}
