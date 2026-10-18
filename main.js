@@ -57,6 +57,7 @@ let editorWin;
 let commandWin;
 
 let debug = false;
+let quitting = false;
 let unsavedChanges = 0;
 let uncompiledChanges = 0;
 
@@ -131,12 +132,12 @@ function showWindow() {
                 e.preventDefault();
             }
         }
-        serverStarter.killInstance();
-        logWin = null;
     });
 
     // Emitted when the window is closed.
     win.on('closed', () => {
+        serverStarter.stopServer();
+        logWin = null;
         // Dereference the window object, usually you would store windows
         // in an array if your app supports multi windows, this is the time
         // when you should delete the corresponding element.
@@ -161,8 +162,16 @@ app.on('window-all-closed', () => {
     }
 });
 
-app.on("will-quit", () => {
-    serverStarter.killInstance();
+app.on("before-quit", async (event) => {
+    if (quitting || !serverStarter.isRunning()) return;
+    event.preventDefault();
+    try {
+        await serverStarter.stopServer();
+    } catch (err) {
+        serverStarter.killInstance();
+    }
+    quitting = true;
+    app.quit();
 });
 
 app.on('activate', () => {
@@ -365,10 +374,10 @@ function createNewProject(arg) {
                 // (symlink would be nicer but requires admin perms)
                 fs.writeFileSync(path.join(currentProjectPath, currentProject.name + ".pbp"), projectFilePath, "utf-8");
 
-                fs.mkdirSync(path.join(arg.path, "src"));
-                fs.mkdirSync(path.join(arg.path, "classes"));
-                fs.mkdirSync(path.join(arg.path, "output"));
-                fs.mkdirSync(path.join(arg.path, "lib"));
+                fs.ensureDirSync(path.join(arg.path, "src"));
+                fs.ensureDirSync(path.join(arg.path, "classes"));
+                fs.ensureDirSync(path.join(arg.path, "output"));
+                fs.ensureDirSync(path.join(arg.path, "lib"));
 
                 try {
                     await ensureProjectServer(progressBar);
@@ -387,6 +396,12 @@ function createNewProject(arg) {
                         return;
                     }
 
+                    let i = recentProjects.map(function (e) {
+                        return e.path;
+                    }).indexOf(currentProjectPath);
+                    if (i !== -1) {
+                        recentProjects.splice(i, 1);
+                    }
                     recentProjects.unshift({
                         path: currentProjectPath,
                         name: currentProject.name,
@@ -516,7 +531,7 @@ function openProject(arg) {
         let appVersionSplit = appVersion.split(".");
         let fileVersion = data.editorVersion || "y.y.y";
         let fileVersionSplit = fileVersion.split(".");
-        if (appVersionSplit[1] !== fileVersionSplit[1]) {// compare minor version
+        if (appVersionSplit[0] !== fileVersionSplit[0] || appVersionSplit[1] !== fileVersionSplit[1]) {
             dialog.showMessageBox({
                 type: "warning",
                 title: "Different Editor Version",
@@ -545,8 +560,7 @@ ipcMain.on("openProject", function (event, arg) {
 });
 
 ipcMain.on("getProjectInfo", function (event, arg) {
-    let proj = currentProject || {};
-    proj.isNewProject = isNewProject;
+    let proj = Object.assign({}, currentProject || {}, {isNewProject});
     event.sender.send("projectInfo", proj);
 });
 
@@ -697,10 +711,9 @@ function saveCodeToFile(code) {
 }
 
 function makePluginYml() {
-    if (!currentProject.buildNumber) currentProject.buildNumber = 0;
     let yml = "name: " + JSON.stringify(currentProject.name) +
         "\ndescription: " + JSON.stringify(currentProject.description) +
-        "\nversion: " + JSON.stringify(currentProject.version + (currentProject.debug ? ("-b" + ++currentProject.buildNumber) : "")) +
+        "\nversion: " + JSON.stringify(currentProject.version) +
         "\nmain: " + JSON.stringify(currentProject.package + ".GeneratedPlugin") +
         "\nauthor: " + JSON.stringify(currentProject.author) +
         "\nsoftdepend: [" + (currentProject.softdepend || []).map(value => JSON.stringify(value)).join(",") + "]" +
@@ -891,7 +904,6 @@ ipcMain.on("startServer", async function (event, arg) {
     }
     if (logWin) logWin.destroy();
     logWin = null;
-    serverStarter.killInstance();
 
     if (!fs.existsSync(path.join(currentProjectPath, "output", currentProject.name + ".jar"))) {
         dialog.showErrorBox("Error", "Please compile your plugin first!");
@@ -899,8 +911,7 @@ ipcMain.on("startServer", async function (event, arg) {
     }
 
     if (serverStarter.isRunning()) {
-        dialog.showErrorBox("Error", "Please wait for the existing server to shut down and try again");
-        return;
+        await serverStarter.stopServer();
     }
 
     logWin = new BrowserWindow({
@@ -939,47 +950,41 @@ ipcMain.on("startServer", async function (event, arg) {
 
 function startProjectServer() {
     let port = "";
-    serverStarter.startServer(currentProjectPath, jdk.java,
-        (out) => {
+    serverStarter.startServer(currentProjectPath, jdk.java, !!currentProject.debug,
+        (log) => {
             if (logWin) {
-                // sometimes multiple lines are combined into one output, so split it here
-                let split = out.split("\n");
-                for (let i = 0; i < split.length; i++) {
-                    let log = split[i];
-
-                    if (log.indexOf("Starting Minecraft server on") !== -1) {
-                        port = log.substr(24/* strip timestamp & start of string */).split(":")[1];
-                    }
-                    if (log.indexOf("Done (") !== -1 && log.indexOf("For help, type") !== -1) {
-                        showNotification("Test Server running on port " + port);
-                    }
-
-
-                    if (log.indexOf("pb_debug_exec") !== -1) {
-                        if (win) win.webContents.send("debugCall", {
-                            type: "exec",
-                            node: parseInt(log.split("pb_debug_exec=")[1])
-                        });
-                        continue;// don't log
-                    }
-
-                    let logData = {
-                        type: "out",
-                        content: log
-                    };
-                    if (log.indexOf("Caused by:") === 0) {
-                        logData.href = "https://www.google.com/search?q=" + log;
-                    }
-                    if (log.indexOf(currentProject.package) !== -1) {
-                        if (log.indexOf("node_") !== -1) {
-                            logData.hasNode = true;
-
-                            if (win) win.webContents.send("logError", log);
-                        }
-                    }
-
-                    logWin.webContents.send("log", logData);
+                if (log.indexOf("Starting Minecraft server on") !== -1) {
+                    port = log.substr(24/* strip timestamp & start of string */).split(":")[1];
                 }
+                if (log.indexOf("Done (") !== -1 && log.indexOf("For help, type") !== -1) {
+                    showNotification("Test Server running on port " + port);
+                }
+
+
+                if (log.indexOf("pb_debug_exec") !== -1) {
+                    if (win) win.webContents.send("debugCall", {
+                        type: "exec",
+                        node: parseInt(log.split("pb_debug_exec=")[1])
+                    });
+                    return;
+                }
+
+                let logData = {
+                    type: "out",
+                    content: log
+                };
+                if (log.indexOf("Caused by:") === 0) {
+                    logData.href = "https://www.google.com/search?q=" + log;
+                }
+                if (log.indexOf(currentProject.package) !== -1) {
+                    if (log.indexOf("node_") !== -1) {
+                        logData.hasNode = true;
+
+                        if (win) win.webContents.send("logError", log);
+                    }
+                }
+
+                logWin.webContents.send("log", logData);
             }
         }, logServerError);
 }
@@ -997,10 +1002,10 @@ ipcMain.on("sendServerCommand", function (event, arg) {
     serverStarter.sendCommandToInstance(arg);
 });
 
-ipcMain.on("stopServer", function (event, arg) {
+ipcMain.on("stopServer", async function (event, arg) {
     if (logWin) logWin.destroy();
     logWin = null;
-    serverStarter.killInstance();
+    await serverStarter.stopServer();
 });
 
 ipcMain.on("reloadPlugin", function (event, arg) {
@@ -1011,7 +1016,7 @@ async function reloadPlugin() {
     if (!currentProject || !serverStarter.isRunning()) return;
     console.log("Reloading plugin...");
     await serverStarter.stopServer();
-    await serverStarter.copyPlugin(currentProjectPath, currentProject, true);
+    await serverStarter.copyPlugin(currentProjectPath, currentProject);
     startProjectServer();
     console.log("Plugin reloaded!");
     showNotification("Plugin reloaded!");

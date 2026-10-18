@@ -47,18 +47,20 @@ If the server fails to start, check [Troubleshooting](Troubleshooting.md).
 
 ## Follow execution in the editor
 
-New projects have **Debug** on. With this setting, the generated code writes
-`pb_debug_exec=<node id>` each time a node runs.
+New projects have **Trace node execution on the test server** checked.
+With this setting, the test server starts with `-Dpluginblueprint.debug=true`.
+The plugin then logs `pb_debug_exec=<node id>` each time a node runs.
 The editor uses those lines to highlight the path the code took.
 The built-in log window filters those debug lines out of its display.
 
-1. Open **Edit → Edit Project Information** and check **Debug**.
+1. Open **Edit → Edit Project Information** and check
+   **Trace node execution on the test server**.
 2. Click **Save**, compile, and start the server.
 3. Trigger your plugin's event or command.
 4. Look at the editor to follow the highlighted nodes.
 
-Before you publish your plugin, turn **Debug** off, click **Save**, and compile
-again. This removes the generated debug log lines from the plugin.
+Plugins built with or without tracing are safe to publish. Tracing stays off
+unless the server starts with `-Dpluginblueprint.debug=true`.
 
 ## Reload a changed plugin
 

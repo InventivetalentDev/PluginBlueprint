@@ -97,9 +97,10 @@ The log window shows the server error.
 
 ### `pb_debug_exec=` lines appear in the server log
 
-Cause: **Debug** is on. The generated plugin writes a line for each executed
-node. The built-in log window uses these lines for highlighting and hides them.
+Cause: the server started with `-Dpluginblueprint.debug=true`, which enables
+node tracing. The built-in log window uses these lines for highlighting and hides them.
 
-1. Open **Edit → Edit Project Information** and turn **Debug** off.
-2. Click **Save**, then choose **Compile → Generate Code, Compile, Package**.
+1. Open **Edit → Edit Project Information** and uncheck
+   **Trace node execution on the test server**.
+2. Click **Save**.
 3. If the test server is running, choose **Run → Reload Plugin**.

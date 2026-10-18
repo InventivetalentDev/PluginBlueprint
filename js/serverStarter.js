@@ -5,37 +5,39 @@ const {copyFile} = require("./util");
 
 let running = false;
 let instance = null;
+let stopPromise = null;
 
-function copyPlugin(projectPath, projectInfo, skipEmpty) {
+async function copyPlugin(projectPath, projectInfo) {
     let projectName = projectInfo.name;
-    return new Promise((resolve, reject) => {
-        function doCopy() {
-            copyFile(path.join(projectPath, "output", projectName + ".jar"), path.join(projectPath, "lib", "plugins", projectName + ".jar"))
-                .then(resolve).catch(reject);
-        }
-
-        let pluginsDir = path.join(projectPath, "lib", "plugins");
-        if (fs.existsSync(pluginsDir)) {
-            if (skipEmpty) {
-                doCopy();
-            } else {
-                fs.emptyDir(pluginsDir, function (err) {
-                    if (err) return reject(err);
-                    doCopy();
-                });
-            }
-        } else {
-            fs.mkdirs(pluginsDir, function (err) {
-                if (err) return reject(err);
-                doCopy();
-            })
-        }
-    })
+    await fs.mkdirs(path.join(projectPath, "lib", "plugins"));
+    return copyFile(path.join(projectPath, "output", projectName + ".jar"), path.join(projectPath, "lib", "plugins", projectName + ".jar"));
 }
 
-function startServer(projectPath, java, outCb, errCb) {
+function createLineSplitter(onLine) {
+    let tail = "";
+    function split(chunk) {
+        let lines = (tail + chunk.toString()).split("\n");
+        tail = lines.pop();
+        for (let i = 0; i < lines.length; i++) {
+            if (onLine) onLine(lines[i].replace(/\r$/, ""));
+        }
+    }
+    split.flush = () => {
+        if (tail.length) {
+            let line = tail;
+            tail = "";
+            if (onLine) onLine(line.replace(/\r$/, ""));
+        }
+    };
+    return split;
+}
+
+function startServer(projectPath, java, debug, outCb, errCb) {
     if (running || instance) return false;
-    let spawned = spawn(java, ["-Xmx2G", "-DIReallyKnowWhatIAmDoingISwear", "-Dcom.mojang.eula.agree=true", "-jar", "paper.jar", "nogui"], {
+    let args = ["-Xmx2G", "-Dcom.mojang.eula.agree=true"];
+    if (debug) args.push("-Dpluginblueprint.debug=true");
+    args.push("-jar", "paper.jar", "nogui");
+    let spawned = spawn(java, args, {
         cwd: path.join(projectPath, "lib")
     });
     running = true;
@@ -47,13 +49,13 @@ function startServer(projectPath, java, outCb, errCb) {
         running = false;
         instance = null;
     });
-    spawned.stdout.on('data', (data) => {
-        if (outCb) outCb(data.toString())
-    });
-    spawned.stderr.on('data', (data) => {
-        if (errCb) errCb(data.toString());
-    });
+    let stdout = createLineSplitter(outCb);
+    let stderr = createLineSplitter(errCb);
+    spawned.stdout.on('data', stdout);
+    spawned.stderr.on('data', stderr);
     spawned.on("exit", (code) => {
+        stdout.flush();
+        stderr.flush();
         console.log("Server process exited with code " + code);
         running = false;
         instance = null;
@@ -62,16 +64,19 @@ function startServer(projectPath, java, outCb, errCb) {
 }
 
 function stopServer() {
-    return new Promise(resolve => {
-        if (!instance) return resolve();
-        let server = instance;
+    if (stopPromise) return stopPromise;
+    if (!instance) return Promise.resolve();
+    let server = instance;
+    stopPromise = new Promise(resolve => {
         let timeout = setTimeout(() => server.kill("SIGKILL"), 30000);
         server.once("exit", () => {
             clearTimeout(timeout);
+            stopPromise = null;
             resolve();
         });
         server.stdin.write("stop\n");
     });
+    return stopPromise;
 }
 
 function sendCommandToInstance(cmd, cb) {
@@ -93,6 +98,7 @@ function killInstance() {
 
 module.exports = {
     copyPlugin: copyPlugin,
+    createLineSplitter: createLineSplitter,
     startServer: startServer,
     stopServer: stopServer,
     sendCommandToInstance: sendCommandToInstance,
