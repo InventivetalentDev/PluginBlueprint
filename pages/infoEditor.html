@@ -3,6 +3,19 @@
         <link rel="stylesheet" href="../node_modules/materialize-css/dist/css/materialize.min.css">
         <link rel="stylesheet" href="../assets/material-icons/material-icons.css">
         <style>
+            body {
+                padding-bottom: 72px;
+            }
+
+            #saveBar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                padding: 12px 0;
+                background-color: #373737;
+            }
+
             #overlay {
                 position: absolute;
                 width: 100%;
@@ -98,43 +111,42 @@
                         <p>
                             <label>
                                 <input type="checkbox" id="debug"/>
-                                <span>Debug</span>
+                                <span>Trace node execution on the test server</span>
                             </label>
                         </p>
                     </div>
                 </form>
             </div>
-            <div class="row">
-                <form class="col s12">
-                    <div class="row">
-                        <button class="btn" id="saveInfo">Save</button>
-                    </div>
-                </form>
+        </div>
+        <div id="saveBar">
+            <div class="container">
+                <button class="btn" id="saveInfo">Save</button>
             </div>
         </div>
 
         <script src="../node_modules/materialize-css/dist/js/materialize.min.js"></script>
         <script>
             const {ipcRenderer} = require("electron");
-            const {Menu, getCurrentWindow} = require("@electron/remote");
+            const {getCurrentWindow} = require("@electron/remote");
+            const setWindowMenu = require("../js/windowMenu");
             const prompt = require('electron-prompt');
             const $ = require("jquery");
 
             let projectInfo = {};
             let commands = [];
 
-            getCurrentWindow().setMenu(Menu.buildFromTemplate([
+            setWindowMenu([
                 {
                     label: "File",
                     submenu: [
                         {
-                            label: "Save", role: "new", accelerator: "CommandOrControl+S", click: () => {
+                            label: "Save", accelerator: "CommandOrControl+S", click: () => {
                                 updateProjectInfo();
                             }
                         }
                     ]
                 }
-            ]));
+            ]);
 
             window.onbeforeunload = function (e) {
                 updateProjectInfo();
@@ -155,7 +167,10 @@
                 let softdepend = [];
                 let softdependSplit = $("#softdepend").val().split(",");
                 for (let i = 0; i < softdependSplit.length; i++) {
-                    softdepend.push(softdependSplit[i].trim());
+                    let dependency = softdependSplit[i].trim();
+                    if (dependency) {
+                        softdepend.push(dependency);
+                    }
                 }
                 projectInfo.softdepend = softdepend || [];
 

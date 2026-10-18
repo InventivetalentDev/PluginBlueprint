@@ -96,7 +96,8 @@
         <canvas id='mycanvas' width='1920' height='1080'></canvas>
         <script>
             const {ipcRenderer} = require("electron");
-            const {app, Menu, getCurrentWindow} = require("@electron/remote");
+            const {app, getCurrentWindow} = require("@electron/remote");
+            const setWindowMenu = require("../js/windowMenu");
             const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../assets/lib/litegraph/litegraph");
             const NodeGenerator = require("../js/nodeGenerator");
             const CodeGenerator = require("../js/codeGenerator");
@@ -105,17 +106,17 @@
             const KeyPics = require("key.pics");
             const {updateLinkColors} = require("../js/util");
 
-            let theMenu = Menu.buildFromTemplate([
+            let theMenu = setWindowMenu([
                 {
                     label: "File",
                     submenu: [
                         {
-                            label: "New", role: "new", click: () => {
+                            label: "New", click: () => {
                                 ipcRenderer.send("showCreateNewProject");
                             }
                         },
                         {
-                            label: "Open", role: "open", click: () => {
+                            label: "Open", click: () => {
                                 ipcRenderer.send("showOpenProject");
                             }
                         },
@@ -124,7 +125,6 @@
                         },
                         {
                             label: "Save",
-                            role: "save",
                             accelerator: "CommandOrControl+S",
                             click: () => {
                                 saveGraph()
@@ -180,7 +180,7 @@
                         {
                             id: "redo",
                             label: "Redo",
-                            accelerator: "CommandOrControl+Y",
+                            accelerator: process.platform === "darwin" ? "Shift+CommandOrControl+Z" : "CommandOrControl+Y",
                             enabled: false,
                             click: () => redo()
                         },
@@ -200,7 +200,14 @@
                             click: () => {
                                 saveGraphAndClose();
                             }
-                        }
+                        },
+                        ...(process.platform === "darwin" ? [
+                            {type: "separator"},
+                            {role: "cut"},
+                            {role: "copy"},
+                            {role: "paste"},
+                            {role: "selectAll"}
+                        ] : [])
                     ]
                 },
                 {
@@ -307,7 +314,6 @@
                     ]
                 }
             ]);
-            getCurrentWindow().setMenu(theMenu);
 
             let projectInfo = {};
             let isNewProject = false;
@@ -347,21 +353,18 @@
             };
             graph.onNodeRemoved = function (n) {
                 console.debug("[HISTORY] onNodeRemoved");
-                if (history) {
-                    if (!history.paused) {
-                        unsavedChanges++;
-                        uncompiledChanges++;
-                        ipcRenderer.send("setChangeState", {unsaved: unsavedChanges, uncompiled: uncompiledChanges});
-                    }
-                    history.track(JSON.stringify(graph.serialize()));
-
-                    console.log(history)
-                }
-                updateTitle();
-                refreshHistoryState();
+                trackGraphChange();
             };
             graph.onConnectionChange = function () {
                 console.debug("[HISTORY] onConnectionChange");
+                trackGraphChange();
+            };
+            graph.onNodePropertyChanged = function () {
+                console.debug("[HISTORY] onNodePropertyChanged");
+                trackGraphChange();
+            };
+
+            function trackGraphChange() {
                 if (history) {
                     if (!history.paused) {
                         unsavedChanges++;
@@ -374,7 +377,7 @@
                 }
                 updateTitle();
                 refreshHistoryState();
-            };
+            }
 
             graph.onNodeConnectionChange = function (slotType, node, slot) {
                 updateLinkColors(slotType, node, slot);
@@ -498,7 +501,7 @@
                 }
                 for (let l in graph.links) {
                     let link = graph.links[l];
-                    if (nodeIds.indexOf(link.origin_id) >= 0 || nodeIds.indexOf(link.target_id) >= 0) {
+                    if (nodeIds.indexOf(link.origin_id) >= 0 && nodeIds.indexOf(link.target_id) >= 0) {
                         links.push({
                             id: link.id,
                             oId: link.origin_id,
@@ -571,7 +574,7 @@
                 for (let j = 0; j < data.links.length; j++) {
                     let l = data.links[j];
 
-                    let newId = ++graph.last_link_id;
+                    let newId = graph.last_link_id++;
                     newLinkIdMap[l.id] = newId;
                     graph.links[newId] = {
                         id: newId,

@@ -11,6 +11,8 @@
             #content {
                 font-family: Consolas, monospace;
                 padding-top: 16px;
+                white-space: pre-wrap;
+                word-break: break-word;
             }
 
             .node-ref {
@@ -44,7 +46,7 @@
 
             let error = params.get("error");
             let message = typeof error === "string" ? error : error.message || error.msg;
-            message = message.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\n", "<br/>").replaceAll("\t", "&nbsp;&nbsp;&nbsp;&nbsp;").replaceAll(" ", "&nbsp;");
+            message = message.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
             message = message.replace(/node_([0-9]+)/gm, '<a class="node-ref" data-node="$1">node_$1</a>');
 
             $("#content").append(message);

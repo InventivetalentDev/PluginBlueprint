@@ -3,6 +3,19 @@
         <link rel="stylesheet" href="../node_modules/materialize-css/dist/css/materialize.min.css">
         <link rel="stylesheet" href="../assets/material-icons/material-icons.css">
         <style>
+            body {
+                padding-bottom: 72px;
+            }
+
+            #saveBar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                padding: 12px 0;
+                background-color: #373737;
+            }
+
             #overlay {
                 position: absolute;
                 width: 100%;
@@ -74,12 +87,10 @@
                     </div>
                 </form>
             </div>
-            <div class="row">
-                <form class="col s12">
-                    <div class="row">
-                        <button class="btn" id="saveCommand">Save</button>
-                    </div>
-                </form>
+        </div>
+        <div id="saveBar">
+            <div class="container">
+                <button class="btn" id="saveCommand">Save</button>
             </div>
         </div>
 

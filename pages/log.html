@@ -53,7 +53,7 @@
         <input id="cmdInput" type="text" autofocus onblur="this.focus()">
         <script>
             const {ipcRenderer, shell} = require("electron");
-            const {Menu, getCurrentWindow} = require("@electron/remote");
+            const setWindowMenu = require("../js/windowMenu");
             const $ = require("jquery");
 
 
@@ -64,7 +64,7 @@
 
             let followLog = true;
 
-            getCurrentWindow().setMenu(Menu.buildFromTemplate([
+            setWindowMenu([
                 {
                     label: "Log",
                     submenu: [
@@ -95,7 +95,7 @@
                         }
                     ]
                 }
-            ]));
+            ]);
 
             let cmdInput = $("#cmdInput");
             cmdInput.on("keypress", function (e) {

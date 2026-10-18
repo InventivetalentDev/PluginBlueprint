@@ -82,7 +82,7 @@
                 <button class="btn" id="openProject"><i class="material-icons left">folder_open</i> Open Project</button>
             </div>
             <div class="row" id="recentProjectRow">
-                <h5>Recent Projects <a href="#" class="createNewProject right-align" style="color:#d2d2d2;"><i class="material-icons right">add</i></a></h5>
+                <h5 style="color:#d2d2d2;">Recent Projects <a href="#" class="createNewProject right-align" style="color:#d2d2d2;"><i class="material-icons right">add</i></a></h5>
                 <ul class="collection" id="recentProjects">
                     <!-- Dynamic -->
                 </ul>
@@ -91,22 +91,23 @@
 
         <script>
             const {ipcRenderer, shell} = require("electron");
-            const {dialog, Menu, getCurrentWindow, app} = require("@electron/remote");
+            const {dialog, getCurrentWindow, app} = require("@electron/remote");
+            const setWindowMenu = require("./js/windowMenu");
             const prompt = require("electron-prompt");
             const $ = require("jquery");
 
 
-            getCurrentWindow().setMenu(Menu.buildFromTemplate([
+            setWindowMenu([
                 {
                     label: "File",
                     submenu: [
                         {
-                            label: "New", role: "new", click: () => {
+                            label: "New", click: () => {
                                 ipcRenderer.send("showCreateNewProject");
                             }
                         },
                         {
-                            label: "Open", role: "open", click: () => {
+                            label: "Open", click: () => {
                                 ipcRenderer.send("showOpenProject");
                             }
                         },
@@ -118,7 +119,7 @@
                         },
                     ]
                 }
-            ]));
+            ]);
 
             $(document).ready(function () {
                 console.log("" +

@@ -7540,6 +7540,8 @@ LGraphCanvas.prototype.showEditPropertyValue = function( node, property, options
 			node._graph._version++;
 		if(node.onPropertyChanged)
 			node.onPropertyChanged( property, value );
+		if(node.graph && node.graph.onNodePropertyChanged)
+			node.graph.onNodePropertyChanged( node, property, value );
 		dialog.close();
 		node.setDirtyCanvas(true,true);
 	}
@@ -8092,7 +8094,7 @@ function ContextMenu( values, options )
 		}
 	}
 
-	if(options.event && options.event.constructor !== MouseEvent && options.event.constructor !== CustomEvent)
+	if(options.event && !(options.event instanceof MouseEvent || options.event instanceof CustomEvent))
 	{
 		console.error("Event passed to ContextMenu is not of type MouseEvent or CustomEvent. Ignoring it.");
 		options.event = null;
@@ -8125,21 +8127,6 @@ function ContextMenu( values, options )
 			e.preventDefault(); return true;
 		}
 	}, true);
-
-	function on_mouse_wheel(e)
-	{
-		var pos = parseInt( root.style.top );
-		root.style.top = (pos + e.deltaY * options.scroll_speed).toFixed() + "px";
-		e.preventDefault();
-		return true;
-	}
-
-	if(!options.scroll_speed)
-		options.scroll_speed = 0.1;
-
-	root.addEventListener("wheel", on_mouse_wheel, true);
-	root.addEventListener("mousewheel", on_mouse_wheel, true);
-
 
 	this.root = root;
 
