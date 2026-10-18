@@ -13,6 +13,7 @@ if (message.startsWith("Line ") || message.includes("(node_")) {
     $("#message").text("Click a node link to show it in the editor.");
 }
 const content = document.querySelector("#content")!;
+content.replaceChildren();
 let offset = 0;
 for (const match of message.matchAll(/node_([0-9]+)/g)) {
     content.append(document.createTextNode(message.slice(offset, match.index)));

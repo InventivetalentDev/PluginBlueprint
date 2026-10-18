@@ -448,8 +448,8 @@ canvas.onDrawForeground = function (ctx) {
         const node = graph.getNodeById(id);
         if (!node) continue;
         const width = node.flags.collapsed ? (node as GraphNode & {_collapsed_width?: number})._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH : node.size[0];
-        const x = node.pos[0] + width - 8;
-        const y = node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT / 2;
+        const x = node.pos[0] + width;
+        const y = node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT;
         ctx.beginPath();
         ctx.arc(x, y, 8, 0, Math.PI * 2);
         ctx.fillStyle = severity === "error" ? "#e34c4c" : "#edb54a";

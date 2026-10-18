@@ -2,6 +2,7 @@ const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
 const H = require("./support/harness");
+const ClassDataStore = require("../out/lib/classDataStore");
 const {validateGraph, classStore} = require("../out/lib/graphValidator");
 
 const nativeTypes = [
@@ -31,6 +32,33 @@ describe("GraphValidator", function () {
     before(async function () { await H.setup(); await classStore.init(); stub("commands/Command", "name"); stub("config/ConfigValue", "key"); });
     beforeEach(async function () { graph = await H.setup(); });
 
+    it("shares loaded class data and metadata between instances", async function () {
+        const first = new ClassDataStore();
+        const second = new ClassDataStore();
+        await Promise.all([first.init(), second.init()]);
+        const clazz = first.getClass("org.bukkit.event.player.PlayerJoinEvent");
+        assert(clazz);
+        assert.strictEqual(second.getClass("org.bukkit.event.player.PlayerJoinEvent"), clazz);
+        assert.strictEqual(first.classStore, second.classStore);
+        assert.strictEqual(first.meta, second.meta);
+    });
+    it("rejects stale connection ids on native EXEC outputs", function () {
+        const node = H.add(graph, "flow/Switch");
+        execute(graph, node);
+        node.outputs[0].links = [99999];
+        const problems = validateGraph(graph, {});
+        assert.strictEqual(problems.length, 1);
+        assert.strictEqual(problems[0].severity, "error");
+        assert.strictEqual(problems[0].nodeId, node.id);
+        assert.match(problems[0].message, /output.*connection that no longer exists/);
+    });
+    it("accepts native EXEC outputs with valid connections", function () {
+        const first = H.add(graph, "flow/Switch");
+        const second = H.add(graph, "flow/Switch");
+        execute(graph, first);
+        H.link(first, 0, second, "EXEC");
+        assert.deepStrictEqual(validateGraph(graph, {}), []);
+    });
     for (const defect of ["origin", "target", "origin slot", "target slot", "output backlink", "input backlink"]) {
         it("rejects a dangling connection: " + defect, function () {
             const value = H.add(graph, "constants/StringConstant");

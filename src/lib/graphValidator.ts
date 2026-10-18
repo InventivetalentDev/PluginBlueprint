@@ -68,6 +68,14 @@ export function validateGraph(graph: LGraph | ValidationGraph, projectInfo: Vali
             continue;
         }
 
+        if (node.classType === "native") {
+            for (const output of node.outputs || []) {
+                if (output.type === "@EXEC" && output.links?.some(id => !graph.links[id])) {
+                    add("error", node, `The "${output.name}" output of "${node.title}" points to a connection that no longer exists. Delete the connection and connect it again.`);
+                }
+            }
+        }
+
         const ref = node.inputs?.find(input => input.name === "REF");
         const method = classStore.getMethod(node.className, node.methodSignature);
         if ((node.nodeType === "BukkitMethodNode" || node.nodeType === "BukkitAbstractMethodNode") && method && !method.isStatic && ref?.link == null) {
