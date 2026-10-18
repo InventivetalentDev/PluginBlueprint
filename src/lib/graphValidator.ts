@@ -5,8 +5,7 @@ import type {ProjectInfo} from "../types/project";
 
 export interface Problem { severity: "error" | "warning"; nodeId?: number; message: string; }
 
-// Config nodes can be checked before the project editor's config types are installed.
-type ValidationProjectInfo = Partial<Pick<ProjectInfo, "commands">> & {config?: {key: string; type?: string; default?: unknown}[]};
+type ValidationProjectInfo = Partial<Pick<ProjectInfo, "commands" | "config">>;
 type ValidationNode = LGraphNode & {
     nodeType?: string;
     classType?: string;
