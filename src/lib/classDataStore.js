@@ -26,7 +26,7 @@ function ClassDataStore() {
     this.loadClassFile = function (fileName, external) {
         return new Promise(((resolve, reject) => {
             console.log("[ClassStore] Load " + fileName);
-            fs.readFile((external ? path.join(app.getPath("userData"), "jjdoc", fileName + ".json") : path.join(__dirname, "../data/classes", fileName + ".json")), "utf-8", (err, data) => {
+            fs.readFile((external ? path.join(app.getPath("userData"), "jjdoc", fileName + ".json") : path.join(__dirname, "../../data/classes", fileName + ".json")), "utf-8", (err, data) => {
                 if (err) {
                     reject();
                     return;

@@ -2,7 +2,7 @@ let assert = require('assert');
 let fs = require("fs-extra");
 let os = require("os");
 let path = require("path");
-const {createLineSplitter, copyPlugin} = require("../js/serverStarter");
+const {createLineSplitter, copyPlugin} = require("../out/lib/serverStarter");
 
 describe("ServerStarter", function () {
     describe("#createLineSplitter", function () {

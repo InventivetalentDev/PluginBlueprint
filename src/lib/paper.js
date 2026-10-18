@@ -5,11 +5,11 @@ const {execFile} = require("child_process");
 const {promisify} = require("util");
 const {copyFile} = require("./util");
 const run = promisify(execFile);
-const USER_AGENT = "PluginBlueprint/" + require("../package.json").version + " (https://github.com/InventivetalentDev/PluginBlueprint)";
+const USER_AGENT = "PluginBlueprint/" + require("../../package.json").version + " (https://github.com/InventivetalentDev/PluginBlueprint)";
 let meta;
 
 function getDataMeta() {
-    if (!meta) meta = JSON.parse(fs.readFileSync(path.join(__dirname, "../data/classes/paper.json"), "utf-8")).meta;
+    if (!meta) meta = JSON.parse(fs.readFileSync(path.join(__dirname, "../../data/classes/paper.json"), "utf-8")).meta;
     return meta;
 }
 

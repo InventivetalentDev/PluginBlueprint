@@ -2,17 +2,18 @@
   "name": "pluginblueprint",
   "version": "2.0.0",
   "description": "Visual editor to create Paper (Minecraft server) plugins",
-  "main": "main.js",
+  "main": "out/main.js",
   "scripts": {
     "postinstall": "electron-builder install-app-deps",
-    "test": "mocha",
-    "start": "electron . --debug",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux",
-    "dist:all": "electron-builder -mwl",
-    "dist:mac": "electron-builder --mac"
+    "build": "tsc",
+    "test": "tsc && mocha",
+    "start": "tsc && electron . --debug",
+    "pack": "tsc && electron-builder --dir",
+    "dist": "tsc && electron-builder",
+    "dist:win": "tsc && electron-builder --win",
+    "dist:linux": "tsc && electron-builder --linux",
+    "dist:all": "tsc && electron-builder -mwl",
+    "dist:mac": "tsc && electron-builder --mac"
   },
   "files": [
     "**/*",
@@ -35,7 +36,10 @@
       "assets/material-icons/*",
       "node_modules/materialize-css/dist/css/*",
       "!.*/**",
-      "!{dev,docs,test,tools}/**"
+      "!{dev,docs,test,tools}/**",
+      "!src/**",
+      "!**/*.map",
+      "!tsconfig.json"
     ],
     "nsis": {
       "oneClick": false,

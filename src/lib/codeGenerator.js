@@ -1,5 +1,5 @@
 const fs = require("fs");
-const {LiteGraph} = require("../assets/lib/litegraph/litegraph");
+const {LiteGraph} = require("../../assets/lib/litegraph/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
 const {getNullForType, javaType} = require("./util");

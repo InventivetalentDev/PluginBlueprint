@@ -1,5 +1,5 @@
 // Drive the real nodeGenerator + codeGenerator from the repo in plain Node (read-only use of repo files).
-const REPO = require("path").resolve(__dirname, "../../.."); const R = REPO + "/js/";
+const REPO = require("path").resolve(__dirname, "../../.."); const R = REPO + "/out/lib/";
 const {LiteGraph, LGraph} = require(REPO + "/assets/lib/litegraph/litegraph");
 Object.assign(global, require(REPO + "/assets/lib/litegraph/litegraph"));
 console.log = () => {}; console.warn = () => {}; console.info = () => {};

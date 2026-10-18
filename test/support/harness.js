@@ -14,8 +14,8 @@ global.window = global;
 global.Path2D = function () {};
 const lg = require(path.join(REPO, "assets/lib/litegraph/litegraph"));
 global.LiteGraph = lg.LiteGraph; global.LGraph = lg.LGraph; global.LGraphCanvas = lg.LGraphCanvas; global.LGraphNode = lg.LGraphNode;
-const NodeGenerator = require(path.join(REPO, "js/nodeGenerator"));
-const CodeGenerator = require(path.join(REPO, "js/codeGenerator"));
+const NodeGenerator = require(path.join(REPO, "out/lib/nodeGenerator"));
+const CodeGenerator = require(path.join(REPO, "out/lib/codeGenerator"));
 
 async function setup() {
     if (!global.__pbInit) { global.__pbInit = true; await NodeGenerator.init(); }

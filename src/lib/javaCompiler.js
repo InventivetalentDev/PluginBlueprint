@@ -30,7 +30,7 @@ function compile(rootDir, projectInfo, jdk, javaVersion, classpath) {
     })
 }
 
-function package(rootDir, projectInfo, jdk) {
+function packageJar(rootDir, projectInfo, jdk) {
     return new Promise((resolve, reject) => {
         let args = ["cfm", path.join(rootDir, "output", projectInfo.name + ".jar"), path.join(rootDir, "src", "manifest"),
             "-C", path.join(rootDir, "classes"), "."];
@@ -55,5 +55,5 @@ function package(rootDir, projectInfo, jdk) {
 
 module.exports = {
     compile: compile,
-    package: package
+    package: packageJar
 };

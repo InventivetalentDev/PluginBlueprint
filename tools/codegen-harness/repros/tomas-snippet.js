@@ -5,8 +5,8 @@ const REPO = path.resolve(__dirname, "../../..");
 const realLog = console.log; console.log = () => {}; console.warn = () => {};
 const LG = require(REPO + "/assets/lib/litegraph/litegraph"); Object.assign(global, LG);
 const {LiteGraph, LGraph} = LG;
-const NodeGenerator = require(REPO + "/js/nodeGenerator");
-const CodeGenerator = require(REPO + "/js/codeGenerator");
+const NodeGenerator = require(REPO + "/out/lib/nodeGenerator");
+const CodeGenerator = require(REPO + "/out/lib/codeGenerator");
 const fs = require("fs");
 (async () => {
   await NodeGenerator.init();

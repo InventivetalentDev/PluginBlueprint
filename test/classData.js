@@ -3,7 +3,7 @@ let fs = require("fs");
 let path = require("path");
 
 
-const ClassDataStore = require("../js/classDataStore");
+const ClassDataStore = require("../out/lib/classDataStore");
 const classStore = new ClassDataStore();
 
 describe("ClassStore", function () {

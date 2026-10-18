@@ -1,14 +1,14 @@
 const {app, BrowserWindow, ipcMain, dialog, Notification, shell} = require('electron');
-const paper = require("./js/paper");
-const {findJdk, downloadJdk} = require("./js/jdk");
-const javaCompiler = require("./js/javaCompiler");
-const serverStarter = require("./js/serverStarter");
-const versionControl = require("./js/versionControl");
+const paper = require("./lib/paper");
+const {findJdk, downloadJdk} = require("./lib/jdk");
+const javaCompiler = require("./lib/javaCompiler");
+const serverStarter = require("./lib/serverStarter");
+const versionControl = require("./lib/versionControl");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
 const ProgressBar = require('electron-progressbar');
-const {copyFile} = require("./js/util");
+const {copyFile} = require("./lib/util");
 const AdmZip = require("adm-zip");
 
 require("@electron/remote/main").initialize();
@@ -93,7 +93,7 @@ function init() {
         width: 1200,
         height: 800,
         show: false,
-        icon: path.join(__dirname, 'build/icon.png'),
+        icon: path.join(__dirname, '../build/icon.png'),
         backgroundColor: "#373737",
     });
     require("@electron/remote/main").enable(win.webContents);
@@ -126,7 +126,7 @@ function showWindow() {
                 type: "question",
                 message: "You have " + unsavedChanges + " unsaved changes. Are you sure you want to exit?",
                 buttons: ["Yes", "No"],
-                icon: path.join(__dirname, 'assets/images/logo-x64.png')
+                icon: path.join(__dirname, '../assets/images/logo-x64.png')
             });
             if (c === 1) {
                 e.preventDefault();
@@ -596,7 +596,7 @@ ipcMain.on("getGraphData", function (event, arg) {
         event.sender.send("graphData", JSON.parse(data));
 
         if (isNewProject) {
-            importSnippet(path.join(__dirname, "assets", "snippets", "onEnableLog.pbs"));
+            importSnippet(path.join(__dirname, "..", "assets", "snippets", "onEnableLog.pbs"));
         }
     });
 });
@@ -766,7 +766,7 @@ function showCustomErrorDialog(error, title, message) {
         show: false,
         resizable: true,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'build/icon.png')
+        icon: path.join(__dirname, '../build/icon.png')
     });
     require("@electron/remote/main").enable(errWin.webContents);
     errWin.setMenu(null);
@@ -848,7 +848,7 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
         show: false,
         resizable: false,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'build/icon.png')
+        icon: path.join(__dirname, '../build/icon.png')
     });
     require("@electron/remote/main").enable(child.webContents);
     editorWin = child;
@@ -871,7 +871,7 @@ ipcMain.on("openCommandEditor", function (event, arg) {
         show: false,
         resizable: false,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'build/icon.png')
+        icon: path.join(__dirname, '../build/icon.png')
     });
     require("@electron/remote/main").enable(child.webContents);
     commandWin = child;
@@ -923,7 +923,7 @@ ipcMain.on("startServer", async function (event, arg) {
         show: false,
         resizable: true,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'build/icon.png')
+        icon: path.join(__dirname, '../build/icon.png')
     });
     require("@electron/remote/main").enable(logWin.webContents);
     logWin.setMenu(null);
@@ -1207,7 +1207,7 @@ function showNotification(body, title) {
     let notification = new Notification({
         title: title || "PluginBlueprint",
         body: body || "-message-",
-        icon: path.join(__dirname, "build/icon.png")
+        icon: path.join(__dirname, "../build/icon.png")
     });
     notification.show();
     return notification;

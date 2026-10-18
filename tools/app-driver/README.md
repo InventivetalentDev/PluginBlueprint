@@ -6,6 +6,8 @@ These scripts drive the running app over the Chrome DevTools Protocol (CDP). Use
 
 Run from the repository root. Do not add `--debug`: `npm start` passes it, and Electron refuses to start when `--debug` and `--inspect` are combined.
 
+Run `npx tsc` before the launch command to compile the application.
+
 ```sh
 npx electron . --inspect=9271 --remote-debugging-port=9471
 ```

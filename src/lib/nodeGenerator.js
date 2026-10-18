@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const shell = require('electron').shell;
-const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../assets/lib/litegraph/litegraph");
+const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../../assets/lib/litegraph/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
 const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding, isNumberType, javaType} = require("./util");

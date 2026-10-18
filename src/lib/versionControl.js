@@ -8,7 +8,7 @@ const {copyFile} = require("./util");
 
 function init(projectPath) {
     return new Promise((resolve, reject) => {
-        copyFile(path.join(__dirname, "../assets/projectGitignore.txt"), path.join(projectPath, ".gitignore"))
+        copyFile(path.join(__dirname, "../../assets/projectGitignore.txt"), path.join(projectPath, ".gitignore"))
             .then(() => {
                 return git.init({fs, dir: projectPath})
             })

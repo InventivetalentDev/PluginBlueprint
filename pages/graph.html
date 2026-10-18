@@ -97,14 +97,14 @@
         <script>
             const {ipcRenderer} = require("electron");
             const {app, getCurrentWindow} = require("@electron/remote");
-            const setWindowMenu = require("../js/windowMenu");
+            const setWindowMenu = require("../out/lib/windowMenu");
             const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../assets/lib/litegraph/litegraph");
-            const NodeGenerator = require("../js/nodeGenerator");
-            const CodeGenerator = require("../js/codeGenerator");
-            const History = require("../js/history");
+            const NodeGenerator = require("../out/lib/nodeGenerator");
+            const CodeGenerator = require("../out/lib/codeGenerator");
+            const History = require("../out/lib/history");
             const $ = require("jquery");
             const KeyPics = require("key.pics");
-            const {updateLinkColors} = require("../js/util");
+            const {updateLinkColors} = require("../out/lib/util");
 
             let theMenu = setWindowMenu([
                 {

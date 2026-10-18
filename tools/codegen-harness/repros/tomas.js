@@ -14,8 +14,8 @@ console.warn = () => {};
 console.debug = () => {};
 
 const LG = require(REPO + "/assets/lib/litegraph/litegraph"); const {LiteGraph, LGraph} = LG; Object.assign(global, LG);
-const NodeGenerator = require(REPO + "/js/nodeGenerator");
-const CodeGenerator = require(REPO + "/js/codeGenerator");
+const NodeGenerator = require(REPO + "/out/lib/nodeGenerator");
+const CodeGenerator = require(REPO + "/out/lib/codeGenerator");
 
 // classpath from the evidence project's javac argfile
 const argLines = fs.readFileSync(process.env.PB_JAVAC_ARGS, "utf8").split("\n");
