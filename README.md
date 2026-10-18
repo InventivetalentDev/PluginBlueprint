@@ -1,11 +1,44 @@
-![](https://i.imgur.com/oHijbOO.png)
+<img src="assets/images/logo-x512.png" width="128" alt="PluginBlueprint logo">
 
-**PluginBlueprint** is a visual editor, which allows you to create plugins for Bukkit/Spigot by adding & connecting nodes, without having to write a single line of code. This was inspired by the [Unreal Engine 4 Blueprint Editor](https://docs.unrealengine.com/en-us/Engine/Blueprints). 
+# PluginBlueprint
 
+PluginBlueprint is a visual editor for Paper plugins (Minecraft 26.3).
+You create plugins by adding and connecting nodes, without writing code.
 
-![](https://thumbs.gfycat.com/KindlyBossyBunny-size_restricted.gif) 
+![Join-message graph connecting PlayerJoinEvent, Player, StringFormat, and sendRichMessage](docs/images/join-message.png)
 
-![](https://thumbs.gfycat.com/InformalWhisperedFishingcat-size_restricted.gif)
+## Download
 
+Download the latest version from
+[GitHub Releases](https://github.com/InventivetalentDev/PluginBlueprint/releases/latest).
 
-![](https://i.imgur.com/f986ivP.png)
+- Windows: `.exe` installer.
+- macOS: `.dmg` or `.zip`, for Apple Silicon.
+- Linux: `.AppImage` or `.deb`.
+
+## Documentation
+
+1. [Getting started](https://github.com/InventivetalentDev/PluginBlueprint/wiki/Getting-Started): install the app and compile your first project.
+2. [Examples](https://github.com/InventivetalentDev/PluginBlueprint/wiki/Examples): build five plugins from steps or downloadable snippets.
+
+The documentation source is in [`docs/`](docs/Home.md).
+
+## Support
+
+PluginBlueprint is free and open source. If it helps you, you can [pay what you want](https://inventivetalent.shop/l/pluginblueprint?layout=profile).
+
+## Requirements
+
+- Internet access when you create a project (to download or check the Paper server, and Java if needed).
+- Java 25 or newer to compile. If a suitable JDK is missing, the app offers to download one.
+
+## Development
+
+Use Node.js 24.
+
+```sh
+npm ci        # Install dependencies.
+npm start     # Start the app.
+npm test      # Run the tests.
+npm run dist  # Build an installer for your platform.
+```

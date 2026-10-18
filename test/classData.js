@@ -8,6 +8,7 @@ const classStore = new ClassDataStore();
 
 describe("ClassStore", function () {
     before(function (done) {
+        this.timeout(30000);
         classStore.init().then(() => {
             done();
         });
@@ -29,6 +30,11 @@ describe("ClassStore", function () {
         })
     });
     describe("#getClass", function () {
+        describe("(org.bukkit.plugin.java.JavaPlugin)", function () {
+            it("should extend org.bukkit.plugin.PluginBase", function () {
+                assert.equal(classStore.getClass("org.bukkit.plugin.java.JavaPlugin").superclass, "org.bukkit.plugin.PluginBase");
+            });
+        });
         describe("(null)", function () {
             it("should return null", function () {
                 assert.equal(classStore.getClass(null), null);
@@ -50,6 +56,12 @@ describe("ClassStore", function () {
                 })
             })
         })
+    });
+    describe("meta", function () {
+        it("should contain the Minecraft and Java versions", function () {
+            assert(typeof classStore.meta.minecraftVersion === "string" && classStore.meta.minecraftVersion.length > 0);
+            assert(typeof classStore.meta.javaVersion === "number");
+        });
     });
     describe("#getAllImplementingAndExtendingClasses", function () {
         describe("(org.bukkit.plugin.Plugin)", function () {

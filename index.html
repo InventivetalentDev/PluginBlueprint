@@ -91,11 +91,9 @@
 
         <script>
             const {ipcRenderer, shell} = require("electron");
-            const {dialog, Menu, getCurrentWindow, app, getGlobal} = require("electron").remote;
-            const analytics = getGlobal("analytics");
+            const {dialog, Menu, getCurrentWindow, app} = require("@electron/remote");
             const prompt = require("electron-prompt");
             const $ = require("jquery");
-            const Sentry = require("@sentry/electron");
 
 
             getCurrentWindow().setMenu(Menu.buildFromTemplate([
@@ -128,33 +126,18 @@
                     "Copyright (c) 2018, Haylee Schaefer\n" +
                     "All rights reserved.\n");
 
-                Sentry.init({
-                    dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246',
-                    beforeSend(event) {
-                        // Check if it is an exception, if so, show the report dialog
-                        if (event.exception) {
-                            Sentry.showReportDialog();
-                        }
-                        return event;
-                    }
-                });
-
                 console.log("Checking for updates...");
                 ipcRenderer.send("checkUpdate");
-
-                analytics.pageview("/", "", "Home").send();
             });
 
             ipcRenderer.send("getRecentProjects");
 
             $(".createNewProject").click(() => {
                 ipcRenderer.send("showCreateNewProject");
-                analytics.event("Home", "Create New Project").send();
             });
 
             $("#openProject").click(() => {
                 ipcRenderer.send("showOpenProject");
-                analytics.event("Home", "Open Project").send();
             });
 
             ipcRenderer.on("recentProjects", function (event, arg) {
@@ -163,7 +146,6 @@
                     let item = $('<li class="collection-item avatar">' + (arg[i].thumbnail ? '<div class="thumbnail" style="background-image: url(data:image/jpeg;base64,' + arg[i].thumbnail + ')"></div>' : '') + '<span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p><span class="editorVersion">' + arg[i].editorVersion + '</span></li>');
                     item.click(() => {
                         ipcRenderer.send("openProject", arg[i].path);
-                        analytics.event("Home", "Open Recent Project").send();
                     });
                     item.appendTo($("#recentProjects"));
                 }
@@ -176,7 +158,6 @@
             $(document).on('click', 'a[href^="http"]', function (event) {
                 event.preventDefault();
                 shell.openExternal(this.href);
-                analytics.pageview(this.href).send();
             });
 
             ipcRenderer.on("updateInfo", function (event, arg) {

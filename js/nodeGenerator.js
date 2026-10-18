@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const shell = require('electron').shell;
-const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../node_modules/litegraph.js/build/litegraph");
+const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../assets/lib/litegraph/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
 const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding, isNumberType} = require("./util");
@@ -76,13 +76,19 @@ const optionalInputOutputSorter = function (a, b) {
     return 0;
 };
 
+function isApiClass(c) {
+    return c.startsWith("org.bukkit") || c.startsWith("io.papermc.paper") ||
+        c.startsWith("com.destroystokyo.paper") || c.startsWith("net.kyori.adventure");
+}
+
 function onEventAdd(node, options, e, prevMenu) {
     let entries = [];
     let existingCategories = [];
     let classesByName = classStore.getClassesByName();
     for (let c in classesByName) {
-        if (!c.startsWith("org.bukkit")) continue;
+        if (!isApiClass(c)) continue;
         let clazz = classesByName[c];
+        if (clazz.isDeprecated) continue;
         if (!clazz.isEvent) continue;
         let v1 = clazz.package;
         if (existingCategories.indexOf(v1) === -1) {
@@ -96,8 +102,9 @@ function onEventAdd(node, options, e, prevMenu) {
     function inner_clicked(v, option, e) {
         var values = [];
         for (let c in classesByName) {
-            if (!c.startsWith("org.bukkit")) continue;
+            if (!isApiClass(c)) continue;
             let clazz = classesByName[c];
+            if (clazz.isDeprecated) continue;
             if (!clazz.isEvent) continue;
             let v1 = clazz.package;
             if (v.value === v1) {
@@ -126,8 +133,9 @@ function onObjectAdd(node, options, e, prevMenu) {
     let existingCategories = [];
     let classesByName = classStore.getClassesByName();
     for (let c in classesByName) {
-        if (!c.startsWith("org.bukkit")) continue;
+        if (!isApiClass(c)) continue;
         let clazz = classesByName[c];
+        if (clazz.isDeprecated) continue;
         if (clazz.isEvent || (!clazz.isObject && !clazz.isEnum)) continue;
         let v1 = clazz.package;
         if (existingCategories.indexOf(v1) === -1) {
@@ -141,8 +149,9 @@ function onObjectAdd(node, options, e, prevMenu) {
     function inner_clicked(v, option, e) {
         var values = [];
         for (let c in classesByName) {
-            if (!c.startsWith("org.bukkit")) continue;
+            if (!isApiClass(c)) continue;
             let clazz = classesByName[c];
+            if (clazz.isDeprecated) continue;
             if (clazz.isEvent || (!clazz.isObject && !clazz.isEnum)) continue;
             let v1 = clazz.package;
             if (v.value === v1) {
@@ -171,8 +180,9 @@ function onMethodAdd(node, options, e, prevMenu) {
     let existingCategories = [];
     let classesByName = classStore.getClassesByName();
     for (let c in classesByName) {
-        if (!c.startsWith("org.bukkit")) continue;
+        if (!isApiClass(c)) continue;
         let clazz = classesByName[c];
+        if (clazz.isDeprecated) continue;
 
         let v1 = clazz.package;
         if (existingCategories.indexOf(v1) === -1) {
@@ -188,8 +198,9 @@ function onMethodAdd(node, options, e, prevMenu) {
         var values = [];
         let existingCategories = [];
         for (let c in classesByName) {
-            if (!c.startsWith("org.bukkit")) continue;
+            if (!isApiClass(c)) continue;
             let clazz = classesByName[c];
+            if (clazz.isDeprecated) continue;
 
             if (v.value === clazz.package) {
                 let simpleName = clazz.name;
@@ -208,11 +219,13 @@ function onMethodAdd(node, options, e, prevMenu) {
         var values = [];
         let existingCategories = [];
         for (let c in classesByName) {
-            if (!c.startsWith("org.bukkit")) continue;
+            if (!isApiClass(c)) continue;
             let clazz = classesByName[c];
+            if (clazz.isDeprecated) continue;
             if (v.value === clazz.qualifiedName) {
                 for (let m in clazz.methodsBySignature) {
                     let method = clazz.methodsBySignature[m];
+                    if (method.isDeprecated) continue;
                     if (existingCategories.indexOf(m) === -1) {
                         values.push({content: method.fullFlatSignature, value: {class: clazz.qualifiedName, method: method.fullSignature}, has_submenu: false});
                         existingCategories.push(m);
@@ -292,7 +305,7 @@ function showOptionalSlotMenu(v, opts, e, prev_menu, node) {
     return false;
 }
 
-function init(extraLibraries) {
+function init() {
     return new Promise((resolve => {
         // Clear default node types
         LiteGraph.registered_node_types = {};
@@ -376,19 +389,23 @@ function init(extraLibraries) {
                 if (!className) {
                     return;
                 }
+                let classData = classStore.getClass(className);
+                let meta = classStore.meta;
                 let url;
-                if (className.startsWith("org.bukkit.")) {
-                    url = "https://hub.spigotmc.org/javadocs/spigot/";
+                if (className.startsWith("org.bukkit.") || className.startsWith("io.papermc.paper.") || className.startsWith("com.destroystokyo.paper.")) {
+                    url = "https://jd.papermc.io/paper/" + meta.minecraftVersion + "/";
                 } else if (className.startsWith("java.")) {
-                    url = "https://docs.oracle.com/javase/8/docs/api/";
+                    url = "https://docs.oracle.com/en/java/javase/" + meta.javaVersion + "/docs/api/java.base/";
+                } else if (className.startsWith("net.kyori.adventure.")) {
+                    let artifact = className.startsWith("net.kyori.adventure.text.minimessage.") ? "adventure-text-minimessage" :
+                        className.startsWith("net.kyori.adventure.key.") ? "adventure-key" : "adventure-api";
+                    url = "https://javadoc.io/doc/net.kyori/" + artifact + "/" + meta.adventureVersion + "/";
                 }
-                if (!url) {
+                if (!url || !classData) {
                     return;
                 }
 
-                url += className.split(".").join("/") + ".html";
-
-                /// TODO: link to individual fields/methods/etc.
+                url += classData.package.split(".").join("/") + "/" + classData.name + ".html";
 
                 shell.openExternal(url);
             }
@@ -411,19 +428,8 @@ function init(extraLibraries) {
         classStore.init().then(() => {
             console.log("Generating & Registering Nodes...");
 
-            if (extraLibraries && extraLibraries.length > 0) {
-                let libPromises = [];
-                for (let l = 0; l < extraLibraries.length; l++) {
-                    libPromises.push(classStore.loadLibrary(extraLibraries[l]));
-                }
-                Promise.all(libPromises).then(() => {
-                    ensureNodeRegistration();
-                    resolve();
-                })
-            } else {
-                ensureNodeRegistration();
-                resolve();
-            }
+            ensureNodeRegistration();
+            resolve();
         });
     }))
 }
@@ -1000,13 +1006,5 @@ function handleSlotDoubleClick(node, type, i, e) {
 module.exports = {
     init: init,
     getOrCreateBukkitClassNode: getOrCreateBukkitClassNode,
-    getOrCreateBukkitMethodNode: getOrCreateBukkitMethodNode,
-    addLibrary: function (lib) {
-        return new Promise((resolve, reject) => {
-            classStore.loadLibrary(lib).then(() => {
-                ensureNodeRegistration();
-                resolve();
-            }).catch(reject);
-        })
-    }
+    getOrCreateBukkitMethodNode: getOrCreateBukkitMethodNode
 };

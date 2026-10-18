@@ -1,37 +1,17 @@
-const electron = require("electron");
-const app = electron.app || electron.remote.app;
 const path = require("path");
 const fs = require("fs-extra");
-const {exec, spawn} = require("child_process");
+const {spawn} = require("child_process");
 const {copyFile} = require("./util");
 
 let running = false;
 let instance = null;
 
-function copyPlugin(projectPath, projectInfo, skipEmpty, skipReloadHelper, skipLibraries) {
+function copyPlugin(projectPath, projectInfo, skipEmpty) {
     let projectName = projectInfo.name;
     return new Promise((resolve, reject) => {
         function doCopy() {
-            copyFile(path.join(projectPath, "output", projectName + ".jar"), path.join(projectPath, "lib", "plugins", projectName + ".jar"))// copy plugin
-                .then(() => {
-                    if (skipReloadHelper && (skipLibraries || !projectInfo.libraries || projectInfo.libraries.length === 0)) {
-                        resolve()
-                    } else {
-                        copyFile(path.join(__dirname, "../assets/lib/livereload.jar"), path.join(projectPath, "lib", "plugins", "livereload.jar"))// copy livereload helper plugin
-                            .then(() => {
-                                if (skipLibraries || !projectInfo.libraries || projectInfo.libraries.length === 0) {
-                                    resolve();
-                                } else {
-                                    let libPromises = [];
-                                    for (let l = 0; l < projectInfo.libraries.length; l++) {
-                                        libPromises.push(copyFile(path.join(app.getPath("userData"), "jjdoc-binaries", projectInfo.libraries[l] + ".jar"), path.join(projectPath, "lib", "plugins", projectInfo.libraries[l] + ".jar")));
-                                    }
-                                    Promise.all(libPromises)
-                                        .then(resolve).catch(reject);
-                                }
-                            }).catch(reject);
-                    }
-                }).catch(reject);
+            copyFile(path.join(projectPath, "output", projectName + ".jar"), path.join(projectPath, "lib", "plugins", projectName + ".jar"))
+                .then(resolve).catch(reject);
         }
 
         let pluginsDir = path.join(projectPath, "lib", "plugins");
@@ -53,17 +33,17 @@ function copyPlugin(projectPath, projectInfo, skipEmpty, skipReloadHelper, skipL
     })
 }
 
-function startServer(projectPath, outCb, errCb) {
+function startServer(projectPath, java, outCb, errCb) {
     if (running || instance) return false;
-    let spawned = spawn("java", ["-DIReallyKnowWhatIAmDoingISwear", "-Dcom.mojang.eula.agree=true", "-jar", "spigot.jar"], {
-        cwd: path.join(projectPath, "lib"),
-        // shell: true
+    let spawned = spawn(java, ["-Xmx2G", "-DIReallyKnowWhatIAmDoingISwear", "-Dcom.mojang.eula.agree=true", "-jar", "paper.jar", "nogui"], {
+        cwd: path.join(projectPath, "lib")
     });
     running = true;
     instance = spawned;
     spawned.on('error', (err) => {
         console.log('Failed to start subprocess.');
         console.warn(err);
+        if (errCb) errCb(err.message);
         running = false;
         instance = null;
     });
@@ -79,6 +59,19 @@ function startServer(projectPath, outCb, errCb) {
         instance = null;
     });
     return true;
+}
+
+function stopServer() {
+    return new Promise(resolve => {
+        if (!instance) return resolve();
+        let server = instance;
+        let timeout = setTimeout(() => server.kill("SIGKILL"), 30000);
+        server.once("exit", () => {
+            clearTimeout(timeout);
+            resolve();
+        });
+        server.stdin.write("stop\n");
+    });
 }
 
 function sendCommandToInstance(cmd, cb) {
@@ -101,6 +94,7 @@ function killInstance() {
 module.exports = {
     copyPlugin: copyPlugin,
     startServer: startServer,
+    stopServer: stopServer,
     sendCommandToInstance: sendCommandToInstance,
     killInstance: killInstance,
     isRunning: () => {

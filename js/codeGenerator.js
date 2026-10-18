@@ -1,5 +1,5 @@
 const fs = require("fs");
-const {LiteGraph} = require("../node_modules/litegraph.js/build/litegraph");
+const {LiteGraph} = require("../assets/lib/litegraph/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
 const {getNullForType} = require("./util");
@@ -30,15 +30,6 @@ function generateClassCode(graph, projectInfo) {
     return new Promise((resolve) => {
         debug = projectInfo.debug;
         classStore.init()
-            .then(() => {
-                let libPromises = [];
-                if (projectInfo.libraries) {
-                    for (let l = 0; l < projectInfo.libraries.length; l++) {
-                        libPromises.push(classStore.loadLibrary(projectInfo.libraries[l]));
-                    }
-                }
-                return Promise.all(libPromises);
-            })
             .then(() => {
                 console.log(graph);
                 for (let i = 0; i < graph._nodes.length; i++) {
@@ -473,7 +464,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbst
                 if (linkInfo) {
                     code += nodeReturn(node.id) + " = " + nodeOutput(linkInfo.origin_id, linkInfo.origin_slot) + ";\n";
                 } else {
-                    code += nodeReturn(node.id) + "=" + getNullForType(sourceOutput ? sourceOutput.type : null) + ";\n";
+                    code += nodeReturn(node.id) + "=" + getNullForType(node.inputs[i].type) + ";\n";
                 }
                 break;
             }
@@ -594,21 +585,22 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
                     let methodParams = [];
                     if (methodData.parameters) {
                         for (let p = 0; p < methodData.parameters.length; p++) {
-                            let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
+                            let pType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName + methodData.parameters[p].type.dimension;
                             console.log(methodData.parameters[p]);
                             console.log(pType);
                             methodParams.push(pType + " " + methodData.parameters[p].name);
                         }
                     }
-                    code += "    public " + methodData.returnType.qualifiedName + " " + methodData.name + "(" + methodParams.join(",") + ") {\n";
+                    let returnType = methodData.returnType.typeVariable ? "java.lang.Object" : methodData.returnType.qualifiedName + methodData.returnType.dimension;
+                    code += "    public " + returnType + " " + methodData.name + "(" + methodParams.join(",") + ") {\n";
                     let returnCode = "";
                     for (let l = 0; l < output.links.length; l++) {
                         let linkInfo = graph.links[output.links[l]];
                         if (!linkInfo) continue;
                         if (methodData.parameters) {
                             for (let p = 0; p < methodData.parameters.length; p++) {
-                                let pType = methodData.parameters[p].typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName;
-                                fields.push("private " + pType + nodeOutput(linkInfo.target_id, 1 + p) + ";");
+                                let pType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : methodData.parameters[p].type.qualifiedName + methodData.parameters[p].type.dimension;
+                                fields.push("private " + pType + " " + nodeOutput(linkInfo.target_id, 1 + p) + ";");
                                 code += nodeOutput(linkInfo.target_id, 1 + p) + " = " + methodData.parameters[p].name + ";\n"
                             }
                         }
@@ -812,7 +804,7 @@ function nodeExec(nodeId) {
 }
 
 function debugCall(nodeId) {
-    return debug ? "java.lang.System.out.println(\"pb_debug_exec=" + nodeId + "\");/** Debug call **/\n" : "";
+    return debug ? "getLogger().info(\"pb_debug_exec=" + nodeId + "\");/** Debug call **/\n" : "";
 }
 
 module.exports = {

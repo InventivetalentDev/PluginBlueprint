@@ -1,24 +1,52 @@
-const {app, BrowserWindow, ipcMain, dialog, Notification, shell, crashReporter} = require('electron');
-const {LiteGraph} = require("litegraph.js");
-const NodeGenerator = require("./js/nodeGenerator");
-const CodeGenerator = require("./js/codeGenerator");
+const {app, BrowserWindow, ipcMain, dialog, Notification, shell} = require('electron');
+const paper = require("./js/paper");
+const {findJdk, downloadJdk} = require("./js/jdk");
 const javaCompiler = require("./js/javaCompiler");
 const serverStarter = require("./js/serverStarter");
-const googleAnalytics = require("./js/analytics");
 const versionControl = require("./js/versionControl");
 const prompt = require("electron-prompt");
 const path = require("path");
 const fs = require("fs-extra");
-const notifier = require("node-notifier");
-const request = require("request");
-const Sentry = require("@sentry/electron");
 const ProgressBar = require('electron-progressbar');
 const {copyFile} = require("./js/util");
 const AdmZip = require("adm-zip");
-const RPC = require("discord-rich-presence");
+
+require("@electron/remote/main").initialize();
 
 const DEFAULT_TITLE = "PluginBlueprint Editor";
 const APP_MODEL_ID = "inventivetalent.PluginBlueprint";
+const jdkDir = path.join(app.getPath("userData"), "jdk");
+const paperCacheDir = path.join(app.getPath("userData"), "paper");
+let jdk;
+
+async function ensureJdk(progressBar) {
+    if (jdk) return jdk;
+    let major = paper.getDataMeta().javaVersion;
+    jdk = await findJdk(major, jdkDir);
+    if (!jdk) {
+        let {response} = await dialog.showMessageBox({
+            type: "question",
+            message: "PluginBlueprint needs Java " + major + " to build plugins. Download it now (about 200 MB)?",
+            buttons: ["Download", "Cancel"]
+        });
+        if (response !== 0) throw new Error("Java " + major + " is required to compile plugins.");
+        jdk = await downloadJdk(major, jdkDir, fraction => {
+            if (progressBar) progressBar.detail = "Downloading Java " + major + ": " + Math.round(fraction * 100) + "%";
+        });
+    }
+    return jdk;
+}
+
+async function ensureProjectServer(progressBar) {
+    await ensureJdk(progressBar);
+    await paper.ensureServer({
+        libDir: path.join(currentProjectPath, "lib"),
+        cacheDir: paperCacheDir,
+        minecraftVersion: currentProject.minecraftVersion,
+        java: jdk.java,
+        onProgress: text => { if (progressBar) progressBar.detail = text; }
+    });
+}
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -27,11 +55,15 @@ let logWin;
 let errWin;
 let editorWin;
 let commandWin;
-let libraryWin;
-
-let richPresence;
 
 let debug = false;
+let unsavedChanges = 0;
+let uncompiledChanges = 0;
+
+ipcMain.on("setChangeState", function (event, arg) {
+    if (arg.unsaved !== undefined) unsavedChanges = arg.unsaved;
+    if (arg.uncompiled !== undefined) uncompiledChanges = arg.uncompiled;
+});
 
 let currentProject;
 let currentProjectPath;
@@ -45,17 +77,6 @@ function init() {
         "Copyright (c) 2018, Haylee Schaefer\n" +
         "All rights reserved.\n");
 
-    crashReporter.start({
-        productName: "PluginBlueprint",
-        companyName: "inventivetalent",
-        submitURL: "https://submit.backtrace.io/inventivetalent/194573923afb55a5b91ad7cda2868bbefaf0df605ae377a7067af7bd44f88e27/minidump",
-        uploadToServer: true
-    });
-    Sentry.init({
-        release: "PluginBlueprint@" + app.getVersion(),
-        dsn: 'https://6d56f92bc4f84e44b66950ed04e92704@sentry.io/1309246'
-    });
-
     console.log(process.argv);
     process.argv.forEach((val, index) => {
         if (val === "--debug") {
@@ -66,26 +87,22 @@ function init() {
 
     // Create the browser window.
     win = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         title: DEFAULT_TITLE + " " + app.getVersion(),
         width: 1200,
         height: 800,
         show: false,
-        icon: path.join(__dirname, 'assets/images/favicon.ico'),
+        icon: path.join(__dirname, 'build/icon.png'),
         backgroundColor: "#373737",
     });
+    require("@electron/remote/main").enable(win.webContents);
 
-    googleAnalytics.init().then(analytics => {
-        analytics.set("ds", "app");
-        analytics.set("debugEnabled", debug);
-        analytics.set("appVersion", app.getVersion());
-
-        showWindow();
-    });
+    showWindow();
 }
 
 function showWindow() {
-    app.unsavedChanges = 0;
-    app.uncompiledChanges = 0;
+    unsavedChanges = 0;
+    uncompiledChanges = 0;
 
     // and load the index.html of the app.
     win.loadFile('index.html');
@@ -100,15 +117,13 @@ function showWindow() {
         }
 
         checkFileAssociation();
-        updateRichPresence();
-        global.analytics.screenview("Home", app.getName(), app.getVersion()).send();
     });
 
     win.on("close", function (e) {
-        if (app.unsavedChanges > 0) {
-            let c = dialog.showMessageBox({
+        if (unsavedChanges > 0) {
+            let c = dialog.showMessageBoxSync({
                 type: "question",
-                message: "You have " + app.unsavedChanges + " unsaved changes. Are you sure you want to exit?",
+                message: "You have " + unsavedChanges + " unsaved changes. Are you sure you want to exit?",
                 buttons: ["Yes", "No"],
                 icon: path.join(__dirname, 'assets/images/logo-x64.png')
             });
@@ -129,16 +144,6 @@ function showWindow() {
     });
 
     readRecentProjects();
-
-    // Init Discord Rich Presence
-    richPresence = RPC("532503320108072960");
-    richPresence.on("error", (err) => {
-        console.warn(err);
-        global.analytics.event("DiscordRPC", "failed").send();
-    });
-    richPresence.on("connected", () => {
-        global.analytics.event("DiscordRPC", "connected").send();
-    });
 }
 
 
@@ -156,6 +161,10 @@ app.on('window-all-closed', () => {
     }
 });
 
+app.on("will-quit", () => {
+    serverStarter.killInstance();
+});
+
 app.on('activate', () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
@@ -166,7 +175,6 @@ app.on('activate', () => {
 
 process.on('uncaughtException', function (error) {
     console.error(error);
-    Sentry.captureException(error);
 });
 
 // In this file you can include the rest of your app's specific main process
@@ -190,7 +198,6 @@ function readRecentProjects() {
     fs.readFile(recentProjectFile, function (err, data) {
         if (err) {
             console.warn(err);
-            Sentry.captureException(err);
             return;
         }
         data = JSON.parse(data);
@@ -242,7 +249,6 @@ function writeRecentProjects() {
     fs.writeFile(path.join(app.getPath("userData"), "recentProjects.pbd"), JSON.stringify(paths), "utf-8", function (err) {
         if (err) {
             console.warn(err);
-            Sentry.captureException(err);
         }
     });
 }
@@ -272,25 +278,6 @@ function updateJumpList() {
     ])
 }
 
-function updateRichPresence() {
-    if (richPresence) {
-        if (currentProjectPath && currentProject) {
-            richPresence.updatePresence({
-                state: "Blueprinting",
-                details: "Editing " + currentProject.name,
-                largeImageKey: "large_default",
-                startTimestamp: Date.now(),// TODO: probably inaccurate to always use the current time
-            })
-        } else {
-            richPresence.updatePresence({
-                state: "In Project Selection",
-                largeImageKey: "large_gray",
-                startTimestamp: Date.now(),// TODO: probably inaccurate to always use the current time
-            })
-        }
-    }
-}
-
 ipcMain.on("openGraph", function (event, arg) {
     if (win) {
         win.loadFile('pages/graph.html');
@@ -298,7 +285,7 @@ ipcMain.on("openGraph", function (event, arg) {
 });
 
 ipcMain.on("showCreateNewProject", function (event, arg) {
-    let projectPath = dialog.showOpenDialog({
+    let projectPath = dialog.showOpenDialogSync({
         properties: ["openDirectory"]
     });
     console.log(projectPath);
@@ -312,15 +299,7 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
             return;
         }
     }
-    let pathSplit = projectPath.split("\\");
-
-    try {
-        global.analytics.event("Project", "Start creating new").send();
-    } catch (e) {
-        console.warn(e);
-    }
-
-    let name = pathSplit[pathSplit.length - 1];
+    let name = path.basename(projectPath);
     prompt({
         title: "Give your project a name",
         label: "Project Name",
@@ -331,46 +310,12 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
             name = r;
             console.log(name);
 
-            dialog.showMessageBox({
-                title: "Select spigot.jar location",
-                message: "Please select the location of a valid Spigot or Paper Server executable (usually spigot.jar)",
-                buttons: ["Select", "I don't have one"],
-                icon: path.join(__dirname, 'assets/images/logo-x64.png')
-            }, (r) => {
-                console.log(r);
-                if (r === 0) {
-                    let libPath = dialog.showOpenDialog({
-                        properties: ["openFile"],
-                        filters: [
-                            {name: 'Spigot JAR file', extensions: ['jar']}
-                        ]
-                    });
-                    console.log(libPath);
-                    if (!libPath || libPath.length === 0) {
-                        return;
-                    }
-                    if (Array.isArray(libPath)) {
-                        libPath = libPath[0];
-                        if (!libPath || libPath.length === 0) {
-                            return;
-                        }
-                    }
-
-                    createNewProject({
-                        path: projectPath,
-                        name: name
-                    }, libPath)
-                } else {
-                    shell.openExternal("https://www.spigotmc.org/wiki/buildtools/#running-buildtools");
-                }
-            });
-
-
+            createNewProject({path: projectPath, name: name});
         }
     })
 });
 
-function createNewProject(arg, lib) {
+function createNewProject(arg) {
     let projectFilePath = path.join(arg.path, "project.pbp");
     if (fs.existsSync(projectFilePath)) {
         dialog.showErrorBox("Project exists", "There is already a PluginBlueprint project in that directory");
@@ -391,7 +336,8 @@ function createNewProject(arg, lib) {
         author: "inventivetalent",
         package: "my.awesome.plugin",
         version: "0.0.0",
-        type: "spigot",
+        type: "paper",
+        minecraftVersion: paper.getDataMeta().minecraftVersion,
         lastSave: 0,
         lastCompile: 0,
         editorVersion: app.getVersion(),
@@ -403,13 +349,12 @@ function createNewProject(arg, lib) {
         progressBar.detail = "Creating project files...";
 
         setTimeout(function () {
-            fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", (err) => {
+            fs.writeFile(projectFilePath, JSON.stringify(projectInfo), "utf-8", async (err) => {
                 progressBar.value++;
                 if (err) {
                     console.error("Failed to create project file");
                     console.error(err);
                     dialog.showErrorBox("Error", "Failed to create PluginBlueprint project in that directory");
-                    Sentry.captureException(err);
                     return;
                 }
                 currentProjectPath = arg.path;
@@ -425,74 +370,59 @@ function createNewProject(arg, lib) {
                 fs.mkdirSync(path.join(arg.path, "output"));
                 fs.mkdirSync(path.join(arg.path, "lib"));
 
-                progressBar.detail = "Copying server .jar file...";
+                try {
+                    await ensureProjectServer(progressBar);
+                } catch (err) {
+                    console.error(err);
+                    dialog.showErrorBox("Server setup failed", err.message);
+                }
+                progressBar.value++;
+                progressBar.detail = "Setting up graph file...";
 
-                let rs = fs.createReadStream(lib);
-                let ws = fs.createWriteStream(path.join(currentProjectPath, "lib", "spigot.jar"));
-                ws.on("close", function () {
+                fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
                     progressBar.value++;
-                    progressBar.detail = "Setting up graph file...";
+                    if (err) {
+                        console.error("Failed to create graph file");
+                        console.error(err);
+                        return;
+                    }
 
-                    fs.writeFile(path.join(arg.path, "graph.pbg"), JSON.stringify({}), "utf-8", (err) => {
+                    recentProjects.unshift({
+                        path: currentProjectPath,
+                        name: currentProject.name,
+                        editorVersion: currentProject.editorVersion
+                    });
+                    writeRecentProjects();
+
+                    app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
+                    updateJumpList();
+
+                    progressBar.detail = "Creating initial commit...";
+
+                    versionControl.init(currentProjectPath).then(repo => {
                         progressBar.value++;
-                        if (err) {
-                            console.error("Failed to create graph file");
-                            console.error(err);
-                            Sentry.captureException(err);
-                            return;
-                        }
+                        console.log(repo);
 
-                        recentProjects.unshift({
-                            path: currentProjectPath,
-                            name: currentProject.name,
-                            editorVersion: currentProject.editorVersion
-                        });
-                        writeRecentProjects();
+                        progressBar.detail = "Done!";
 
-                        app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
-                        updateJumpList();
-
-                        progressBar.detail = "Creating initial commit...";
-
-                        versionControl.init(currentProjectPath).then(repo => {
+                        if (win) {
+                            win.loadFile('pages/graph.html');
+                            win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
                             progressBar.value++;
-                            console.log(repo);
-
-                            progressBar.detail = "Done!";
-
-                            if (win) {
-                                win.loadFile('pages/graph.html');
-                                win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
-                                progressBar.value++;
-                            }
-                            updateRichPresence();
-                            global.analytics.event("Project", "New created").send();
-                        }).catch(err => {
-                            console.error(err);
-                            Sentry.captureException(err);
-                        })
+                        }
+                    }).catch(err => {
+                        console.error(err);
                     })
-                });
-                rs.pipe(ws);
+                })
 
             });
         }, 500);
     });
 }
 
-ipcMain.on("createNewProject", function (event, arg) {
-    createNewProject(arg);
-});
-
 
 ipcMain.on("showOpenProject", function (event, arg) {
-    try {
-        global.analytics.event("Project", "Show File Selector").send();
-    } catch (e) {
-        console.warn(e);
-    }
-
-    let p = dialog.showOpenDialog({
+    let p = dialog.showOpenDialogSync({
         properties: ["openFile"],
         filters: [
             {name: 'Plugin Blueprint Projects', extensions: ['pbp']}
@@ -521,19 +451,12 @@ function openProject(arg) {
     if (!fs.existsSync(projectFilePath)) {
         console.error("No project file found");
         dialog.showErrorBox("Not found", "Could not find a PluginBlueprint project in that directory");
-        Sentry.captureException(err);
         return;
-    }
-    try {
-        global.analytics.event("Project", "Open Project").send();
-    } catch (e) {
-        console.warn(e);
     }
     fs.readFile(projectFilePath, "utf-8", function (err, data) {
         if (err) {
             console.error("Failed to read project file");
             console.error(err);
-            Sentry.captureException(err);
             return;
         }
         data = JSON.parse(data);
@@ -567,12 +490,26 @@ function openProject(arg) {
                     win.loadFile('pages/graph.html');
                     win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
                 }
-                updateRichPresence();
-                global.analytics.event("Project", "Open Project").send();
             }).catch(err => {
                 console.error(err);
-                Sentry.captureException(err);
             })
+        }
+
+        async function updateAndOpen() {
+            let meta = paper.getDataMeta();
+            if (data.type !== "paper" || data.minecraftVersion !== meta.minecraftVersion) {
+                let {response} = await dialog.showMessageBox({
+                    type: "question",
+                    message: `This project targets ${data.type === "paper" ? "Paper " + data.minecraftVersion : "Spigot"}. PluginBlueprint now builds plugins for Paper ${meta.minecraftVersion}.`,
+                    detail: "Update the project? The server files in lib/ are replaced on the next compile. Nodes for methods that no longer exist are marked as errors.",
+                    buttons: ["Update and open", "Cancel"]
+                });
+                if (response !== 0) return;
+                data.type = "paper";
+                data.minecraftVersion = meta.minecraftVersion;
+                await fs.writeFile(projectFilePath, JSON.stringify(data), "utf-8");
+            }
+            doOpen();
         }
 
         let appVersion = app.getVersion() || "x.x.x";
@@ -587,17 +524,17 @@ function openProject(arg) {
                 detail: "It might not be compatible with the current version, so please proceed carefully and create a backup first. (Project Version: " + fileVersion + ", Editor Version: " + appVersion + ")",
                 buttons: ["Proceed Anyway", "Open Project Directory to create backup", "Cancel"],
                 defaultId: 1
-            }, (r) => {
+            }).then(({response: r}) => {
                 console.log(r);
                 if (r === 0) {// Proceed Anyway
-                    doOpen();
+                    updateAndOpen().catch(err => dialog.showErrorBox("Error", err.message));
                 } else if (r === 1) {// Open directory
-                    shell.openItem(arg);
+                    shell.openPath(arg);
                 } else {// cancel
                 }
             });
         } else {
-            doOpen();
+            updateAndOpen().catch(err => dialog.showErrorBox("Error", err.message));
         }
 
     })
@@ -626,10 +563,8 @@ ipcMain.on("updateProjectInfo", function (event, arg) {
         if (err) {
             console.error("Failed to write project file");
             console.error(err);
-            Sentry.captureException(err);
             return;
         }
-        updateRichPresence();
     })
 });
 
@@ -641,7 +576,6 @@ ipcMain.on("getGraphData", function (event, arg) {
         if (err) {
             console.error("Failed to read graph file");
             console.error(err);
-            Sentry.captureException(err);
             return;
         }
 
@@ -664,7 +598,6 @@ function saveGraphData(arg, cb) {
             if (err) {
                 console.error("Failed to save graph file");
                 console.error(err);
-                Sentry.captureException(err);
                 return;
             }
 
@@ -679,7 +612,6 @@ function saveProject(cb) {
         if (err) {
             console.error("Failed to write project file");
             console.error(err);
-            Sentry.captureException(err);
             return;
         }
         if (cb) cb();
@@ -701,10 +633,8 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
         win.setTitle(DEFAULT_TITLE);
         currentProject = null;
         currentProjectPath = null;
-        app.unsavedChanges = 0;
-        app.uncompiledChanges = 0;
-
-        updateRichPresence();
+        unsavedChanges = 0;
+        uncompiledChanges = 0;
     });
 });
 
@@ -732,26 +662,19 @@ function saveCodeToFile(code) {
         }
         if (!code) return reject();
 
-        try {
-            global.analytics.event("Code", "Save to File").send();
-        } catch (e) {
-            console.warn(e);
-        }
-
         fs.emptyDir(path.join(currentProjectPath, "src"), function (err) {
-            fs.mkdirs(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\")), function (err) {
+            if (err) return reject(err);
+            fs.mkdirs(path.join(currentProjectPath, "src", ...currentProject.package.split(".")), function (err) {
                 if (err) {
                     console.error("Failed to save code file");
                     console.error(err);
-                    Sentry.captureException(err);
-                    return;
+                    return reject(err);
                 }
-                fs.writeFile(path.join(currentProjectPath, "src", currentProject.package.split(".").join("\\"), "GeneratedPlugin.java"), code, "utf-8", function (err) {
+                fs.writeFile(path.join(currentProjectPath, "src", ...currentProject.package.split("."), "GeneratedPlugin.java"), code, "utf-8", function (err) {
                     if (err) {
                         console.error("Failed to save code file");
                         console.error(err);
-                        Sentry.captureException(err);
-                        return;
+                        return reject(err);
                     }
 
                     console.log("savedCode: " + Date.now());
@@ -761,8 +684,7 @@ function saveCodeToFile(code) {
                         if (err) {
                             console.error("Failed to save manifest file");
                             console.error(err);
-                            Sentry.captureException(err);
-                            return;
+                            return reject(err);
                         }
 
                         resolve();
@@ -776,67 +698,46 @@ function saveCodeToFile(code) {
 
 function makePluginYml() {
     if (!currentProject.buildNumber) currentProject.buildNumber = 0;
-    let yml = "name: " + currentProject.name +
-        "\ndescription: " + currentProject.description +
-        "\nversion: " + currentProject.version + (currentProject.debug ? ("-b" + ++currentProject.buildNumber) : "") +
-        "\nmain: " + currentProject.package + ".GeneratedPlugin" +
-        "\nauthor: " + currentProject.author +
-        "\nsoftdepend: [" + (currentProject.softdepend || []).join(",") + "]" +
-        "\ngenerator: PluginBlueprint " + app.getVersion() +
-        "\napi-version: 1.13\n";
+    let yml = "name: " + JSON.stringify(currentProject.name) +
+        "\ndescription: " + JSON.stringify(currentProject.description) +
+        "\nversion: " + JSON.stringify(currentProject.version + (currentProject.debug ? ("-b" + ++currentProject.buildNumber) : "")) +
+        "\nmain: " + JSON.stringify(currentProject.package + ".GeneratedPlugin") +
+        "\nauthor: " + JSON.stringify(currentProject.author) +
+        "\nsoftdepend: [" + (currentProject.softdepend || []).map(value => JSON.stringify(value)).join(",") + "]" +
+        "\ngenerator: " + JSON.stringify("PluginBlueprint " + app.getVersion()) +
+        "\napi-version: '" + currentProject.minecraftVersion + "'\n";
     if (currentProject.commands) {
         yml += "commands:\n";
         for (let i = 0; i < currentProject.commands.length; i++) {
-            yml += "  " + currentProject.commands[i].name + ":\n";
-            yml += "    description: " + currentProject.commands[i].description + "\n";
-            yml += "    usage: " + currentProject.commands[i].usage + "\n";
+            let command = currentProject.commands[i];
+            yml += "  " + JSON.stringify(command.name) + ":\n";
+            yml += "    description: " + JSON.stringify(command.description) + "\n";
+            yml += "    usage: " + JSON.stringify(command.usage) + "\n";
+            let aliases = typeof command.aliases === "string" ? command.aliases.split(",") : command.aliases || [];
+            aliases = aliases.map(alias => alias.trim()).filter(Boolean);
+            if (aliases.length) yml += "    aliases: [" + aliases.map(alias => JSON.stringify(alias)).join(",") + "]\n";
         }
     }
     return yml;
 }
 
-function compile() {
-    return new Promise((resolve, reject) => {
-        try {
-            global.analytics.event("Code", "Compile").send();
-        } catch (e) {
-            console.warn(e);
-        }
-
-        javaCompiler.testForJavac().then(() => {
-            console.log("compile: " + Date.now());
-            fs.emptyDir(path.join(currentProjectPath, "classes"), function (err) {
-                javaCompiler.compile(currentProjectPath, currentProject).then((result) => {
-                    let pluginYml = makePluginYml();
-                    fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), pluginYml, function (err) {
-                        console.log("compiled: " + Date.now());
-                        currentProject.lastCompile = Date.now();
-                        resolve();
-                    })
-                }).catch(reject);
-            });
-        }).catch(() => {
-            dialog.showErrorBox("javac not found", "Could not find javac executable. Please download the Java Development Kit and make sure javac is in your Environment Variables. (See https://yeleha.co/pb-jdk for details)");
-        })
-    })
+async function compile(progressBar) {
+    await ensureProjectServer(progressBar);
+    console.log("compile: " + Date.now());
+    await fs.emptyDir(path.join(currentProjectPath, "classes"));
+    await javaCompiler.compile(currentProjectPath, currentProject, jdk, paper.getDataMeta().javaVersion,
+        paper.getClasspath(path.join(currentProjectPath, "lib")));
+    await fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), makePluginYml());
+    console.log("compiled: " + Date.now());
+    currentProject.lastCompile = Date.now();
 }
 
-function pack() {
-    return new Promise((resolve, reject) => {
-        try {
-            global.analytics.event("Code", "Pack").send();
-        } catch (e) {
-            console.warn(e);
-        }
-
-        console.log("package: " + Date.now());
-        fs.emptyDir(path.join(currentProjectPath, "output"), function (err) {
-            javaCompiler.package(currentProjectPath, currentProject).then(() => {
-                console.log("packaged: " + Date.now());
-                resolve();
-            }).catch(reject);
-        });
-    })
+async function pack(progressBar) {
+    await ensureJdk(progressBar);
+    console.log("package: " + Date.now());
+    await fs.emptyDir(path.join(currentProjectPath, "output"));
+    await javaCompiler.package(currentProjectPath, currentProject, jdk);
+    console.log("packaged: " + Date.now());
 }
 
 function showCustomErrorDialog(error, title, message) {
@@ -844,6 +745,7 @@ function showCustomErrorDialog(error, title, message) {
     errWin = null;
 
     errWin = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         parent: win,
         width: 1000,
         height: 600,
@@ -851,13 +753,15 @@ function showCustomErrorDialog(error, title, message) {
         show: false,
         resizable: true,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/images/favicon.ico')
+        icon: path.join(__dirname, 'build/icon.png')
     });
+    require("@electron/remote/main").enable(errWin.webContents);
     errWin.setMenu(null);
     errWin.setTitle(title || "An Error occurred!");
-    errWin.loadFile('pages/error.html');
-    errWin.theError = error;
-    errWin.theMessage = message;
+    errWin.loadFile('pages/error.html', {query: {
+        error: typeof error === "string" ? error : error.message || error.msg,
+        message: message || ""
+    }});
     errWin.show();
     // Open the DevTools.
     if (debug) {
@@ -905,24 +809,24 @@ async function generateCompilePackage(arg, progressBar) {
     }
     if (arg.compile) {
         progressBar.detail = "Compiling...";
-        await compile();
+        await compile(progressBar);
         progressBar.value++;
     }
     if (arg.pack) {
         progressBar.detail = "Packaging...";
-        await pack();
+        await pack(progressBar);
         progressBar.value++;
     }
 }
 
 ipcMain.on("openOutputDir", function (event, arg) {
-    shell.openItem(path.join(currentProjectPath, "output"));
-    global.analytics.event("Project", "Open Output Directory").send();
+    shell.openPath(path.join(currentProjectPath, "output"));
 });
 
 ipcMain.on("openProjectInfoEditor", function (event, arg) {
     console.log("openProjectInfoEditor");
     let child = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         parent: win,
         title: DEFAULT_TITLE,
         width: 600,
@@ -931,20 +835,21 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
         show: false,
         resizable: false,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/icons/favicon.ico')
+        icon: path.join(__dirname, 'build/icon.png')
     });
+    require("@electron/remote/main").enable(child.webContents);
     editorWin = child;
     child.on("close", () => {
         editorWin = null;
     });
     child.loadFile('pages/infoEditor.html');
     child.show();
-    global.analytics.screenview("Info Editor", app.getName(), app.getVersion()).event("Project", "Open Info Editor").send();
 });
 
 ipcMain.on("openCommandEditor", function (event, arg) {
     console.log("openCommandEditor");
     let child = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         parent: win,
         title: DEFAULT_TITLE,
         width: 600,
@@ -953,19 +858,18 @@ ipcMain.on("openCommandEditor", function (event, arg) {
         show: false,
         resizable: false,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/icons/favicon.ico')
+        icon: path.join(__dirname, 'build/icon.png')
     });
-    child.custom = {
-        command: arg.command,
-        index: arg.index
-    };
+    require("@electron/remote/main").enable(child.webContents);
     commandWin = child;
     child.on("close", () => {
         commandWin = null;
     });
-    child.loadFile('pages/commandEditor.html');
+    child.loadFile('pages/commandEditor.html', {query: {custom: JSON.stringify({
+        command: arg.command,
+        index: arg.index
+    })}});
     child.show();
-    global.analytics.screenview("Command Editor", app.getName(), app.getVersion()).event("Project", "Open Command Editor").send();
 });
 
 ipcMain.on("saveCommand", function (event, arg) {
@@ -981,7 +885,7 @@ ipcMain.on("saveCommand", function (event, arg) {
     }
 });
 
-ipcMain.on("startServer", function (event, arg) {
+ipcMain.on("startServer", async function (event, arg) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
@@ -1000,6 +904,7 @@ ipcMain.on("startServer", function (event, arg) {
     }
 
     logWin = new BrowserWindow({
+        webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
         parent: win,
         width: 800,
         height: 1000,
@@ -1007,78 +912,86 @@ ipcMain.on("startServer", function (event, arg) {
         show: false,
         resizable: true,
         backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/images/favicon.ico')
+        icon: path.join(__dirname, 'build/icon.png')
     });
+    require("@electron/remote/main").enable(logWin.webContents);
     logWin.setMenu(null);
     logWin.setTitle("PluginBlueprint Test Server");
     logWin.loadFile('pages/log.html');
     logWin.show();
-    try {
-        global.analytics.screenview("Server Log", app.getName(), app.getVersion()).event("Project", "Start Server").send();
-    } catch (e) {
-        console.warn(e);
-    }
     // Open the DevTools.
     if (debug) {
         logWin.webContents.openDevTools({
             mode: "detach"
         });
     }
-    let port = "";
-    serverStarter.copyPlugin(currentProjectPath, currentProject).then(() => {
-        serverStarter.startServer(currentProjectPath,
-            (out) => {
-                if (logWin) {
-                    // sometimes multiple lines are combined into one output, so split it here
-                    let split = out.split("\n");
-                    for (let i = 0; i < split.length; i++) {
-                        let log = split[i];
-
-                        if (log.indexOf("Starting Minecraft server on") !== -1) {
-                            port = log.substr(24/* strip timestamp & start of string */).split(":")[1];
-                        }
-                        if (log.indexOf("Done (") !== -1 && log.indexOf("For help, type") !== -1) {
-                            showNotification("Test Server running on port " + port);
-                        }
-
-
-                        if (log.indexOf("pb_debug_exec") !== -1) {
-                            if (win) win.webContents.send("debugCall", {
-                                type: "exec",
-                                node: parseInt(log.split("pb_debug_exec=")[1])
-                            });
-                            continue;// don't log
-                        }
-
-                        let logData = {
-                            type: "out",
-                            content: log
-                        };
-                        if (log.indexOf("Caused by:") === 0) {
-                            logData.href = "https://www.google.com/search?q=" + log;
-                        }
-                        if (log.indexOf(currentProject.package) !== -1) {
-                            if (log.indexOf("node_") !== -1) {
-                                logData.hasNode = true;
-
-                                if (win) win.webContents.send("logError", log);
-                            }
-                        }
-
-                        logWin.webContents.send("log", logData);
-                    }
-                }
-            },
-            (err) => {
-                if (logWin) {
-                    logWin.webContents.send("log", {
-                        type: "err",
-                        content: err
-                    })
-                }
-            });
-    })
+    try {
+        await ensureProjectServer({set detail(text) {
+            if (logWin) logWin.webContents.send("log", {type: "out", content: text});
+        }});
+        await serverStarter.copyPlugin(currentProjectPath, currentProject);
+        startProjectServer();
+    } catch (err) {
+        logServerError(err.message);
+        showCustomErrorDialog(err, "Server Error");
+    }
 });
+
+function startProjectServer() {
+    let port = "";
+    serverStarter.startServer(currentProjectPath, jdk.java,
+        (out) => {
+            if (logWin) {
+                // sometimes multiple lines are combined into one output, so split it here
+                let split = out.split("\n");
+                for (let i = 0; i < split.length; i++) {
+                    let log = split[i];
+
+                    if (log.indexOf("Starting Minecraft server on") !== -1) {
+                        port = log.substr(24/* strip timestamp & start of string */).split(":")[1];
+                    }
+                    if (log.indexOf("Done (") !== -1 && log.indexOf("For help, type") !== -1) {
+                        showNotification("Test Server running on port " + port);
+                    }
+
+
+                    if (log.indexOf("pb_debug_exec") !== -1) {
+                        if (win) win.webContents.send("debugCall", {
+                            type: "exec",
+                            node: parseInt(log.split("pb_debug_exec=")[1])
+                        });
+                        continue;// don't log
+                    }
+
+                    let logData = {
+                        type: "out",
+                        content: log
+                    };
+                    if (log.indexOf("Caused by:") === 0) {
+                        logData.href = "https://www.google.com/search?q=" + log;
+                    }
+                    if (log.indexOf(currentProject.package) !== -1) {
+                        if (log.indexOf("node_") !== -1) {
+                            logData.hasNode = true;
+
+                            if (win) win.webContents.send("logError", log);
+                        }
+                    }
+
+                    logWin.webContents.send("log", logData);
+                }
+            }
+        }, logServerError);
+}
+
+function logServerError(err) {
+    if (logWin) {
+        logWin.webContents.send("log", {
+            type: "err",
+            content: err
+        })
+    }
+}
 
 ipcMain.on("sendServerCommand", function (event, arg) {
     serverStarter.sendCommandToInstance(arg);
@@ -1091,21 +1004,17 @@ ipcMain.on("stopServer", function (event, arg) {
 });
 
 ipcMain.on("reloadPlugin", function (event, arg) {
-    reloadPlugin();
+    reloadPlugin().catch(err => showCustomErrorDialog(err, "Server Error"));
 });
 
-function reloadPlugin() {
-    if (!currentProject) return;
+async function reloadPlugin() {
+    if (!currentProject || !serverStarter.isRunning()) return;
     console.log("Reloading plugin...");
-    serverStarter.sendCommandToInstance("pluginblueprint unload " + currentProject.name, () => {
-        serverStarter.copyPlugin(currentProjectPath, currentProject, true, true, true).then(() => {
-            serverStarter.sendCommandToInstance("pluginblueprint load " + currentProject.name, () => {
-                console.log("Plugin reloaded!");
-                showNotification("Plugin reloaded!");
-            })
-        })
-    });
-    global.analytics.event("Project", "Reload Plugin").send();
+    await serverStarter.stopServer();
+    await serverStarter.copyPlugin(currentProjectPath, currentProject, true);
+    startProjectServer();
+    console.log("Plugin reloaded!");
+    showNotification("Plugin reloaded!");
 }
 
 ipcMain.on("highlightNode", function (event, arg) {
@@ -1127,8 +1036,8 @@ function showExportDialog() {
             name: "ZIP File",
             extensions: ["zip"]
         }]
-    }, (file) => {
-        if (!file) return;
+    }).then(({canceled, filePath: file}) => {
+        if (canceled || !file) return;
         exportProject(file);
     })
 }
@@ -1139,7 +1048,6 @@ function exportProject(output) {
     zip.addLocalFile(path.join(currentProjectPath, "project.pbp"));
     zip.addLocalFile(path.join(currentProjectPath, "graph.pbg"));
     zip.writeZip(output);
-    global.analytics.event("Project", "Export").send();
 }
 
 ipcMain.on("exportSnippet", function (event, arg) {
@@ -1149,8 +1057,8 @@ ipcMain.on("exportSnippet", function (event, arg) {
             name: "PluginBlueprint Snippet",
             extensions: ["pbs"]
         }]
-    }, (file) => {
-        if (!file) return;
+    }).then(({canceled, filePath: file}) => {
+        if (canceled || !file) return;
         fs.writeFile(file, JSON.stringify(arg), function (err) {
             if (err) throw err;
         })
@@ -1164,8 +1072,8 @@ ipcMain.on("showImportSnippet", function (event, arg) {
             name: "PluginBlueprint Snippet",
             extensions: ["pbs"]
         }]
-    }, (files) => {
-        if (!files || files.length === 0) return;
+    }).then(({canceled, filePaths: files}) => {
+        if (canceled || !files || files.length === 0) return;
         importSnippet(files[0]);
     });
 });
@@ -1197,7 +1105,6 @@ ipcMain.on("gitAddAndCommit", function (event, arg) {
                 }).catch((err) => {
                     console.error(err);
                     dialog.showErrorBox("Error", err ? err.message : err);
-                    Sentry.captureException(err);
                     event.sender.send("committed");//TODO: might need a different channel
                 })
             } else {
@@ -1222,7 +1129,6 @@ ipcMain.on("gitPush", function (event, arg) {
                     }).catch(err => {
                         console.error(err);
                         dialog.showErrorBox("Error", err ? err.message : err);
-                        Sentry.captureException(err);
                         event.sender.send("pushed");//TODO: different event
                     });
 
@@ -1249,7 +1155,6 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
                     }).catch((err) => {
                         console.error(err);
                         dialog.showErrorBox("Error", err ? err.message : err);
-                        Sentry.captureException(err);
                         event.sender.send("remoteChanged");// TODO: different event
                     });
                 } else {
@@ -1260,46 +1165,6 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
     });
 });
 
-ipcMain.on("showLibrarySelector", function (event) {
-    let child = new BrowserWindow({
-        parent: win,
-        title: DEFAULT_TITLE,
-        width: 600,
-        height: 300,
-        modal: true,
-        show: false,
-        resizable: false,
-        backgroundColor: "#373737",
-        icon: path.join(__dirname, 'assets/icons/favicon.ico')
-    });
-    libraryWin = child;
-    child.on("close", () => {
-        libraryWin = null;
-    });
-    child.loadFile('pages/librarySelector.html');
-    if (debug) {
-        child.webContents.openDevTools({
-            mode: "detach"
-        });
-    }
-    child.show();
-    global.analytics.screenview("Library Selector", app.getName(), app.getVersion()).event("Project", "Open Library Selector").send();
-});
-
-ipcMain.on("addLibrary", function (event, arg) {
-    console.log("addLibrary", arg);
-    if (!currentProject) return;
-    if (!currentProject.libraries) currentProject.libraries = [];
-    if (currentProject.libraries.indexOf(arg) === -1) {
-        currentProject.libraries.push(arg);
-    }
-    saveProject(function () {
-        if (win) {
-            win.webContents.send("libraryAdded", arg);
-        }
-    });
-});
-
 ipcMain.on("checkUpdate", function (event) {
     checkUpdate().then(u => {
         event.sender.send("updateInfo", u);
@@ -1307,40 +1172,38 @@ ipcMain.on("checkUpdate", function (event) {
 });
 
 function checkUpdate() {
-    return new Promise(resolve => {
-        request("https://pluginblueprint.net/checkupdate.php", function (err, res, body) {
-            if (err || !body || body.length > 10/* invalid response content */) {
-                resolve({
-                    hasUpdate: false
-                });
-                return;
-            }
+    return fetch("https://api.github.com/repos/InventivetalentDev/PluginBlueprint/releases/latest", {
+        headers: {"User-Agent": "PluginBlueprint/" + app.getVersion()}
+    }).then(response => {
+        if (response.status !== 200) return {hasUpdate: false};
+        return response.json().then(release => {
             let currentVersion = app.getVersion();
-            resolve({
-                hasUpdate: body > currentVersion,
-                appVersion: currentVersion,
-                updateVersion: body
-            })
-        })
+            let updateVersion = release.tag_name.replace(/^v/, "");
+            let currentParts = currentVersion.split(".").map(Number);
+            let updateParts = updateVersion.split(".").map(Number);
+            let hasUpdate = false;
+            for (let i = 0; i < Math.max(currentParts.length, updateParts.length); i++) {
+                let current = currentParts[i] || 0;
+                let update = updateParts[i] || 0;
+                if (current !== update) {
+                    hasUpdate = update > current;
+                    break;
+                }
+            }
+            return {hasUpdate, appVersion: currentVersion, updateVersion};
+        });
+    }).catch(e => {
+        console.error(e);
+        return {hasUpdate: false};
     });
 }
 
 function showNotification(body, title) {
-
-    notifier.notify({
-        appName: "org.inventivetalent.pluginblueprint",
+    let notification = new Notification({
         title: title || "PluginBlueprint",
-        message: body || "-message-",
-        icon: path.join(__dirname, "assets/images/PluginBlueprint-x512.png"),
-        sound: false
-    }, function (err, res) {
-        console.log(err);
-        console.log(res);
+        body: body || "-message-",
+        icon: path.join(__dirname, "build/icon.png")
     });
-    // }
-
-    return {
-        close: function () {
-        }
-    }
+    notification.show();
+    return notification;
 }

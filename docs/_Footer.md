@@ -1,0 +1,1 @@
+[Releases](https://github.com/InventivetalentDev/PluginBlueprint/releases) · [Issues](https://github.com/InventivetalentDev/PluginBlueprint/issues) · [Documentation source](https://github.com/InventivetalentDev/PluginBlueprint/tree/master/docs)
