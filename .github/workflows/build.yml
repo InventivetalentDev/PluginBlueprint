@@ -30,11 +30,11 @@ jobs:
       - uses: actions/cache@v4
         if: runner.os == 'Linux'
         with:
-          path: paper-lib
+          path: ${{ runner.temp }}/paper-lib
           key: paper-lib-${{ hashFiles('data/classes/paper.json') }}
-      - run: node test/support/fetch-paper.js paper-lib
+      - run: node test/support/fetch-paper.js "${{ runner.temp }}/paper-lib"
         if: runner.os == 'Linux'
-      - run: PB_PAPER_LIB=paper-lib npx mocha test/codegen.js
+      - run: PB_PAPER_LIB="${{ runner.temp }}/paper-lib" npx mocha test/codegen.js
         if: runner.os == 'Linux'
       - run: npx electron-builder --publish never --linux
         if: runner.os == 'Linux'
