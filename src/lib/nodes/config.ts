@@ -27,21 +27,19 @@ function ConfigValue(this: NativeNode) {
         this.graph?.beforeChange(this);
         let previous = this.properties.key;
         this.properties.key = value;
+        let entry = window.projectInfo?.config?.find(entry => entry.key === value);
+        if (entry) this.properties.type = entry.type;
+        if (this.outputs[0].type !== configTypes[configType(this)].java) this.disconnectOutput(0);
         this.onPropertyChanged?.("key", value, previous);
         this.graph?.afterChange(this);
     }, {values: () => window.projectInfo?.config?.map(entry => entry.key) || []});
 }
 
 ConfigValue.title = "Config value";
-ConfigValue.prototype.onPropertyChanged = function (this: NativeNode, name: string): void {
-    let entry = window.projectInfo?.config?.find(entry => entry.key === this.properties.key);
-    if (name === "key" && entry) this.properties.type = entry.type;
+ConfigValue.prototype.onPropertyChanged = function (this: NativeNode): void {
     this.outputs[0].label = this.properties.key;
     if (this.widgets?.[0]) this.widgets[0].value = this.properties.key || "";
-    // Properties restore one at a time, before the saved type is available.
-    if (name === "key" && !entry) return;
     let type = configTypes[configType(this)].java;
-    if (this.outputs[0].type !== type) this.disconnectOutput(0);
     Object.assign(this.outputs[0], shapeAndColorsForSlotType(type), {type});
     this.size = this.computeSize();
 };

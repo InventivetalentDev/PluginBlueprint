@@ -364,6 +364,27 @@ describe("Codegen", function () {
         assert.notStrictEqual(graph.getNodeById(log.id).inputs[1].link, null);
         assert.strictEqual(graph.getNodeById(value.id).outputs[0].type, "int");
     });
+    it("preserves both ends of saved Config value links when the table type changed", async function () {
+        const graph = await H.setup();
+        global.projectInfo = {config: [{key: "count", type: "string", default: "3"}]};
+        try {
+            const value = H.add(graph, "config/ConfigValue", {key: "count", type: "int"});
+            const add = H.add(graph, "arithmetic/Add");
+            const link = H.link(value, 0, add, "A");
+            graph.configure(graph.serialize());
+            const restoredValue = graph.getNodeById(value.id);
+            const restoredAdd = graph.getNodeById(add.id);
+            assert.strictEqual(restoredValue.properties.type, "int");
+            assert.strictEqual(restoredValue.outputs[0].type, "int");
+            assert.deepStrictEqual(restoredValue.outputs[0].links, [link.id]);
+            assert.strictEqual(restoredAdd.inputs[H.inIdx(restoredAdd, "A")].link, link.id);
+            assert(graph.links[link.id]);
+            assert.strictEqual(graph.links[link.id].origin_id, value.id);
+            assert.strictEqual(graph.links[link.id].target_id, add.id);
+        } finally {
+            delete global.projectInfo;
+        }
+    });
     it("classifies only Bukkit events with a handler list as events", function () {
         assert.strictEqual(classStore.getClass("org.bukkit.event.player.PlayerJoinEvent").isEvent, true);
         assert.strictEqual(classStore.getClass("org.bukkit.event.player.PlayerEvent").isEvent, false);
