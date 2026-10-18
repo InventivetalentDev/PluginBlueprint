@@ -1,31 +1,51 @@
-const fs = require("fs");
-const {LiteGraph} = require("../../assets/lib/litegraph/litegraph");
-const Colors = require("./colors");
-const ClassDataStore = require("./classDataStore");
-const {getNullForType, javaType} = require("./util");
+import fs = require("fs");
+import {LiteGraph} from "../../assets/lib/litegraph/litegraph";
+import Colors = require("./colors");
+import ClassDataStore = require("./classDataStore");
+import {getNullForType, javaType} from "./util";
+import type {INodeInputSlot, LGraph, LGraphNode, LLink} from "../../assets/lib/litegraph/litegraph";
+import type {ClassData, ConstructorData, MethodData} from "../types/classData";
+import type {NativeNode} from "../types/nodes";
+
+interface CodegenNode extends LGraphNode {
+    nodeType?: string;
+    classType?: string;
+    className?: string;
+    methodName?: string;
+    methodSignature?: string;
+    constructorSignature?: string;
+    isAbstractMethod?: boolean;
+    properties: {en?: string};
+    getOutputExpression?: NativeNode["getOutputExpression"];
+}
+
+interface CodegenGraph extends Pick<LGraph, "links"> {
+    _nodes: CodegenNode[];
+    getNodeById(id: number): CodegenNode | undefined;
+}
 
 const classStore = new ClassDataStore();
 
-const classesByName = [];
+const classesByName: ClassData[] = [];
 
-const fields = [];
-const eventListenerMethods = [];
-const objectMethods = [];
-const enumMethods = [];
-const generatedMethods = [];
-const constructorCalls = [];
-const methodCalls = [];
-const nativeCalls = [];
+const fields: string[] = [];
+const eventListenerMethods: string[] = [];
+const objectMethods: string[] = [];
+const enumMethods: string[] = [];
+const generatedMethods: string[] = [];
+const constructorCalls: string[] = [];
+const methodCalls: string[] = [];
+const nativeCalls: string[] = [];
 
-const javaPluginMethods = [];
-const onLoadMethods = [];
-const onEnableMethods = [];
-const onDisableMethods = [];
-const onCommandMethods = [];
-const onTabCompleteMethods = [];
+const javaPluginMethods: string[] = [];
+const onLoadMethods: string[] = [];
+const onEnableMethods: string[] = [];
+const onDisableMethods: string[] = [];
+const onCommandMethods: string[] = [];
+const onTabCompleteMethods: string[] = [];
 
-function generateClassCode(graph, projectInfo) {
-    return new Promise((resolve) => {
+function generateClassCode(graph: CodegenGraph, projectInfo: {package: string}) {
+    return new Promise<string>((resolve) => {
         for (const state of [classesByName, fields, eventListenerMethods, objectMethods, enumMethods, generatedMethods, constructorCalls, methodCalls, nativeCalls, javaPluginMethods, onLoadMethods, onEnableMethods, onDisableMethods, onCommandMethods, onTabCompleteMethods]) {
             state.length = 0;
         }
@@ -35,7 +55,7 @@ function generateClassCode(graph, projectInfo) {
                 console.log(graph);
                 for (let i = 0; i < graph._nodes.length; i++) {
                     if (graph._nodes[i].nodeType === "BukkitClassNode") {
-                        let classData = classStore.getClass(graph._nodes[i].className);
+                        let classData = classStore.getClass(graph._nodes[i].className)!;
                         if (graph._nodes[i].classType === "event") {
                             generateCodeForEventClassNode(graph, i, graph._nodes[i], classData);
                         }
@@ -46,16 +66,16 @@ function generateClassCode(graph, projectInfo) {
                             generateCodeForEnumClassNode(graph, i, graph._nodes[i], classData);
                         }
                     } else if (graph._nodes[i].nodeType === "BukkitMethodNode" || graph._nodes[i].nodeType === "BukkitAbstractMethodNode") {
-                        let classData = classStore.getClass(graph._nodes[i].className);
-                        let methodData = classStore.getMethod(graph._nodes[i].className, graph._nodes[i].methodSignature);
+                        let classData = classStore.getClass(graph._nodes[i].className)!;
+                        let methodData = classStore.getMethod(graph._nodes[i].className, graph._nodes[i].methodSignature)!;
                         generateCodeForMethodNode(graph, i, graph._nodes[i], classData, methodData, graph._nodes[i].nodeType === "BukkitAbstractMethodNode");
                     } else if (graph._nodes[i].nodeType === "BukkitConstructorNode") {
-                        let classData = classStore.getClass(graph._nodes[i].className);
-                        let constructorData = classStore.getConstructor(graph._nodes[i].className, graph._nodes[i].constructorSignature);
+                        let classData = classStore.getClass(graph._nodes[i].className)!;
+                        let constructorData = classStore.getConstructor(graph._nodes[i].className, graph._nodes[i].constructorSignature)!;
                         generateCodeForConstructorNode(graph, i, graph._nodes[i], classData, constructorData);
                     } else {
                         if (graph._nodes[i].classType === "native") {
-                            generateCodeForNativeNode(graph, i, graph._nodes[i]);
+                            generateCodeForNativeNode(graph, i, graph._nodes[i] as NativeNode);
                         }
                     }
                 }
@@ -153,7 +173,7 @@ function generateClassCode(graph, projectInfo) {
     })
 }
 
-function generateCodeForEventClassNode(graph, n, node, classData) {
+function generateCodeForEventClassNode(graph: CodegenGraph, n: number, node: CodegenNode, classData: ClassData) {
     let code = "" +
         "@org.bukkit.event.EventHandler\n" +
         "public void on" + node.id + "(" + node.type + " event) {\n" + debugCall(node.id);
@@ -184,7 +204,7 @@ function generateCodeForEventClassNode(graph, n, node, classData) {
                         fields.push("private " + node.type + " " + nodeOutput(node.id, o) + ";");
                         code += nodeOutput(node.id, o) + " = event;\n";
                     } else if (output.linkType !== "method") {
-                        let methodData = classStore.getMethod(output.className, output.methodSignature);
+                        let methodData = classStore.getMethod(output.className, output.methodSignature)!;
                         /* if (output.linkType === "method") {
                              generateMethod("event", output.methodData.name, node, output, targetNode, o, l);
 
@@ -249,7 +269,7 @@ function generateCodeForEventClassNode(graph, n, node, classData) {
 //     //TODO
 // }
 
-function generateSetterMethodCall(methodName, targetNode, targetInput, inputIndex, obj, param) {
+function generateSetterMethodCall(methodName: string, targetNode: CodegenNode, targetInput: INodeInputSlot, inputIndex: number, obj: string, param: string) {
     let code = "// SETTER for " + targetNode.title + "#" + methodName + "\n" +
         "private void node_" + targetNode.id + "_in_" + inputIndex + "() {\n" +
         "  " + obj + "." + methodName + "(" + param + ");\n" +
@@ -259,7 +279,7 @@ function generateSetterMethodCall(methodName, targetNode, targetInput, inputInde
     return "node_" + targetNode.id + "_in_" + inputIndex;
 }
 
-function generateCodeForObjectClassNode(graph, n, node, classData) {
+function generateCodeForObjectClassNode(graph: CodegenGraph, n: number, node: CodegenNode, classData: ClassData) {
     let field = "private " + node.type + nodeV(node.id) + ";";
 
     let code = "// CLASS EXECUTION for " + node.title + "\n" +
@@ -283,7 +303,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
                 }
             } else {
                 if (output.linkType !== "abstractMethod") {
-                    let type = output.linkType === "this" ? output.type : javaType(classStore.getMethod(output.className, output.methodSignature).returnType);
+                    let type = output.linkType === "this" ? output.type : javaType(classStore.getMethod(output.className, output.methodSignature)!.returnType);
                     fields.push("private " + type + nodeOutput(node.id, o) + ";");
                 }
 
@@ -384,7 +404,7 @@ function generateCodeForObjectClassNode(graph, n, node, classData) {
     return field;
 }
 
-function generateCodeForEnumClassNode(graph, n, node, classData) {
+function generateCodeForEnumClassNode(graph: CodegenGraph, n: number, node: CodegenNode, classData: ClassData) {
     for (let o = 0; o < node.outputs.length; o++) {
         let output = node.outputs[o];
         if (!output) continue;
@@ -394,7 +414,7 @@ function generateCodeForEnumClassNode(graph, n, node, classData) {
 
             let value = classData.qualifiedName + "." + node.properties.en;
             if (output.linkType === "getter") {
-                let methodData = classStore.getMethod(output.className, output.methodSignature);
+                let methodData = classStore.getMethod(output.className, output.methodSignature)!;
                 fields.push("private " + javaType(methodData.returnType) + nodeOutput(node.id, o) + " = " + value + "." + methodData.name + "();");
             } else {
                 fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + value + ";");
@@ -403,7 +423,7 @@ function generateCodeForEnumClassNode(graph, n, node, classData) {
     }
 }
 
-function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbstractMethodNode) {
+function generateCodeForMethodNode(graph: CodegenGraph, n: number, node: CodegenNode, classData: ClassData, methodData: MethodData, isAbstractMethodNode: boolean) {
     let code = "// " + (isAbstractMethodNode ? "ABSTRACT" : "") + " METHOD EXECUTION for " + classData.qualifiedName + (isAbstractMethodNode ? "{" : "#") + methodData.name + (isAbstractMethodNode ? "}" : "") + "\n" +
         "private void node_" + node.id + "_exec() {\n" + debugCall(node.id);
 
@@ -443,7 +463,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbst
                 }
             }
             let sourceNode = linkInfo ? graph.getNodeById(linkInfo.origin_id) : null;
-            let sourceOutput = sourceNode ? sourceNode.outputs[linkInfo.origin_slot] : null;
+            let sourceOutput = sourceNode ? sourceNode.outputs[linkInfo!.origin_slot] : null;
 
             if (node.inputs[i].type === "@EXEC") {
                 paramOffset++;
@@ -453,10 +473,10 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbst
                 // code = code.replace("%obj", sourceNode.title).replace("%method", sourceOutput.methodData.name.split("(")[0]);
                 if (methodData.isStatic) {
                     code += " " + classData.qualifiedName + "." + methodData.name.split("(")[0] + "(";
-                } else if (sourceNode.classType === "enum") {
-                    code += " " + sourceNode.className + "." + sourceNode.properties.en + "." + methodData.name.split("(")[0] + "(";
+                } else if (sourceNode!.classType === "enum") {
+                    code += " " + sourceNode!.className + "." + sourceNode!.properties.en + "." + methodData.name.split("(")[0] + "(";
                 } else if (!node.isAbstractMethod) {
-                    code += nodeV(linkInfo.origin_id) + "." + methodData.name.split("(")[0] + "(";
+                    code += nodeV(linkInfo!.origin_id) + "." + methodData.name.split("(")[0] + "(";
                 }
                 paramOffset++;
                 continue;
@@ -517,7 +537,7 @@ function generateCodeForMethodNode(graph, n, node, classData, methodData, isAbst
 
 }
 
-function generateCodeForConstructorNode(graph, n, node, classData, constructorData) {
+function generateCodeForConstructorNode(graph: CodegenGraph, n: number, node: CodegenNode, classData: ClassData, constructorData: ConstructorData) {
     let code = "// CONSTRUCTOR EXECUTION for " + constructorData.fullSignature + "\n" +
         "private void node_" + node.id + "_exec() {\n" + debugCall(node.id);
 
@@ -550,19 +570,19 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
             let input = node.inputs[i];
             if (!input) continue;
             if (input.type === "@EXEC") continue;
-            let linkInfo = graph.links[input.link];
+            let linkInfo = graph.links[input.link!];
 
 
             if (input.linkType === "constructorParam") {
                 if (!input.link || !linkInfo) {
-                    let param = constructorData.parameters[input.paramIndex];
-                    params[input.paramIndex] = getNullForType(javaType(param.type).replace(/\[\]/g, ""), param.type.dimension);
+                    let param = constructorData.parameters[input.paramIndex!];
+                    params[input.paramIndex!] = getNullForType(javaType(param.type).replace(/\[\]/g, ""), param.type.dimension);
                     continue;
                 }
 
 
                 if (input.hasOwnProperty("paramIndex")) {
-                    params[input.paramIndex] = outputExpression(graph, linkInfo);
+                    params[input.paramIndex!] = outputExpression(graph, linkInfo);
                 } else {
                     params.push(outputExpression(graph, linkInfo));
                 }
@@ -582,7 +602,7 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
             if (!output.links) continue;
             if (output.links.length > 0) {
                 if (output.linkType === "abstractMethod") {
-                    let methodData = classStore.getMethod(classData.qualifiedName, output.methodSignature);
+                    let methodData = classStore.getMethod(classData.qualifiedName, output.methodSignature)!;
                     let methodParams = [];
                     if (methodData.parameters) {
                         for (let p = 0; p < methodData.parameters.length; p++) {
@@ -630,7 +650,7 @@ function generateCodeForConstructorNode(graph, n, node, classData, constructorDa
     constructorCalls.push(code);
 }
 
-function generateCodeForNativeNode(graph, n, node) {
+function generateCodeForNativeNode(graph: CodegenGraph, n: number, node: NativeNode) {
 
     let inputVars = [];
     if (node.inputs) {
@@ -644,7 +664,7 @@ function generateCodeForNativeNode(graph, n, node) {
     }
 
     let outputVars = [];
-    let outputExecs = [];
+    let outputExecs: string[][] = [];
     if (node.outputs) {
         for (let i = 0; i < node.outputs.length; i++) {
             let output = node.outputs[i];
@@ -787,36 +807,34 @@ function generateCodeForNativeNode(graph, n, node) {
 
 // Snippet generator
 
-function nodeV(n) {
+function nodeV(n: number) {
     return " node_" + n;
 }
 
-function nodeOutput(n, o) {
+function nodeOutput(n: number, o: number) {
     return " node_" + n + "_output_" + o;
 }
 
-function nodeReturn(n) {
+function nodeReturn(n: number) {
     return " node_" + n + "_return";
 }
 
-function nodeExec(nodeId) {
+function nodeExec(nodeId: number) {
     return " node_" + nodeId + "_exec()"
 }
 
-function debugCall(nodeId) {
+function debugCall(nodeId: number) {
     return "if (PB_DEBUG) getLogger().info(\"pb_debug_exec=" + nodeId + "\");\n";
 }
 
-function outputExpression(graph, linkInfo) {
+function outputExpression(graph: CodegenGraph, linkInfo: LLink) {
     const origin = graph.getNodeById(linkInfo.origin_id);
     return origin && origin.getOutputExpression ? origin.getOutputExpression(linkInfo.origin_slot) : nodeOutput(linkInfo.origin_id, linkInfo.origin_slot);
 }
 
-function javaPluginReturn(graph, methodName, defaultValue) {
+function javaPluginReturn(graph: CodegenGraph, methodName: string, defaultValue: string) {
     const node = graph._nodes.filter(node => node.nodeType === "BukkitAbstractMethodNode" && node.className === "org.bukkit.plugin.java.JavaPlugin" && node.methodName === methodName && node.inputs.some(input => input.name === "RETURN" && input.link)).sort((a, b) => a.id - b.id)[0];
     return node ? nodeReturn(node.id) : defaultValue;
 }
 
-module.exports = {
-    generateClassCode: generateClassCode
-};
+export {generateClassCode};
