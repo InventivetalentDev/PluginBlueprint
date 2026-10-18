@@ -41,6 +41,15 @@ $(document).ready(function () {
 
 ipcRenderer.send("getRecentProjects");
 
+ipcRenderer.invoke("getSetting", "checklistHidden").then((hidden: boolean | undefined) => {
+    $("#gettingStarted").prop("hidden", hidden === true);
+});
+
+$("#hideChecklist").on("click", async function () {
+    await ipcRenderer.invoke("setSetting", {key: "checklistHidden", value: true});
+    $("#gettingStarted").prop("hidden", true);
+});
+
 $(".createNewProject").click(() => {
     ipcRenderer.send("showCreateNewProject");
 });

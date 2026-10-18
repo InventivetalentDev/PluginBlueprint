@@ -15,9 +15,23 @@ export interface ProjectInfo {
     buildNumber: number;
     debug?: boolean;
     softdepend?: string[];
+    depend?: string[];
+    loadbefore?: string[];
+    load?: "STARTUP" | "POSTWORLD";
+    website?: string;
+    authors?: string[];
+    prefix?: string;
+    libraries?: string[];
+    permissions?: ProjectPermission[];
     commands?: ProjectCommand[];
     gitUser?: string;
     isNewProject?: boolean;
+}
+
+export interface ProjectPermission {
+    name: string;
+    description?: string;
+    default?: "true" | "false" | "op" | "not op";
 }
 
 export interface ProjectCommand {

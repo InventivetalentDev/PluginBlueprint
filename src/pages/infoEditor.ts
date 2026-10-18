@@ -5,10 +5,11 @@ import setWindowMenu = require("../lib/windowMenu");
 const prompt = require('electron-prompt') as typeof import('electron-prompt');
 import $ = require("jquery");
 
-import type {ProjectInfo, ProjectCommand} from "../types/project";
+import type {ProjectInfo, ProjectCommand, ProjectPermission} from "../types/project";
 
 let projectInfo: Partial<ProjectInfo> = {};
 let commands: ProjectCommand[] = [];
+let permissions: ProjectPermission[] = [];
 
 setWindowMenu([
     {
@@ -49,9 +50,22 @@ function updateProjectInfo() {
     }
     projectInfo.softdepend = softdepend || [];
 
+    projectInfo.depend = commaList("depend");
+    projectInfo.loadbefore = commaList("loadbefore");
+    projectInfo.authors = commaList("authors");
+    let load = $("#load").val();
+    projectInfo.load = load === "STARTUP" || load === "POSTWORLD" ? load : undefined;
+    projectInfo.website = ($("#website").val() as string).trim();
+    projectInfo.prefix = ($("#prefix").val() as string).trim();
+    projectInfo.libraries = ($("#libraries").val() as string).split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+    projectInfo.permissions = permissions.filter(permission => permission.name);
     projectInfo.commands = commands || [];
 
     ipcRenderer.send("updateProjectInfo", projectInfo);
+}
+
+function commaList(id: string) {
+    return ($("#" + id).val() as string).split(",").map(value => value.trim()).filter(Boolean);
 }
 
 ipcRenderer.send("getProjectInfo");
@@ -61,17 +75,17 @@ ipcRenderer.on("projectInfo", function (event, arg: ProjectInfo) {
     console.log(arg);
     projectInfo = arg;
 
-    if (arg.name)
+    if (arg.name !== undefined)
         $("#name").val(arg.name);
-    if (arg.description)
+    if (arg.description !== undefined)
         $("#description").val(arg.description);
-    if (arg.version)
+    if (arg.version !== undefined)
         $("#version").val(arg.version);
-    if (arg.author)
+    if (arg.author !== undefined)
         $("#author").val(arg.author);
-    if (arg.package)
+    if (arg.package !== undefined)
         $("#package").val(arg.package);
-    if (arg.debug)
+    if (arg.debug !== undefined)
         $("#debug").prop("checked", arg.debug);
     if (arg.softdepend)
         $("#softdepend").val(arg.softdepend.join(","));
@@ -80,6 +94,17 @@ ipcRenderer.on("projectInfo", function (event, arg: ProjectInfo) {
         updateCommandList();
     }
 
+    for (let key of ["depend", "loadbefore", "authors"] as const) {
+        $("#" + key).val((arg[key] || []).join(","));
+    }
+    $("#load").val(arg.load || "");
+    $("#website").val(arg.website ?? "");
+    $("#prefix").val(arg.prefix ?? "");
+    $("#libraries").val((arg.libraries || []).join("\n"));
+    permissions = arg.permissions || [];
+    updatePermissionList();
+    M.FormSelect.init(document.querySelectorAll("#load"));
+    M.textareaAutoResize($("#libraries"));
     M.updateTextFields();
 
     $("#overlay").fadeOut();
@@ -119,3 +144,40 @@ ipcRenderer.on("commandUpdated", function (event, arg: {index: number; command: 
     commands[arg.index] = arg.command;
     updateCommandList();
 })
+
+
+function updatePermissionList() {
+    $("#permissionList").empty();
+    for (let i = 0; i < permissions.length; i++) {
+        let permission = permissions[i];
+        let item = $('<li class="collection-item"><div class="row"><div class="input-field col s12"><input class="permission-name" type="text"><label>Name</label></div><div class="input-field col s12"><input class="permission-description" type="text"><label>Description</label></div><div class="input-field col s10"><select class="permission-default"><option value="">None</option><option value="true">true</option><option value="false">false</option><option value="op">op</option><option value="not op">not op</option></select><label>Default</label></div><div class="col s2"><a href="#!" class="delete-permission" aria-label="Delete permission"><i class="material-icons">delete</i></a></div></div></li>');
+        item.find("input, select").each(function (index) {
+            let id = "permission-" + i + "-" + index;
+            $(this).attr("id", id).next("label").attr("for", id);
+        });
+        item.find(".permission-name").val(permission.name).on("input", function () {
+            permission.name = ($(this).val() as string).trim();
+        });
+        item.find(".permission-description").val(permission.description ?? "").on("input", function () {
+            permission.description = $(this).val() as string;
+        });
+        item.find(".permission-default").val(permission.default ?? "").on("change", function () {
+            let value = $(this).val();
+            permission.default = value === "true" || value === "false" || value === "op" || value === "not op" ? value : undefined;
+        });
+        item.find(".delete-permission").on("click", function (event) {
+            event.preventDefault();
+            permissions.splice(i, 1);
+            updatePermissionList();
+        });
+        item.appendTo($("#permissionList"));
+    }
+    M.FormSelect.init(document.querySelectorAll(".permission-default"));
+    M.updateTextFields();
+}
+
+$("#addPermission").on("click", function (event) {
+    event.preventDefault();
+    permissions.push({name: ""});
+    updatePermissionList();
+});
