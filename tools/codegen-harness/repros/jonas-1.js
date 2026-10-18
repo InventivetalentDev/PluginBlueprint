@@ -1,4 +1,4 @@
-const H = require("../harness");
+const H = require("../../../test/support/harness");
 const fs = require("fs");
 const path = require("path");
 const OUT = path.join(__dirname, "..", "out", "jonas");

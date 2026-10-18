@@ -6,7 +6,7 @@ They were written during the [2026-10-18 persona review](../../dev/reviews/2026-
 
 ## Files
 
-- `harness.js`: shared helpers. `setup()` returns a fresh `LGraph`; `add`, `link`, `addOptOut`, `addOptIn` build the graph; `gen(graph, debug)` returns the Java source. It stubs `electron` and `@electron/remote`.
+- [`test/support/harness.js`](../../test/support/harness.js): shared helpers. `setup()` returns a fresh `LGraph`; `add`, `link`, `addOptOut`, `addOptIn` build the graph; `gen(graph, debug)` returns the Java source. It stubs `electron` and `@electron/remote`.
 - `repros/jonas-1.js`, `repros/jonas-2.js`: about 25 small graphs (generics, enum outputs, JavaPlugin methods, onTabComplete, async events, Folia scheduler, checked exceptions, unconnected parameters, variables, FlipFlop). Pass test names as arguments to run a subset.
 - `repros/tomas.js`: graphs for the admin use cases (variables, generic `Map#get`, onTabComplete, onCommand return value, command arguments). It also compiles each result.
 - `repros/tomas-snippet.js`: re-runs the snippet export and import logic from `pages/graph.html` on a partial selection of `docs/examples/join-message.pbs`.

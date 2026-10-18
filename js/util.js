@@ -22,22 +22,24 @@ function copyFile(src, dest) {
     })
 }
 
-function getNullForType(type) {
-    if (type) {
-        if (typeof type !== "string") {
-            type = type.qualifiedName;
-        }
-        if (type === "boolean") {
-            return "false";
-        }
-        if (type === "byte" || type === "short" || type === "int" || type === "long" || type === "float" || type === "double") {
-            return "0";
-        }
-        if (type === "char") {
-            return "'\\0'";
-        }
+function getNullForType(type, dimension = "") {
+    if (!type) return "null";
+    if (dimension !== "") return "(" + type + dimension + ") null";
+    switch (type) {
+        case "boolean": return "false";
+        case "byte": return "(byte) 0";
+        case "short": return "(short) 0";
+        case "int": return "0";
+        case "long": return "0L";
+        case "float": return "0.0f";
+        case "double": return "0.0d";
+        case "char": return "'\\0'";
+        default: return "(" + type + ") null";
     }
-    return "null";
+}
+
+function javaType(type) {
+    return (type.typeVariable ? "java.lang.Object" : type.qualifiedName) + type.dimension;
 }
 
 function guessTypeFromValue(value) {
@@ -224,5 +226,5 @@ function wrapCanvasText(context, text, x, y, maxWidth, lineHeight) {
 }
 
 
-module.exports = {copyFile, getNullForType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength, typeSwitchEnum, parseTypeSwitchEnum, handleDescDrawBackground, handleDescOnBounding};
+module.exports = {copyFile, getNullForType, javaType, shapeAndColorsForSlotType, isPrimitiveType, isNumberType, getNumberSuffix, updateLinkColors, scrollSpeedForLength, typeSwitchEnum, parseTypeSwitchEnum, handleDescDrawBackground, handleDescOnBounding};
 

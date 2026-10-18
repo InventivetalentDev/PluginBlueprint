@@ -40,8 +40,6 @@ function ClassDataStore() {
                     clazz.fieldsByName = {};
                     clazz.methodsBySignature = {};
                     clazz.constructorsBySignature = {};
-                    clazz.isEvent = clazz.qualifiedName.endsWith("Event");
-                    clazz.isObject = !clazz.isEvent && !clazz.isEnum;
 
                     if (clazz.comment) {
                         clazz.comment = clazz.comment.split(".")[0];
@@ -112,7 +110,20 @@ ClassDataStore.prototype.init = function () {
         this.initPromise = Promise.all([
             this.loadClassFile("java"),
             this.loadClassFile("paper")
-        ]);
+        ]).then(() => {
+            for (let clazz of Object.values(this.classStore)) {
+                let current = clazz;
+                let extendsEvent = false;
+                let hasHandlerList = false;
+                while (current) {
+                    if (current.qualifiedName === "org.bukkit.event.Event") extendsEvent = true;
+                    if (current.methods.some(method => method.name === "getHandlerList" && method.isStatic)) hasHandlerList = true;
+                    current = this.getClass(current.superclass);
+                }
+                clazz.isEvent = extendsEvent && hasHandlerList;
+                clazz.isObject = !clazz.isEvent && !clazz.isEnum;
+            }
+        });
     }
     return this.initPromise;
 };

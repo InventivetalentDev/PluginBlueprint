@@ -22,6 +22,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - uses: actions/setup-java@v4
+        if: runner.os == 'Linux'
+        with:
+          distribution: temurin
+          java-version: 25
+      - uses: actions/cache@v4
+        if: runner.os == 'Linux'
+        with:
+          path: paper-lib
+          key: paper-lib-${{ hashFiles('data/classes/paper.json') }}
+      - run: node test/support/fetch-paper.js paper-lib
+        if: runner.os == 'Linux'
+      - run: PB_PAPER_LIB=paper-lib npx mocha test/codegen.js
+        if: runner.os == 'Linux'
       - run: npx electron-builder --publish never --linux
         if: runner.os == 'Linux'
       - run: npx electron-builder --publish never --win

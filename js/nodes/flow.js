@@ -16,7 +16,7 @@ function Switch() {
 
 Switch.title = "Switch";
 Switch.prototype.getMethodBody = function (input, output) {
-    return "boolean val = " + input[1] + ";";
+    return "boolean val = " + (input[1] || "false") + ";";
 };
 Switch.prototype.getExecAfter = function (exec) {
     return "if(val) {\n" +
@@ -77,11 +77,9 @@ FlipFlop.title = "FlipFlop";
 FlipFlop.prototype.getFields = function (output) {
     return ["boolean flipflop_" + this.id, "boolean " + output[2]];
 };
-FlipFlop.prototype.getMethodBody = function (input, output) {
-    return "flipflop_" + this.id + " = " + output[2] + " = !flipflop_" + this.id + ";";
-};
-FlipFlop.prototype.getExecBefore = function (exec) {
-    return "if(flipflop_" + this.id + ") {\n" +
+FlipFlop.prototype.getExecBefore = function (exec, output) {
+    return "flipflop_" + this.id + " = " + output[2] + " = !flipflop_" + this.id + ";\n" +
+        "if(flipflop_" + this.id + ") {\n" +
         exec[0].join("\n") + "//A\n" +
         "} else {\n" +
         exec[1].join("\n") + "//B\n" +

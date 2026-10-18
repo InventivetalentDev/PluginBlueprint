@@ -6,6 +6,7 @@ function Set() {
     this.desc = "Set the value of a variable";
     this.iconName = "sign-in-alt";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("myVariable", null);
     this.addProperty("name", "myVariable", "string");
     this.addProperty("type", "string", "enum", {values: typeSwitchEnum})
@@ -21,6 +22,15 @@ Set.prototype.getFields = function (output) {
 };
 Set.prototype.getMethodBody = function (input, output) {
     return this.properties.name + " = " + input[1] + ";";
+};
+Set.prototype.getExecAfter = function (exec) {
+    return exec[0].join("\n");
+};
+Set.prototype.onConfigure = function () {
+    if (this.findOutputSlot("EXEC") < 0) {
+        this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
+    }
+    this.size = this.computeSize();
 };
 Set.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 
@@ -39,8 +49,9 @@ Get.prototype.onDrawBackground = function (ctx) {
     this.outputs[0].type = parseTypeSwitchEnum(this.properties.type);
     handleDescDrawBackground.call(this, ctx);
 };
-Get.prototype.getMethodBody = function (input, output) {
-    return output[0] + " = " + this.properties.name + ";";
+Get.prototype.getFields = Set.prototype.getFields;
+Get.prototype.getOutputExpression = function (slot) {
+    return this.properties.name;
 };
 Get.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
 

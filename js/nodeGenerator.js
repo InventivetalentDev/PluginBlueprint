@@ -4,7 +4,7 @@ const shell = require('electron').shell;
 const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../assets/lib/litegraph/litegraph");
 const Colors = require("./colors");
 const ClassDataStore = require("./classDataStore");
-const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding, isNumberType} = require("./util");
+const {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding, isNumberType, javaType} = require("./util");
 
 const miscNodes = require("./nodes/misc");
 const constantNodes = require("./nodes/constants");
@@ -28,6 +28,11 @@ const nodes = [
 ];
 
 const classStore = new ClassDataStore();
+const isValidConnection = LiteGraph.isValidConnection;
+LiteGraph.isValidConnection = function (outputType, inputType) {
+    if (inputType === "java.lang.Object") return outputType !== "@EXEC";
+    return isValidConnection.apply(this, arguments);
+};
 
 
 const inputOutputSorter = function (a, b) {
@@ -600,7 +605,7 @@ function addClassIO(node, classData, isChildCall) {
             }
 
             // add it!
-            addNodeOutput(node, method.name, method.returnType.qualifiedName + method.returnType.dimension, shapeAndColorsForSlotType(extraDataType, {
+            addNodeOutput(node, method.name, javaType(method.returnType), shapeAndColorsForSlotType(extraDataType, {
                 linkType: linkType,
                 returnType: method.returnType.qualifiedName,
                 className: classData.qualifiedName,
@@ -698,7 +703,7 @@ function addMethodIO(node, classData, methodData) {
     addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType(methodData.isStatic ? "staticMethod" : "method"));
     for (let p = 0; p < methodData.parameters.length; p++) {
         let param = methodData.parameters[p];
-        addNodeInput(node, param.name, param.type.qualifiedName + param.type.dimension, shapeAndColorsForSlotType(param.type.qualifiedName, {
+        addNodeInput(node, param.name, javaType(param.type), shapeAndColorsForSlotType(param.type.qualifiedName, {
             paramName: param.name,
             paramType: param.type.qualifiedName,
             paramIndex: p
@@ -706,7 +711,7 @@ function addMethodIO(node, classData, methodData) {
     }
 
     if (methodData.returnType.qualifiedName !== "void") {
-        addNodeOutput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
+        addNodeOutput(node, "RETURN", javaType(methodData.returnType), shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
     }
 }
 
@@ -764,9 +769,9 @@ function addAbstractMethodIO(node, classData, methodData) {
     addNodeInput(node, "REF", classData.qualifiedName + "#" + methodSignature, shapeAndColorsForSlotType("abstractMethod"));
     for (let p = 0; p < methodData.parameters.length; p++) {
         let param = methodData.parameters[p];
-        let paramType = methodData.parameters[p].type.typeVariable ? "java.lang.Object" : param.type.qualifiedName;
+        let paramType = javaType(param.type);
 
-        addNodeOutput(node, param.name, paramType + param.type.dimension, shapeAndColorsForSlotType(paramType, {
+        addNodeOutput(node, param.name, paramType, shapeAndColorsForSlotType(paramType, {
             paramName: param.name,
             paramType: param.type.qualifiedName,
             paramIndex: p
@@ -774,7 +779,7 @@ function addAbstractMethodIO(node, classData, methodData) {
     }
 
     if (methodData.returnType.qualifiedName !== "void") {
-        addNodeInput(node, "RETURN", methodData.returnType.qualifiedName + methodData.returnType.dimension, shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
+        addNodeInput(node, "RETURN", javaType(methodData.returnType), shapeAndColorsForSlotType(methodData.returnType.qualifiedName, {returnType: methodData.returnType.qualifiedName}));
     }
 }
 
@@ -891,7 +896,7 @@ function addNodeInput(node, name, type, options, optional) {
     if (!options.locked) options.locked = !optional;
     options.nameLocked = true;
 
-    if (type) {
+    if (type && type !== "java.lang.Object") {
         let implementingAndExtending = classStore.getAllImplementingAndExtendingClasses(type);
         console.log(implementingAndExtending);
         if (implementingAndExtending.length > 0) {
@@ -980,12 +985,11 @@ function handleSlotDoubleClick(node, type, i, e) {
         console.log(n);
 
         if (type === "out" && n.inputs) {
-            if (n.inputs[0].name === "REF") {// special case for abstract methods
-                node.connect(i, n, 0);// 0 = REF
-            } else {// default case
-                node.connect(0, n, 0);// 0 = EXEC
-                node.connect(i, n, 1);// 1 = REF
-            }
+            const ref = n.findInputSlot("REF");
+            if (ref >= 0) node.connect(i, n, ref);
+            const execOut = node.findOutputSlot("EXEC");
+            const execIn = n.findInputSlot("EXEC");
+            if (execOut >= 0 && execIn >= 0) node.connect(execOut, n, execIn);
         }
         if (type === "in" && n.outputs) {
             if (nodeName === "constants/NumberConstant") {

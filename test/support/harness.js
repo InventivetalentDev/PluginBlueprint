@@ -1,4 +1,4 @@
-// Run PluginBlueprint's nodeGenerator + codeGenerator in plain Node (read-only use of the repo)
+// Stub Electron so the generators can run in plain Node.
 const Module = require("module");
 const path = require("path");
 const REPO = path.resolve(__dirname, "../..");
@@ -55,4 +55,55 @@ function link(a, aSlot, b, bSlot) {
 async function gen(graph, debug) {
     return CodeGenerator.generateClassCode(graph, {package: "my.awesome.plugin", debug: !!debug});
 }
-module.exports = {setup, add, link, outIdx, inIdx, addOptOut, addOptIn, gen, LiteGraph: () => LiteGraph, log: quiet || console.log};
+function loadSnippet(graph, snippet) {
+    const data = LiteGraph.cloneObject(snippet);
+    const newNodeIdMap = {};
+    const newLinkIdMap = {};
+    for (const n of data.nodes) {
+        const newId = ++graph.last_node_id;
+        newNodeIdMap[n.id] = newId;
+        n.id = newId;
+        const node = LiteGraph.createNode(n.type, n.title);
+        if (!node) {
+            console.warn("Unknown node: " + n.type);
+            continue;
+        }
+        node.id = newId;
+        graph.add(node, true);
+    }
+    for (const l of data.links) {
+        const newId = graph.last_link_id++;
+        newLinkIdMap[l.id] = newId;
+        graph.links[newId] = {
+            id: newId,
+            origin_id: newNodeIdMap[l.oId],
+            origin_slot: l.oSlot,
+            target_id: newNodeIdMap[l.tId],
+            target_slot: l.tSlot,
+            type: l.type
+        };
+    }
+    for (const n of data.nodes) {
+        if (n.inputs) {
+            for (const input of n.inputs) {
+                if (input.link) input.link = newLinkIdMap[input.link];
+            }
+        }
+        if (n.outputs) {
+            for (const output of n.outputs) {
+                if (output.links) output.links = output.links.map(id => newLinkIdMap[id]);
+            }
+        }
+        const node = graph.getNodeById(n.id);
+        if (node) node.configure(n);
+    }
+    for (const g of data.groups) {
+        const group = new LiteGraph.LGraphGroup();
+        group.configure(g);
+        graph.add(group);
+    }
+    graph.updateExecutionOrder();
+    graph._version++;
+    graph.setDirtyCanvas(true, true);
+}
+module.exports = {setup, add, link, outIdx, inIdx, addOptOut, addOptIn, gen, loadSnippet, LiteGraph: () => LiteGraph, log: quiet || console.log};

@@ -79,8 +79,8 @@ StringFormat.prototype.getFields = function (output) {
     return ["java.lang.String " + output[1]];// Formatted
 };
 StringFormat.prototype.getMethodBody = function (input, output) {
-    let variableInputs = input.slice(2);
-    return output[1] + " = java.lang.String.format(" + input[1] + ", " + variableInputs.join(",") + ");";
+    let variableInputs = input.slice(2).filter(value => value !== null);
+    return output[1] + " = java.lang.String.format(" + input[1] + (variableInputs.length ? ", " + variableInputs.join(",") : "") + ");";
 };
 StringFormat.prototype.getExecAfter = function (exec) {
     return exec[0].join("\n");
