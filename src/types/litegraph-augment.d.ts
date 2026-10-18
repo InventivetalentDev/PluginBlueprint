@@ -30,6 +30,7 @@ declare module "../../assets/lib/litegraph/litegraph" {
         onNodePropertyChanged?(node: LGraphNode, property: string, value: unknown): void;
         onNodeRemoved(node: LGraphNode): void;
         onConnectionChange(): void;
+        onAfterChange?(graph: LGraph, info?: LGraphNode | LGraphGroup): void;
         add(group: LGraphGroup): void;
     }
 

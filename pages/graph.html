@@ -18,6 +18,55 @@
                 height: 100%;
             }
 
+            #toolbar {
+                position: absolute;
+                top: 0;
+                width: 100%;
+                box-sizing: border-box;
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 8px;
+                padding: 8px;
+                background-color: #222e;
+                color: white;
+                font-size: 14px;
+                z-index: 18;
+            }
+
+            #toolbar button, #toolbar input {
+                font: inherit;
+                color: #d0d0d0;
+                background-color: #333;
+                border: 1px solid #777;
+                border-radius: 3px;
+                padding: 6px 10px;
+            }
+
+            #toolbar button:enabled:hover {
+                background-color: #555;
+            }
+
+            #toolbar :focus-visible {
+                outline: 2px solid #bde8ff;
+                outline-offset: 2px;
+            }
+
+            #toolbar button:disabled {
+                opacity: 0.5;
+            }
+
+            #findBox {
+                display: inline-flex;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            #findBox[hidden] {
+                display: none;
+            }
+
             #overlay {
                 position: absolute;
                 width: 100%;
@@ -75,6 +124,18 @@
         </style>
     </head>
     <body>
+        <div id="toolbar" role="toolbar" aria-label="Editor actions">
+            <button id="saveGraph" type="button">Save</button>
+            <button id="buildReload" type="button">Build &amp; Reload</button>
+            <button id="testPlugin" type="button">Test</button>
+            <button id="stopServer" type="button" disabled>Stop</button>
+            <span id="saveState" role="status">Saved</span>
+            <div id="findBox" hidden>
+                <label for="findInput">Find</label>
+                <input id="findInput" type="text" autocomplete="off" aria-describedby="findCount" title="Enter: next match. Shift+Enter: previous match. Escape: close.">
+                <span id="findCount" role="status">0 of 0</span>
+            </div>
+        </div>
         <div id="overlay">
             <div id="overlay-loader">
                 <img src="../assets/images/spinner.svg">

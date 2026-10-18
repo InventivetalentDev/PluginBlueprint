@@ -1,4 +1,4 @@
-import {ipcRenderer} from "electron";
+import {ipcRenderer, shell} from "electron";
 import {app, getCurrentWindow} from "@electron/remote";
 import setWindowMenu = require("../lib/windowMenu");
 const {LiteGraph, LGraph, LGraphCanvas, LGraphNode} = require("../../assets/lib/litegraph/litegraph") as Omit<typeof import("../../assets/lib/litegraph/litegraph"), "LiteGraph" | "LGraph" | "LGraphCanvas"> & {
@@ -121,6 +121,11 @@ let theMenu = setWindowMenu([
                 click: () => redo()
             },
             {
+                label: "Find",
+                accelerator: "CommandOrControl+F",
+                click: () => openFind()
+            },
+            {
                 type: "separator"
             },
             {
@@ -194,6 +199,16 @@ let theMenu = setWindowMenu([
         label: "Compile",
         submenu: [
             {
+                label: "Build & Reload",
+                accelerator: "CommandOrControl+B",
+                click: () => generateCodeCompilePackage("ifRunning")
+            },
+            {
+                label: "Test",
+                accelerator: "CommandOrControl+T",
+                click: () => generateCodeCompilePackage("start")
+            },
+            {
                 label: "Generate Code, Compile, Package", click: () => {
                     generateCodeCompilePackage();
                 }
@@ -235,7 +250,11 @@ let theMenu = setWindowMenu([
                 }
             },
             {
-                label: "Stop Server", click: () => {
+                id: "stopServer",
+                label: "Stop",
+                accelerator: "CommandOrControl+Shift+T",
+                enabled: false,
+                click: () => {
                     ipcRenderer.send("stopServer");
                 }
             },
@@ -246,6 +265,15 @@ let theMenu = setWindowMenu([
                 label: "Reload Plugin", click: () => {
                     ipcRenderer.send("reloadPlugin");
                 }
+            }
+        ]
+    },
+    {
+        label: "Help",
+        submenu: [
+            {
+                label: "Install on your server",
+                click: () => { shell.openExternal("https://pluginblueprint.net/wiki/Installing-on-your-Server"); }
             }
         ]
     }
@@ -261,6 +289,9 @@ history.pause();
 
 let unsavedChanges = 0;
 let uncompiledChanges = 0;
+let savingChanges: number | null = null;
+let manualSavePending = false;
+let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
 ipcRenderer.send("setChangeState", {unsaved: unsavedChanges, uncompiled: uncompiledChanges});
 
 var graph = new LGraph();
@@ -272,23 +303,11 @@ graph.onNodeAdded = function (n) {
     if (n) {
         n.size = n.computeSize();
     }
-    if (history) {
-        if (!history.paused) {
-            unsavedChanges++;
-            uncompiledChanges++;
-            ipcRenderer.send("setChangeState", {unsaved: unsavedChanges, uncompiled: uncompiledChanges});
-        }
-        history.track(JSON.stringify(graph.serialize()));
-
-        console.log(history);
-
-        // hide inside the history's timeout to prevent hiding it instantly
-        if (!history.paused) {
-            $("#helpBox").hide();
-        }
+    trackGraphChange();
+    // hide inside the history's timeout to prevent hiding it instantly
+    if (!history.paused) {
+        $("#helpBox").hide();
     }
-    updateTitle();
-    refreshHistoryState();
 };
 graph.onNodeRemoved = function (n) {
     console.debug("[HISTORY] onNodeRemoved");
@@ -302,20 +321,47 @@ graph.onNodePropertyChanged = function () {
     console.debug("[HISTORY] onNodePropertyChanged");
     trackGraphChange();
 };
+graph.onAfterChange = function () {
+    trackGraphChange();
+};
+
+function serializeHistory() {
+    let data = graph.serialize();
+    // Selecting a node brings it to the front without changing the project.
+    data.nodes.sort((a, b) => a.id - b.id);
+    return JSON.stringify(data);
+}
+
+function codeState(state: string | null | undefined) {
+    if (!state) return state;
+    let data: ReturnType<Graph["serialize"]> = JSON.parse(state);
+    return JSON.stringify({...data, groups: [], nodes: data.nodes.map(({pos, size, title, ...node}) => node)});
+}
 
 function trackGraphChange() {
-    if (history) {
-        if (!history.paused) {
-            unsavedChanges++;
-            uncompiledChanges++;
-            ipcRenderer.send("setChangeState", {unsaved: unsavedChanges, uncompiled: uncompiledChanges});
-        }
-        history.track(JSON.stringify(graph.serialize()));
-
-        console.log(history)
-    }
-    updateTitle();
+    let state = serializeHistory();
+    let previous = history.present;
+    if (!history.track(state)) return;
+    markGraphChanged(codeState(previous) !== codeState(state));
     refreshHistoryState();
+}
+
+function markGraphChanged(codeChanged: boolean) {
+    unsavedChanges++;
+    if (codeChanged) uncompiledChanges++;
+    ipcRenderer.send("setChangeState", {unsaved: unsavedChanges, uncompiled: uncompiledChanges});
+    updateTitle();
+    scheduleAutosave();
+}
+
+function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    if (unsavedChanges > 0) {
+        autosaveTimer = setTimeout(() => {
+            autosaveTimer = undefined;
+            saveGraph(true);
+        }, 30000);
+    }
 }
 
 graph.onNodeConnectionChange = function (slotType, node, slot) {
@@ -329,6 +375,8 @@ LiteGraph.search_show_all_on_open = false;
 var canvas = new LGraphCanvas("#mycanvas", graph);
 Object.assign(window, {canvas});
 canvas.allow_reconnect_links = false;
+canvas.show_info = false;
+canvas.onNodeMoved = () => trackGraphChange();
 canvas.onShowNodePanel = function () {};
 console.log(canvas);
 
@@ -338,11 +386,67 @@ window.addEventListener("resize", function () {
     canvas.resize();
 });
 $("body")[0].addEventListener("keydown", function (event) {
+    if (event.target instanceof HTMLElement &&
+        (event.target.closest("button, select, textarea, input") || event.target.isContentEditable)) return;
     if (event.target !== canvas.canvas) {
         canvas.processKey(event);
     }
 });
 canvas.resize();
+
+$("#saveGraph").on("click", () => saveGraph());
+$("#buildReload").on("click", () => generateCodeCompilePackage("ifRunning"));
+$("#testPlugin").on("click", () => generateCodeCompilePackage("start"));
+$("#stopServer").on("click", () => ipcRenderer.send("stopServer"));
+ipcRenderer.on("serverState", function (event, arg: {running: boolean}) {
+    $("#stopServer").prop("disabled", !arg.running);
+    $("#testPlugin").text(arg.running ? "Restart" : "Test");
+    theMenu.getMenuItemById("stopServer")!.enabled = arg.running;
+});
+ipcRenderer.send("getServerState");
+
+const findInput = document.querySelector<HTMLInputElement>("#findInput")!;
+let findMatches: GraphNode[] = [];
+let findIndex = -1;
+
+function openFind() {
+    $("#findBox").prop("hidden", false);
+    findInput.focus();
+    findInput.select();
+    findNodes();
+}
+
+function findNodes() {
+    let query = findInput.value.toLowerCase();
+    findMatches = query ? graph._nodes.filter(node =>
+        node.title.toLowerCase().includes(query) || (node.type || "").toLowerCase().includes(query)) : [];
+    findIndex = findMatches.length ? 0 : -1;
+    showFindMatch();
+}
+
+function showFindMatch() {
+    $("#findCount").text((findIndex + 1) + " of " + findMatches.length);
+    let node = findMatches[findIndex];
+    if (node) {
+        canvas.selectNode(node);
+        canvas.centerOnNode(node);
+    }
+}
+
+findInput.addEventListener("input", findNodes);
+findInput.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+        $("#findBox").prop("hidden", true);
+        canvas.canvas.focus();
+    } else if (event.key === "Enter") {
+        if (findMatches.length) {
+            findIndex = (findIndex + (event.shiftKey ? -1 : 1) + findMatches.length) % findMatches.length;
+            showFindMatch();
+        }
+    } else return;
+    event.preventDefault();
+    event.stopPropagation();
+});
 
 
 function addBukkitNode(className: string, classType: unknown) {
@@ -363,10 +467,10 @@ function generateCode() {
 }
 
 
-function generateCodeCompilePackage() {
+function generateCodeCompilePackage(reload?: "ifRunning" | "start") {
     $("#overlay").fadeIn();
     CodeGenerator.generateClassCode(graph, projectInfo as ProjectInfo).then((code) => {
-        ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true});
+        ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true, ...(reload ? {reload} : {})});
     });
 }
 
@@ -383,10 +487,22 @@ function pack() {
     ipcRenderer.send("codeGenerated", {code: null, compile: false, pack: true});
 }
 
-function saveGraph() {
-    $("#overlay").fadeIn();
-    makeThumbnail();
-    ipcRenderer.send("saveGraphData", graph.serialize());
+function saveGraph(autosave = false) {
+    if (savingChanges !== null) {
+        if (!autosave) manualSavePending = true;
+        return;
+    }
+    if (autosave && unsavedChanges === 0) return;
+    clearTimeout(autosaveTimer);
+    autosaveTimer = undefined;
+    savingChanges = unsavedChanges;
+    updateTitle();
+    if (!autosave) {
+        $("#overlay").fadeIn();
+        makeThumbnail();
+    }
+    let data = graph.serialize();
+    ipcRenderer.send("saveGraphData", autosave ? {...data, autosave: true} : data);
 }
 
 function saveGraphAndClose() {
@@ -404,9 +520,11 @@ function undo() {
     console.log("canUndo: " + history.canUndo());
     history.pause();
     if (history.canUndo()) {
+        let previous = history.present;
         let undone = history.undo();
         console.log(undone);
         graph.configure(JSON.parse(undone!))
+        markGraphChanged(codeState(previous) !== codeState(undone));
     }
     history.unpause();
     console.log(history);
@@ -418,9 +536,11 @@ function redo() {
     console.log("canRedo: " + history.canRedo());
     history.pause();
     if (history.canRedo()) {
+        let previous = history.present;
         let redone = history.redo();
         console.log(redone);
         graph.configure(JSON.parse(redone!));
+        markGraphChanged(codeState(previous) !== codeState(redone));
     }
     history.unpause();
     console.log(history);
@@ -495,7 +615,7 @@ Object.assign(window, {serializeSnippet});
 function configureSnippet(data: Snippet) {
     $("#overlay").fadeIn();
 
-    history.track(JSON.stringify(graph.serialize()));
+    history.track(serializeHistory());
     history.pause();
     canvas.deselectAllNodes();
 
@@ -576,8 +696,7 @@ function configureSnippet(data: Snippet) {
     graph.setDirtyCanvas(true, true);
 
     history.unpause();
-    history.track(JSON.stringify(graph.serialize()));
-    refreshHistoryState();
+    trackGraphChange();
 
     $("#overlay").fadeOut();
 }
@@ -608,15 +727,15 @@ ipcRenderer.on("projectInfo", function (event, arg: ProjectInfo) {
 ipcRenderer.on("graphData", function (event, arg: ReturnType<Graph["serialize"]> | null) {
     if (!arg) {
         console.warn("Empty graph data");
-        return;
     }
-    if (graph && arg.nodes) {
+    if (graph && arg && arg.nodes) {
         graph.configure(arg);
     }
     $("#overlay").fadeOut();
 
     history.unpause();
-    history.track(JSON.stringify(graph.serialize()));
+    history.track(serializeHistory());
+    refreshHistoryState();
 });
 ipcRenderer.on("generateDone", function (event, arg) {
     $("#overlay").fadeOut();
@@ -635,9 +754,14 @@ ipcRenderer.on("generateError", function (event, arg: string | Error) {
 });
 ipcRenderer.on("graphDataSaved", function (event, arg) {
     $("#overlay").fadeOut();
-    unsavedChanges = 0;
+    unsavedChanges = Math.max(0, unsavedChanges - (savingChanges ?? unsavedChanges));
+    savingChanges = null;
     ipcRenderer.send("setChangeState", {unsaved: unsavedChanges});
     updateTitle();
+    if (manualSavePending) {
+        manualSavePending = false;
+        saveGraph();
+    } else if (autosaveTimer === undefined) scheduleAutosave();
 });
 
 ipcRenderer.on("logError", function (event, arg: string) {
@@ -648,7 +772,7 @@ ipcRenderer.on("logError", function (event, arg: string) {
 
 ipcRenderer.on("importSnippet", function (event, arg: Snippet) {
     if (history) {
-        history.track(JSON.stringify(graph.serialize()));
+        history.track(serializeHistory());
     }
     configureSnippet(arg);
 });
@@ -682,6 +806,7 @@ function highlightAffectedNodes(arg: string | Error, deselectFirst: boolean) {
 }
 
 function updateTitle() {
+    $("#saveState").text(savingChanges !== null ? "Saving…" : unsavedChanges > 0 ? "Unsaved changes" : "Saved");
     getCurrentWindow().setTitle("PluginBlueprint Editor [" + projectInfo.name + (unsavedChanges > 0 && uncompiledChanges > 0 ? "**" : (unsavedChanges > 0 || uncompiledChanges > 0 ? "*" : "")) + "]");
 }
 
