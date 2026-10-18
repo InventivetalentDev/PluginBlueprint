@@ -2,8 +2,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "out",
-    "allowJs": true,
-    "checkJs": false,
+    "allowJs": false,
     "strict": true,
     "noEmitOnError": true,
     "sourceMap": true,

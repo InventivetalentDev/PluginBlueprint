@@ -30,33 +30,6 @@
         <div id="content">
 
         </div>
-        <script>
-            const {ipcRenderer, shell} = require("electron");
-            const $ = require("jquery");
-
-
-            String.prototype.replaceAll = function (search, replacement) {
-                var target = this;
-                return target.replace(new RegExp(search, 'g'), replacement);
-            };
-
-            const params = new URLSearchParams(location.search);
-            let msg = params.get("message");
-            $("#message").text(msg || "Please make sure you didn't forget to connect any of the nodes - you can also click on the highlighted nodes below to check which might cause the problems.");
-
-            let error = params.get("error");
-            let message = typeof error === "string" ? error : error.message || error.msg;
-            message = message.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-            message = message.replace(/node_([0-9]+)/gm, '<a class="node-ref" data-node="$1">node_$1</a>');
-
-            $("#content").append(message);
-
-            $(".node-ref").on("click", function (e) {
-                e.preventDefault();
-                ipcRenderer.send("highlightNode", {
-                    node: $(this).data("node")
-                })
-            })
-        </script>
+        <script>require("../out/pages/error")</script>
     </body>
 </html>
