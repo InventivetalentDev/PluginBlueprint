@@ -1,6 +1,7 @@
 import {execFile} from "child_process";
 import path = require("path");
 import fs = require("fs-extra");
+import {parseJavacErrors, formatJavacErrors} from "./javacErrors";
 
 export async function listJavaSources(srcDir: string): Promise<string[]> {
     let sources: string[] = [];
@@ -22,10 +23,20 @@ async function compile(rootDir: string, projectInfo: {package: string}, jdk: {ja
         fs.writeFile(argfile, args.map(quote).join("\n"), "utf-8", (err) => {
             if (err) return reject(err);
             console.log("Running " + jdk.javac + " @" + argfile);
-            execFile(jdk.javac, ["@" + argfile], (err, stdout, stderr) => {
+            execFile(jdk.javac, ["-J-Duser.language=en", "-J-Duser.country=US", "@" + argfile], async (err, stdout, stderr) => {
                 if (err) {
                     console.error(err);
-                    reject(err);
+                    const errors = parseJavacErrors(stderr);
+                    const sourceFiles = new Map<string, string>();
+                    for (const file of new Set(errors.map(error => error.file))) {
+                        try {
+                            sourceFiles.set(file, await fs.readFile(file, "utf-8"));
+                        } catch {
+                            // A compiler diagnostic is still useful if its source file was removed.
+                        }
+                    }
+                    const explained = formatJavacErrors(errors, sourceFiles);
+                    reject(Object.assign(new Error((explained || err.message) + "\n\njavac output:\n" + stderr), {code: err.code}));
                     return;
                 }
 

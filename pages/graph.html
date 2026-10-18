@@ -121,6 +121,47 @@
             #helpBox .keypics[data-type=key] {
                 height: 70%;
             }
+
+            #problemsPanel {
+                position: absolute;
+                bottom: 12px;
+                left: 12px;
+                width: min(540px, calc(100% - 24px));
+                max-height: 40%;
+                box-sizing: border-box;
+                overflow: auto;
+                padding: 12px;
+                border: 1px solid #777;
+                border-radius: 3px;
+                background-color: #222e;
+                color: #eee;
+                font-size: 14px;
+                z-index: 19;
+            }
+
+            #problemsPanel header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 8px;
+            }
+
+            #problemsPanel button {
+                font: inherit;
+                color: inherit;
+                background-color: #333;
+                border: 1px solid #777;
+                border-radius: 3px;
+                padding: 6px 10px;
+                cursor: pointer;
+            }
+
+            #problemsPanel button:hover { background-color: #555; }
+            #problemsPanel :focus-visible { outline: 2px solid #bde8ff; }
+            #problemRows { display: grid; gap: 6px; }
+            .problem-row { text-align: left; overflow-wrap: anywhere; }
+            #problemsPanel .error { border-left: 3px solid #e34c4c; }
+            #problemsPanel .warning { border-left: 3px solid #edb54a; }
         </style>
     </head>
     <body>
@@ -154,6 +195,13 @@
                 <i class="keypics" data-type="mouse" data-color="dark" data-fontFamily="RobotoMono">left</i>&nbsp;Select
             </div>
         </div>
+        <section id="problemsPanel" aria-labelledby="problemsHeading" hidden>
+            <header>
+                <strong id="problemsHeading" role="status"></strong>
+                <button id="closeProblems" type="button" aria-label="Close problems">Close</button>
+            </header>
+            <div id="problemRows"></div>
+        </section>
         <canvas id='mycanvas' width='1920' height='1080'></canvas>
         <script>require("../out/pages/graph")</script>
     </body>

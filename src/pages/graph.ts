@@ -18,6 +18,8 @@ import History = require("../lib/history");
 import $ = require("jquery");
 const KeyPics = require("key.pics") as typeof import("key.pics");
 import {updateLinkColors} from "../lib/util";
+import {validateGraph, classStore} from "../lib/graphValidator";
+import type {Problem} from "../lib/graphValidator";
 import type {LiteGraphExtras} from "../types/litegraph-augment";
 import type {ProjectInfo, Snippet} from "../types/project";
 import type {LGraphGroup, LGraphNode as GraphNode, LGraph as Graph} from "../../assets/lib/litegraph/litegraph";
@@ -124,6 +126,11 @@ let theMenu = setWindowMenu([
                 label: "Find",
                 accelerator: "CommandOrControl+F",
                 click: () => openFind()
+            },
+            {
+                label: "Check for problems",
+                accelerator: "CommandOrControl+Shift+K",
+                click: () => showProblems(validateGraph(graph, projectInfo))
             },
             {
                 type: "separator"
@@ -344,6 +351,7 @@ function trackGraphChange() {
     if (!history.track(state)) return;
     markGraphChanged(codeState(previous) !== codeState(state));
     refreshHistoryState();
+    refreshProblems();
 }
 
 function markGraphChanged(codeChanged: boolean) {
@@ -379,6 +387,78 @@ canvas.show_info = false;
 canvas.onNodeMoved = () => trackGraphChange();
 canvas.onShowNodePanel = function () {};
 console.log(canvas);
+
+const problemsPanel = document.querySelector<HTMLElement>("#problemsPanel")!;
+const problemBadges = new Map<number, Problem["severity"]>();
+
+function showProblems(problems: Problem[]) {
+    problemsPanel.hidden = false;
+    const errors = problems.filter(problem => problem.severity === "error").length;
+    const warnings = problems.length - errors;
+    document.querySelector("#problemsHeading")!.textContent = `${errors} error${errors === 1 ? "" : "s"}, ${warnings} warning${warnings === 1 ? "" : "s"}`;
+    const rows = document.querySelector("#problemRows")!;
+    rows.replaceChildren();
+    problemBadges.clear();
+    if (!problems.length) rows.textContent = "No problems found.";
+    for (const problem of problems) {
+        const row = document.createElement(problem.nodeId === undefined ? "div" : "button");
+        row.className = "problem-row " + problem.severity;
+        row.textContent = `${problem.severity === "error" ? "Error" : "Warning"}: ${problem.message}`;
+        if (problem.nodeId !== undefined) {
+            const nodeId = problem.nodeId;
+            row.addEventListener("click", () => focusNode(nodeId));
+            if (problemBadges.get(nodeId) !== "error") problemBadges.set(nodeId, problem.severity);
+        }
+        rows.append(row);
+    }
+    graph.setDirtyCanvas(true, false);
+}
+
+function refreshProblems() {
+    if (!problemsPanel.hidden) showProblems(validateGraph(graph, projectInfo));
+}
+
+function checkBeforeBuild() {
+    const problems = validateGraph(graph, projectInfo);
+    if (problems.length || !problemsPanel.hidden) showProblems(problems);
+    if (problems.some(problem => problem.severity === "error")) {
+        $("#overlay").stop(true, true).hide();
+        return false;
+    }
+    return true;
+}
+
+function codeGenerationFailed(error: unknown) {
+    $("#overlay").stop(true, true).hide();
+    showProblems([{severity: "error", message: "Code generation failed: " + (error instanceof Error ? error.message : String(error))}]);
+}
+
+document.querySelector("#closeProblems")!.addEventListener("click", () => {
+    problemsPanel.hidden = true;
+    problemBadges.clear();
+    graph.setDirtyCanvas(true, false);
+});
+
+canvas.onDrawForeground = function (ctx) {
+    ctx.save();
+    ctx.font = "bold 12px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    for (const [id, severity] of problemBadges) {
+        const node = graph.getNodeById(id);
+        if (!node) continue;
+        const width = node.flags.collapsed ? (node as GraphNode & {_collapsed_width?: number})._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH : node.size[0];
+        const x = node.pos[0] + width - 8;
+        const y = node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT / 2;
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = severity === "error" ? "#e34c4c" : "#edb54a";
+        ctx.fill();
+        ctx.fillStyle = "#111";
+        ctx.fillText("!", x, y);
+    }
+    ctx.restore();
+};
 
 ipcRenderer.send("getProjectInfo");
 
@@ -460,29 +540,33 @@ function addBukkitNode(className: string, classType: unknown) {
 }
 
 function generateCode() {
+    if (!checkBeforeBuild()) return;
     $("#overlay").fadeIn();
     CodeGenerator.generateClassCode(graph, projectInfo as ProjectInfo).then((code) => {
         ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
-    });
+    }).catch(codeGenerationFailed);
 }
 
 
 function generateCodeCompilePackage(reload?: "ifRunning" | "start") {
+    if (!checkBeforeBuild()) return;
     $("#overlay").fadeIn();
     CodeGenerator.generateClassCode(graph, projectInfo as ProjectInfo).then((code) => {
         ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true, ...(reload ? {reload} : {})});
-    });
+    }).catch(codeGenerationFailed);
 }
 
 
 Object.assign(window, {generateCodeCompilePackage});
 
 function compile() {
+    if (!checkBeforeBuild()) return;
     $("#overlay").fadeIn();
     ipcRenderer.send("codeGenerated", {code: null, compile: true, pack: false});
 }
 
 function pack() {
+    if (!checkBeforeBuild()) return;
     $("#overlay").fadeIn();
     ipcRenderer.send("codeGenerated", {code: null, compile: false, pack: true});
 }
@@ -530,6 +614,7 @@ function undo() {
     console.log(history);
 
     refreshHistoryState();
+    refreshProblems();
 }
 
 function redo() {
@@ -546,6 +631,7 @@ function redo() {
     console.log(history);
 
     refreshHistoryState();
+    refreshProblems();
 }
 
 function refreshHistoryState() {
@@ -716,13 +802,14 @@ ipcRenderer.on("projectInfo", function (event, arg: ProjectInfo) {
 
     if (!nodesInitialized) {
         console.log("Initializing Bukkit Node generator...");
-        NodeGenerator.init().then(() => {
+        Promise.all([NodeGenerator.init(), classStore.init()]).then(() => {
             nodesInitialized = true;
             ipcRenderer.send("getGraphData");
 
             graph.start(100);
         });
     }
+    if (nodesInitialized) refreshProblems();
 });
 ipcRenderer.on("graphData", function (event, arg: ReturnType<Graph["serialize"]> | null) {
     if (!arg) {
@@ -789,20 +876,22 @@ ipcRenderer.on("pushed", function (event, arg) {
 
 
 function highlightAffectedNodes(arg: string | Error, deselectFirst: boolean) {
-    let affectedNode = /node_([0-9]+)/gm.exec(arg as string);
-    console.log(affectedNode);
+    const text = arg instanceof Error ? arg.message : arg;
+    const explained = [...text.matchAll(/\bLine \d+ \(node_(\d+)\)/g)];
+    const affectedNodes = explained.length || text.includes("\n\njavac output:") ? explained : [...text.matchAll(/node_([0-9]+)/g)].slice(0, 1);
 
     if (deselectFirst) {
         for (let i = 0; i < graph._nodes.length; i++) {
             delete graph._nodes[i].has_errors;
         }
     }
-    if (affectedNode) {
+    for (const affectedNode of affectedNodes) {
         let n = graph.getNodeById(parseInt(affectedNode[1]));
         if (n) {
             n.has_errors = true;
         }
     }
+    graph.setDirtyCanvas(true, false);
 }
 
 function updateTitle() {
@@ -845,14 +934,18 @@ ipcRenderer.on("debugCall", function (event, arg: {node: number; type: string}) 
     }
 });
 
-ipcRenderer.on("highlightNode", function (event, arg: {node: number}) {
-    let node = graph.getNodeById(arg.node);
+function focusNode(id: number) {
+    let node = graph.getNodeById(id);
     if (node) {
         console.log(node);
         canvas.selectNode(node);
         canvas.centerOnNode(node);
-        canvas.setZoom(2);
     }
+}
+
+ipcRenderer.on("highlightNode", function (event, arg: {node: number}) {
+    focusNode(arg.node);
+    if (graph.getNodeById(arg.node)) canvas.setZoom(2);
 });
 
 // HelpBox timeout
