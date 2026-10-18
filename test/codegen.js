@@ -264,7 +264,7 @@ describe("Codegen", function () {
             const graph = await H.setup();
             const projectInfo = build(graph);
             const code = (await H.gen(graph, true, projectInfo)).replace(/\r\n/g, "\n");
-            if (name === "note-ignored") assert.strictEqual(code, fs.readFileSync(path.join(snapshotDir, "join-message.java"), "utf8"));
+            if (name === "note-ignored") assert.strictEqual(code, fs.readFileSync(path.join(snapshotDir, "join-message.java"), "utf8").replace(/\r\n/g, "\n"));
             const file = path.join(snapshotDir, name + ".java");
             if (process.env.UPDATE_SNAPSHOTS === "1") fs.writeFileSync(file, code);
             else assert.strictEqual(code, fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n"));
