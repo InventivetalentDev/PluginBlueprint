@@ -76,6 +76,8 @@ Codex batch `phase1`, three parallel tracks. The files of each track don't overl
 
 **Done when** the golden tests pass, and an app-driver smoke run (create a project, add nodes, connect, compile, start the server) works on macOS.
 
+- [x] Done 2026-10-18: 0.7.18 core build with two local patches (see `assets/lib/litegraph/README.md`). Golden tests unchanged; old projects, all docs examples, compile and the test server verified on macOS.
+
 ### T1 Migrate to TypeScript (L)
 
 Do this right after L1, while Phase 1's golden tests guard behaviour.
@@ -86,9 +88,9 @@ Do this right after L1, while Phase 1's golden tests guard behaviour.
 - Run tests through the TypeScript build. Snapshots must stay identical.
 - Plan it as one setup track (tooling and shared types), then parallel tracks by area: main process, generators, built-in nodes, renderer pages.
 
-### E1 Electron hardening (M, optional here)
+### E1 Electron hardening (M)
 
-Context isolation with a preload script, no `@electron/remote`, a Content Security Policy, and navigation guards. T1 already restructures the renderer code, so this is cheaper alongside it than later. If T1 runs long, move E1 to Later.
+Moved to Later (2026-10-18). Context isolation with a preload script, no `@electron/remote`, a Content Security Policy, and navigation guards.
 
 ## Phase 3: cheap wins and core features
 
@@ -134,3 +136,6 @@ Context isolation with a preload script, no `@electron/remote`, a Content Securi
 - 2026-10-18: TypeScript migration and litegraph upgrade move up to Phase 2, before feature work.
 - 2026-10-18: Phase 1 runs as three Codex tracks: `editor`, `codegen`, `server`.
 - 2026-10-18: The Debug checkbox is a runtime trace flag. Every jar contains `if (PB_DEBUG)` trace calls, which log only when the server runs with `-Dpluginblueprint.debug=true`, so every jar is safe to publish. The plugin.yml `-bN` version suffix is gone.
+- 2026-10-18: The editor adopts the litegraph 0.7.18 default look (bigger nodes, new colours). The docs screenshots need retaking.
+- 2026-10-18: E1 Electron hardening moves to Later, so Phase 2 is L1 then T1.
+- 2026-10-18: T1 compiles everything under `src/` with `tsc` into one output folder the app runs from, with full `strict` from the start.
