@@ -266,7 +266,8 @@ describe("Codegen", function () {
         const graph = await H.setup();
         const constant = H.add(graph, "org.bukkit.persistence.PersistentDataType#static:org.bukkit.persistence.PersistentDataType", {field: "STRING"});
         const note = H.add(graph, "annotations/Note", {text: "First line\nSecond line"});
-        assert.strictEqual(note.widgets[0].value, "First line\nSecond line");
+        assert.strictEqual((note.widgets || []).length, 0);
+        assert.deepStrictEqual(Array.from(note.computeSize()), [240, 120]);
         note.size = [400, 200];
         graph.configure(graph.serialize());
         const restored = graph.getNodeById(constant.id);
@@ -278,17 +279,18 @@ describe("Codegen", function () {
         assert.strictEqual(restoredNote.resizable, true);
         assert.strictEqual((restoredNote.inputs || []).length, 0);
         assert.strictEqual((restoredNote.outputs || []).length, 0);
-        assert.strictEqual(restoredNote.widgets[0].options.multiline, true);
+        assert.strictEqual((restoredNote.widgets || []).length, 0);
+        assert.deepStrictEqual(Array.from(restoredNote.computeSize()), [140, 60]);
     });
     it("wraps Note text and preserves explicit line breaks", async function () {
         const graph = await H.setup();
         const note = H.add(graph, "annotations/Note", {text: "one two three\nfour\n\nfive"});
         note.size = [70, 160];
         const lines = [];
-        const context = {save() {}, restore() {}, measureText: text => ({width: text.length * 8}), fillText: (text, x, y) => lines.push([text, x, y])};
+        const context = {save() {}, restore() {}, beginPath() {}, rect() {}, clip() {}, measureText: text => ({width: text.length * 8}), fillText: (text, x, y) => lines.push([text, x, y])};
         note.onDrawBackground(context);
         assert.deepStrictEqual(lines.map(line => line[0]), ["one", "two", "three", "four", "", "five"]);
-        assert.deepStrictEqual(lines.map(line => line[2]), [50, 68, 86, 104, 122, 140]);
+        assert.deepStrictEqual(lines.map(line => line[2]), [20, 38, 56, 74, 92, 110]);
         note.flags.collapsed = true;
         note.onDrawBackground(context);
         assert.strictEqual(lines.length, 6);
