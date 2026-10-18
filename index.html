@@ -82,94 +82,13 @@
                 <button class="btn" id="openProject"><i class="material-icons left">folder_open</i> Open Project</button>
             </div>
             <div class="row" id="recentProjectRow">
-                <h5>Recent Projects <a href="#" class="createNewProject right-align" style="color:#d2d2d2;"><i class="material-icons right">add</i></a></h5>
+                <h5 style="color:#d2d2d2;">Recent Projects <a href="#" class="createNewProject right-align" style="color:#d2d2d2;"><i class="material-icons right">add</i></a></h5>
                 <ul class="collection" id="recentProjects">
                     <!-- Dynamic -->
                 </ul>
             </div>
         </div>
 
-        <script>
-            const {ipcRenderer, shell} = require("electron");
-            const {dialog, Menu, getCurrentWindow, app} = require("@electron/remote");
-            const prompt = require("electron-prompt");
-            const $ = require("jquery");
-
-
-            getCurrentWindow().setMenu(Menu.buildFromTemplate([
-                {
-                    label: "File",
-                    submenu: [
-                        {
-                            label: "New", role: "new", click: () => {
-                                ipcRenderer.send("showCreateNewProject");
-                            }
-                        },
-                        {
-                            label: "Open", role: "open", click: () => {
-                                ipcRenderer.send("showOpenProject");
-                            }
-                        },
-                        {
-                            type: "separator"
-                        },
-                        {
-                            role: "toggledevtools"
-                        },
-                    ]
-                }
-            ]));
-
-            $(document).ready(function () {
-                console.log("" +
-                    "PluginBlueprint, Version " + app.getVersion() + "\n" +
-                    "Copyright (c) 2018, Haylee Schaefer\n" +
-                    "All rights reserved.\n");
-
-                console.log("Checking for updates...");
-                ipcRenderer.send("checkUpdate");
-            });
-
-            ipcRenderer.send("getRecentProjects");
-
-            $(".createNewProject").click(() => {
-                ipcRenderer.send("showCreateNewProject");
-            });
-
-            $("#openProject").click(() => {
-                ipcRenderer.send("showOpenProject");
-            });
-
-            ipcRenderer.on("recentProjects", function (event, arg) {
-                for (let i = 0; i < arg.length; i++) {
-                    if (!arg[i] || !arg[i].path) continue;
-                    let item = $('<li class="collection-item avatar">' + (arg[i].thumbnail ? '<div class="thumbnail" style="background-image: url(data:image/jpeg;base64,' + arg[i].thumbnail + ')"></div>' : '') + '<span class="title">' + arg[i].name + '</span><p>' + arg[i].path + '</p><span class="editorVersion">' + arg[i].editorVersion + '</span></li>');
-                    item.click(() => {
-                        ipcRenderer.send("openProject", arg[i].path);
-                    });
-                    item.appendTo($("#recentProjects"));
-                }
-                if (arg.length === 0) {
-                    $("#recentProjectRow").hide();
-                }
-            });
-
-            // external links
-            $(document).on('click', 'a[href^="http"]', function (event) {
-                event.preventDefault();
-                shell.openExternal(this.href);
-            });
-
-            ipcRenderer.on("updateInfo", function (event, arg) {
-                $("#updateCheckContent").empty();
-                if (arg.hasUpdate) {
-                    console.log("Update available!", arg);
-
-                    $("#updateCheckContent").append("<strong>Update available!</strong> (v" + arg.updateVersion + ") <a href='https://pluginblueprint.net/downloads'>Download</a>")
-                } else {
-                    console.log("No update found", arg)
-                }
-            });
-        </script>
+        <script>require("./out/pages/index")</script>
     </body>
 </html>

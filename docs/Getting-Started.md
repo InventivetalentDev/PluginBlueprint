@@ -161,8 +161,8 @@ Open **Edit → Edit Project Information** to edit your plugin's details.
 2. If you need soft dependencies, enter them in **Soft-Depend (comma-separated)**.
 3. If your plugin handles commands, click **+** beside **Commands**.
    Each command has a name, description, usage, and aliases.
-4. For execution highlighting during testing, leave **Debug** checked.
-   It is on for new projects.
+4. For execution highlighting during testing, leave
+   **Trace node execution on the test server** checked. It is on for new projects.
 5. Click **Save** to close the information window.
 
 ## Compile and find the jar
@@ -175,8 +175,7 @@ Compiling turns your graph into a plugin jar that Paper can load.
 4. Find `<Name>.jar` in `<project>/output/`. `<Name>` is your plugin's name.
 
 The jar contains `plugin.yml` with `api-version: '26.3'`.
-With **Debug** on, its version is `<Version>-b<build number>` and the build
-number increases on each compile. With **Debug** off, it uses `<Version>`.
+Its version matches the project's **Version**, with or without tracing.
 
 If an error window opens, read its first `error:` line.
 Click a `node_<id>` link to highlight the related node.

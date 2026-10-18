@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "out",
+    "allowJs": false,
+    "strict": true,
+    "noEmitOnError": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "types": ["node"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "es2024"
+  },
+  "include": ["src/**/*"]
+}

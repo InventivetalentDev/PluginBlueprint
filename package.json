@@ -2,17 +2,18 @@
   "name": "pluginblueprint",
   "version": "2.0.0",
   "description": "Visual editor to create Paper (Minecraft server) plugins",
-  "main": "main.js",
+  "main": "out/main.js",
   "scripts": {
     "postinstall": "electron-builder install-app-deps",
-    "test": "mocha",
-    "start": "electron . --debug",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux",
-    "dist:all": "electron-builder -mwl",
-    "dist:mac": "electron-builder --mac"
+    "build": "tsc",
+    "test": "tsc && mocha",
+    "start": "tsc && electron . --debug",
+    "pack": "tsc && electron-builder --dir",
+    "dist": "tsc && electron-builder",
+    "dist:win": "tsc && electron-builder --win",
+    "dist:linux": "tsc && electron-builder --linux",
+    "dist:all": "tsc && electron-builder -mwl",
+    "dist:mac": "tsc && electron-builder --mac"
   },
   "files": [
     "**/*",
@@ -35,7 +36,10 @@
       "assets/material-icons/*",
       "node_modules/materialize-css/dist/css/*",
       "!.*/**",
-      "!{docs,test,tools}/**"
+      "!{dev,docs,test,tools}/**",
+      "!src/**",
+      "!**/*.map",
+      "!tsconfig.json"
     ],
     "nsis": {
       "oneClick": false,
@@ -86,11 +90,19 @@
   "homepage": "https://pluginblueprint.net",
   "license": "BSD-3-Clause",
   "devDependencies": {
+    "@types/deep-equal": "^1.0.4",
+    "@types/fs-extra": "^11.0.4",
+    "@types/jquery": "^4.0.1",
+    "@types/materialize-css": "^1.0.15",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.19.2",
     "electron": "^44.9.0",
     "electron-builder": "^26.17.0",
-    "mocha": "^11.8.0"
+    "mocha": "^11.8.0",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@electron/remote": "^2.1.3",
     "@fortawesome/fontawesome-free": "^5.6.3",
     "@fortawesome/fontawesome-svg-core": "^1.2.12",
     "@fortawesome/free-solid-svg-icons": "^5.6.3",
@@ -102,8 +114,7 @@
     "isomorphic-git": "^1.44.3",
     "jquery": "^3.7.1",
     "key.pics": "^1.0.2",
-    "materialize-css": "^1.0.0",
-    "@electron/remote": "^2.1.3"
+    "materialize-css": "^1.0.0"
   },
   "engines": {
     "node": ">=22"

@@ -3,6 +3,19 @@
         <link rel="stylesheet" href="../node_modules/materialize-css/dist/css/materialize.min.css">
         <link rel="stylesheet" href="../assets/material-icons/material-icons.css">
         <style>
+            body {
+                padding-bottom: 72px;
+            }
+
+            #saveBar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                padding: 12px 0;
+                background-color: #373737;
+            }
+
             #overlay {
                 position: absolute;
                 width: 100%;
@@ -98,137 +111,20 @@
                         <p>
                             <label>
                                 <input type="checkbox" id="debug"/>
-                                <span>Debug</span>
+                                <span>Trace node execution on the test server</span>
                             </label>
                         </p>
                     </div>
                 </form>
             </div>
-            <div class="row">
-                <form class="col s12">
-                    <div class="row">
-                        <button class="btn" id="saveInfo">Save</button>
-                    </div>
-                </form>
+        </div>
+        <div id="saveBar">
+            <div class="container">
+                <button class="btn" id="saveInfo">Save</button>
             </div>
         </div>
 
         <script src="../node_modules/materialize-css/dist/js/materialize.min.js"></script>
-        <script>
-            const {ipcRenderer} = require("electron");
-            const {Menu, getCurrentWindow} = require("@electron/remote");
-            const prompt = require('electron-prompt');
-            const $ = require("jquery");
-
-            let projectInfo = {};
-            let commands = [];
-
-            getCurrentWindow().setMenu(Menu.buildFromTemplate([
-                {
-                    label: "File",
-                    submenu: [
-                        {
-                            label: "Save", role: "new", accelerator: "CommandOrControl+S", click: () => {
-                                updateProjectInfo();
-                            }
-                        }
-                    ]
-                }
-            ]));
-
-            window.onbeforeunload = function (e) {
-                updateProjectInfo();
-            };
-
-            $("#saveInfo").on("click", function () {
-                getCurrentWindow().close();
-            });
-
-            function updateProjectInfo() {
-                projectInfo.name = $("#name").val();
-                projectInfo.description = $("#description").val();
-                projectInfo.version = $("#version").val();
-                projectInfo.author = $("#author").val();
-                projectInfo.package = $("#package").val();
-                projectInfo.debug = $("#debug").is(":checked");
-
-                let softdepend = [];
-                let softdependSplit = $("#softdepend").val().split(",");
-                for (let i = 0; i < softdependSplit.length; i++) {
-                    softdepend.push(softdependSplit[i].trim());
-                }
-                projectInfo.softdepend = softdepend || [];
-
-                projectInfo.commands = commands || [];
-
-                ipcRenderer.send("updateProjectInfo", projectInfo);
-            }
-
-            ipcRenderer.send("getProjectInfo");
-
-            ipcRenderer.on("projectInfo", function (event, arg) {
-                console.log("projectInfo");
-                console.log(arg);
-                projectInfo = arg;
-
-                if (arg.name)
-                    $("#name").val(arg.name);
-                if (arg.description)
-                    $("#description").val(arg.description);
-                if (arg.version)
-                    $("#version").val(arg.version);
-                if (arg.author)
-                    $("#author").val(arg.author);
-                if (arg.package)
-                    $("#package").val(arg.package);
-                if (arg.debug)
-                    $("#debug").prop("checked", arg.debug);
-                if (arg.softdepend)
-                    $("#softdepend").val(arg.softdepend.join(","));
-                if (arg.commands) {
-                    commands = arg.commands;
-                    updateCommandList();
-                }
-
-                M.updateTextFields();
-
-                $("#overlay").fadeOut();
-            });
-
-            function updateCommandList() {
-                $("#commandList").empty();
-                for (let i = 0; i < commands.length; i++) {
-                    let cmd = commands[i];
-                    let commandItem = $('<li class="collection-item"><div>' + cmd.name + '<a href="#!" class="secondary-content"><i class="material-icons delete-command">delete</i></a></div></li>');
-                    commandItem.find(".delete-command").on("click", function () {
-                        commands.splice(i, 1);
-                        updateCommandList();
-                    });
-                    commandItem.on("click", function () {
-                        ipcRenderer.send("openCommandEditor", {
-                            command: commands[i],
-                            index: i
-                        })
-                    });
-                    commandItem.appendTo($("#commandList"))
-                }
-            }
-
-            $("#addCommand").click(function (e) {
-                ipcRenderer.send("openCommandEditor", {
-                    command: {},
-                    index: -1
-                })
-            });
-
-            ipcRenderer.on("commandAdded", function (event, arg) {
-                commands.push(arg);
-                updateCommandList();
-            });
-            ipcRenderer.on("commandUpdated", function (event, arg) {
-                commands[arg.index] = arg.command;
-                updateCommandList();
-            })
-        </script>
+        <script>require("../out/pages/infoEditor")</script>
     </body>
 </html>
