@@ -32,7 +32,7 @@ function createLineSplitter(onLine?: (line: string) => void) {
     return split;
 }
 
-function startServer(projectPath: string, java: string, debug: boolean, outCb?: (line: string) => void, errCb?: (line: string) => void) {
+function startServer(projectPath: string, java: string, debug: boolean, outCb?: (line: string) => void, errCb?: (line: string) => void, stateCb?: (running: boolean) => void) {
     if (running || instance) return false;
     let args = ["-Xmx2G", "-Dcom.mojang.eula.agree=true"];
     if (debug) args.push("-Dpluginblueprint.debug=true");
@@ -42,12 +42,14 @@ function startServer(projectPath: string, java: string, debug: boolean, outCb?: 
     });
     running = true;
     instance = spawned;
+    spawned.once("spawn", () => { if (stateCb) stateCb(true); });
     spawned.on('error', (err) => {
         console.log('Failed to start subprocess.');
         console.warn(err);
         if (errCb) errCb(err.message);
         running = false;
         instance = null;
+        if (stateCb) stateCb(false);
     });
     let stdout = createLineSplitter(outCb);
     let stderr = createLineSplitter(errCb);
@@ -59,6 +61,7 @@ function startServer(projectPath: string, java: string, debug: boolean, outCb?: 
         console.log("Server process exited with code " + code);
         running = false;
         instance = null;
+        if (stateCb) stateCb(false);
     });
     return true;
 }

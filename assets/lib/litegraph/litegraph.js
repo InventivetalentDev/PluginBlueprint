@@ -1480,6 +1480,7 @@
             this.change();
             node.graph = this;
             this._version++;
+            this.afterChange(node);
             return;
         }
 
@@ -1557,6 +1558,7 @@
             this._version++;
             this.setDirtyCanvas(true, true);
             this.change();
+            this.afterChange(node);
             return;
         }
 
@@ -6716,6 +6718,7 @@ LGraphNode.prototype.executeAction = function(action)
         var now = LiteGraph.getTime();
         e.click_time = now - this.last_mouseclick;
         this.last_mouse_dragging = false;
+		var mouse_moved = !this.last_click_position || this.last_click_position[0] !== e.clientX || this.last_click_position[1] !== e.clientY;
 		this.last_click_position = null;
 
 		if(this.block_click)
@@ -6736,7 +6739,7 @@ LGraphNode.prototype.executeAction = function(action)
             //left button
             this.node_widget = null;
 
-            if (this.selected_group) {
+            if (this.selected_group && mouse_moved) {
                 var diffx =
                     this.selected_group.pos[0] -
                     Math.round(this.selected_group.pos[0]);
@@ -6753,8 +6756,9 @@ LGraphNode.prototype.executeAction = function(action)
                 if (this.selected_group._nodes.length) {
                     this.dirty_canvas = true;
                 }
-                this.selected_group = null;
+                this.graph.afterChange(this.selected_group);
             }
+            this.selected_group = null;
             this.selected_group_resizing = false;
 
 			var node = this.graph.getNodeOnPos(
@@ -6918,10 +6922,12 @@ LGraphNode.prototype.executeAction = function(action)
 
                 this.dirty_canvas = true;
                 this.dirty_bgcanvas = true;
-                this.node_dragged.pos[0] = Math.round(this.node_dragged.pos[0]);
-                this.node_dragged.pos[1] = Math.round(this.node_dragged.pos[1]);
-                if (this.graph.config.align_to_grid || this.align_to_grid ) {
-                    this.node_dragged.alignToGrid();
+                if (mouse_moved) {
+                    this.node_dragged.pos[0] = Math.round(this.node_dragged.pos[0]);
+                    this.node_dragged.pos[1] = Math.round(this.node_dragged.pos[1]);
+                    if (this.graph.config.align_to_grid || this.align_to_grid ) {
+                        this.node_dragged.alignToGrid();
+                    }
                 }
 				if( this.onNodeMoved )
 					this.onNodeMoved( this.node_dragged );
@@ -11378,6 +11384,7 @@ LGraphNode.prototype.executeAction = function(action)
                 value = Boolean(value);
             }
             node[property] = value;
+            if (node.graph) node.graph.afterChange(node);
             if (dialog.parentNode) {
                 dialog.parentNode.removeChild(dialog);
             }

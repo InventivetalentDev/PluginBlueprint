@@ -5,8 +5,9 @@ The server uses your last compiled jar.
 
 ## Compile and start the server
 
-Starting the test server means you accept the [Minecraft EULA](https://aka.ms/MinecraftEULA).
-The app starts the server with `-Dcom.mojang.eula.agree=true`.
+Before the first start, the app asks you to accept the [Minecraft EULA](https://aka.ms/MinecraftEULA).
+Choose **Open EULA** to read it, **I agree** to start, or **Cancel** to leave the server stopped.
+The app remembers your agreement and then starts the server with `-Dcom.mojang.eula.agree=true`.
 
 1. Choose **Compile → Generate Code, Compile, Package**.
 2. Choose **Run → Start Server**.

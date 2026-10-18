@@ -21,8 +21,8 @@ class History<T = unknown> {
      * Tracks a new state to the present and stores any previous actions in the past (doesn't track if the state is equal to the current present)
      * @param state present state
      */
-    track(state: T) {
-        if (this.paused) return;
+    track(state: T): boolean {
+        if (this.paused) return false;
         if (this.present) {
             if (deepEqual(this.present, state)) return false;
             // Move existing present to past

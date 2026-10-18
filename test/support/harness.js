@@ -53,8 +53,8 @@ function link(a, aSlot, b, bSlot) {
     if (!r) throw new Error("connect refused: " + a.type + "[" + a.outputs[as].name + ":" + a.outputs[as].type + "] -> " + b.type + "[" + b.inputs[bs].name + ":" + String(b.inputs[bs].type).slice(0, 80) + "]");
     return r;
 }
-async function gen(graph, debug) {
-    return CodeGenerator.generateClassCode(graph, {package: "my.awesome.plugin", debug: !!debug});
+async function gen(graph, debug, projectInfo) {
+    return CodeGenerator.generateClassCode(graph, {package: "my.awesome.plugin", debug: !!debug, ...projectInfo});
 }
 function loadSnippet(graph, snippet) {
     const data = LiteGraph.cloneObject(snippet);

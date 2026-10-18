@@ -7,12 +7,12 @@ import ClassDataStore = require("./classDataStore");
 import {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding, isNumberType, javaType} from "./util";
 
 import type {ContextMenuItem, IContextMenuItem, IContextMenuOptions, INodeSlot, LGraphNodeConstructor} from "../../assets/lib/litegraph/litegraph";
-import type {ClassData, ConstructorData, MethodData} from "../types/classData";
+import type {ClassData, ConstructorData, FieldData, MethodData} from "../types/classData";
 import type {LiteGraphExtras, OptionalSlot, SlotType} from "../types/litegraph-augment";
 import type {NodeModule} from "../types/nodes";
 
 interface BukkitNode extends LGraphNode {
-    nodeType: "BukkitClassNode" | "BukkitMethodNode" | "BukkitAbstractMethodNode" | "BukkitConstructorNode";
+    nodeType: "BukkitClassNode" | "BukkitMethodNode" | "BukkitAbstractMethodNode" | "BukkitConstructorNode" | "BukkitStaticFieldNode";
     classType?: "event" | "enum" | "object";
     className: string;
     methodName?: string;
@@ -44,6 +44,10 @@ import variableNodes = require("./nodes/variables");
 import arrayNodes = require("./nodes/array");
 import flowNodes = require("./nodes/flow");
 import logicNodes = require("./nodes/logic");
+import eventNodes = require("./nodes/events");
+import annotationNodes = require("./nodes/annotations");
+import commandNodes = require("./nodes/commands");
+import configNodes = require("./nodes/config");
 
 const nodes: [string, NodeModule][] = [
     // category, import
@@ -54,13 +58,18 @@ const nodes: [string, NodeModule][] = [
     ["variables", require("./nodes/variables") as typeof variableNodes],
     ["arrays", require("./nodes/array") as typeof arrayNodes],
     ["flow", require("./nodes/flow") as typeof flowNodes],
-    ["logic", require("./nodes/logic") as typeof logicNodes]
+    ["logic", require("./nodes/logic") as typeof logicNodes],
+    ["events", require("./nodes/events") as typeof eventNodes],
+    ["annotations", require("./nodes/annotations") as typeof annotationNodes],
+    ["commands", require("./nodes/commands") as typeof commandNodes],
+    ["config", require("./nodes/config") as typeof configNodes]
 ];
 
 const classStore = new ClassDataStore();
 const isValidConnection = (LiteGraph as typeof LiteGraph & LiteGraphExtras).isValidConnection;
 (LiteGraph as typeof LiteGraph & LiteGraphExtras).isValidConnection = function (outputType: SlotType, inputType: SlotType) {
     if (inputType === "java.lang.Object") return outputType !== "@EXEC";
+    if (typeof outputType === "string" && typeof inputType === "string" && inputType.toLowerCase() === "org.bukkit.event.cancellable" && classStore.isAssignableTo(outputType, inputType)) return true;
     return isValidConnection.apply(this, arguments as IArguments & [SlotType, SlotType]);
 };
 // The editor does not use slot-type search, so skip registry sorting for each slot.
@@ -212,6 +221,31 @@ function onObjectAdd(node: ContextMenuItem, options: IContextMenuOptions, e: Mou
     }
 }
 
+function onConstantAdd(node: ContextMenuItem, options: IContextMenuOptions, e: MouseEvent, prevMenu: Menu | undefined) {
+    const constants = Object.entries(LiteGraph.registered_node_types).filter(([type]) => type.includes("#static:") && isApiClass(type) && !classStore.getClass(type.split("#")[0])!.isDeprecated);
+    const packages = [...new Set(constants.map(([type]) => classStore.getClass(type.split("#")[0])!.package))];
+    const entries = packages.map(name => ({content: name, value: name, has_submenu: true}));
+    const menu = new LiteGraph.ContextMenu(entries, {event: e, callback: inner_clicked, parentMenu: prevMenu, scroll_speed: scrollSpeedForLength(entries.length)} as MenuOptions);
+
+    function inner_clicked(v: ContextMenuItem, options: IContextMenuOptions, e: MouseEvent) {
+        const values = constants.filter(([type]) => {
+            const clazz = classStore.getClass(type.split("#")[0])!;
+            return clazz.package === (v as MenuEntry<string>).value;
+        }).map(([type, constructor]) => ({content: (constructor as LGraphNodeConstructor & {title: string}).title, value: type}));
+        new LiteGraph.ContextMenu(values, {event: e, callback: inner_create, parentMenu: menu, scroll_speed: scrollSpeedForLength(values.length)} as MenuOptions);
+        return false;
+    }
+
+    function inner_create(v: ContextMenuItem) {
+        const firstEvent = (prevMenu!.getFirstEvent as () => MouseEvent)();
+        const node = LiteGraph.createNode((v as MenuEntry<string>).value);
+        if (node) {
+            node.pos = canvas.convertEventToCanvasOffset(firstEvent);
+            canvas.graph!.add(node);
+        }
+    }
+}
+
 function onMethodAdd(node: ContextMenuItem, options: IContextMenuOptions, e: MouseEvent, prevMenu: Menu | undefined) {
     let entries = [];
     let existingCategories = [];
@@ -354,6 +388,7 @@ function init() {
                 null,
                 {content: "Add Bukkit Event", has_submenu: true, callback: onEventAdd},
                 {content: "Add Bukkit Object", has_submenu: true, callback: onObjectAdd},
+                {content: "Add Bukkit Constant", has_submenu: true, callback: onConstantAdd},
                 {content: "Add Bukkit Method", has_submenu: true, callback: onMethodAdd},
                 null,
                 {content: "Add Group", callback: LGraphCanvas.onGroupAdd}
@@ -486,6 +521,19 @@ function ensureNodeRegistration() {
     for (let n in classesByName) {
         let clazz = classesByName[n];
         getOrCreateBukkitClassNode(clazz.qualifiedName);
+        if (!clazz.isEnum) {
+            const fieldsByType = new Map<string, FieldData[]>();
+            for (const field of Object.values(clazz.fieldsByName)) {
+                if (!field.isStatic || field.isDeprecated) continue;
+                if (!field.type.isPrimitive && !classStore.getClass(field.type.qualifiedName)) continue;
+                const group = fieldsByType.get(field.type.qualifiedName) || [];
+                group.push(field);
+                fieldsByType.set(field.type.qualifiedName, group);
+            }
+            for (const group of fieldsByType.values()) {
+                registerStaticFieldNode(clazz, group);
+            }
+        }
         for (let m in clazz.methodsBySignature) {
             let method = clazz.methodsBySignature[m];
             getOrCreateBukkitAbstractMethodNode(clazz.qualifiedName, method.fullSignature);
@@ -496,6 +544,27 @@ function ensureNodeRegistration() {
             getOrCreateBukkitConstructorNode(clazz.qualifiedName, constructor.fullSignature);
         }
     }
+}
+
+function registerStaticFieldNode(classData: ClassData, fields: FieldData[]) {
+    const fieldType = fields[0].type;
+    const names = fields.map(field => field.name);
+    const type = classData.qualifiedName + "#static:" + fieldType.qualifiedName;
+
+    function BukkitStaticFieldNode(this: BukkitNode) {
+        this.nodeType = "BukkitStaticFieldNode";
+        this.className = classData.qualifiedName;
+        this.color = Colors.ENUM_OFF;
+        this.addOutput(names[0], javaType(fieldType), shapeAndColorsForSlotType("enum", {linkType: "staticField"}));
+        this.outputs[0].label = "[" + names[0] + "]";
+        this.addProperty("field", names[0], "enum", {values: names});
+    }
+
+    BukkitStaticFieldNode.title = classData.simpleName + (fieldType.qualifiedName === classData.qualifiedName ? "" : ": " + fieldType.simpleName);
+    BukkitStaticFieldNode.prototype.onPropertyChanged = function (this: BukkitNode, property: string, value: string) {
+        if (property === "field") this.outputs[0].label = "[" + value + "]";
+    };
+    LiteGraph.registerNodeType(type, BukkitStaticFieldNode as unknown as LGraphNodeConstructor);
 }
 
 function getOrCreateBukkitClassNode(className: string | null | undefined) {
@@ -540,6 +609,10 @@ function getOrCreateBukkitClassNode(className: string | null | undefined) {
             this.classType = "event";
             this.iconName = "bullhorn";
             this.color = Colors.EVENT;
+            this.addProperty("priority", "NORMAL", "enum", {values: ["LOWEST", "LOW", "NORMAL", "HIGH", "HIGHEST", "MONITOR"]});
+            if (classStore.isAssignableTo(classData!.qualifiedName, "org.bukkit.event.Cancellable")) {
+                this.addProperty("ignoreCancelled", false, "boolean");
+            }
         } else if (classData!.isEnum) {
             this.classType = "enum";
             this.iconName = "list-ol";

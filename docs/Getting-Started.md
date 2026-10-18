@@ -139,6 +139,20 @@ To open a node's Javadoc, hold Shift and click the node.
 Javadoc describes its class and methods. Paper classes open on `jd.papermc.io`;
 Java classes open on `docs.oracle.com`.
 
+The toolbar has **Save**, **Build & Reload**, **Test**, and **Stop**.
+**Build & Reload** builds your jar and reloads it if the test server is running.
+**Test** builds it and starts the server; while the server runs, it reads **Restart**.
+**Stop** stops the server.
+
+The save label shows **Unsaved changes**, **Saving…**, or **Saved**.
+The editor autosaves 30 seconds after your last change, including in new projects.
+Autosave keeps the backup from your last manual save.
+Undo covers node moves, resizes, titles, and group changes.
+
+Use **Edit → Find** to find nodes by title or type.
+Type in the toolbar field, then press Enter for the next match or Shift+Enter
+for the previous match. Escape closes Find and returns focus to the canvas.
+
 Use these shortcuts while editing. Use Command on macOS and Control elsewhere
 where the table says Ctrl/Cmd.
 
@@ -147,8 +161,12 @@ where the table says Ctrl/Cmd.
 | Copy and paste | Ctrl/Cmd+C and Ctrl/Cmd+V |
 | Delete selected nodes | Delete or Backspace |
 | Undo | Ctrl/Cmd+Z or **Edit → Undo** |
-| Redo | Ctrl/Cmd+Y or **Edit → Redo** |
+| Redo | Ctrl+Y (Command+Shift+Z on macOS) or **Edit → Redo** |
 | Save | Ctrl/Cmd+S or **File → Save** |
+| Build & Reload | Ctrl/Cmd+B or **Compile → Build & Reload** |
+| Test | Ctrl/Cmd+T or **Compile → Test** |
+| Stop | Ctrl/Cmd+Shift+T or **Run → Stop** |
+| Find | Ctrl/Cmd+F or **Edit → Find** |
 
 ## Edit the project information
 

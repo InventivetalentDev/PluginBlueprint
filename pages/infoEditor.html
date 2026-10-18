@@ -5,6 +5,19 @@
         <style>
             body {
                 padding-bottom: 72px;
+                color: #d2d2d2;
+            }
+
+            input, textarea, select, .select-dropdown li > span, .input-field .helper-text {
+                color: #d2d2d2;
+            }
+
+            .select-dropdown.dropdown-content, .collection .collection-item {
+                background-color: #373737;
+            }
+
+            .select-dropdown.dropdown-content li.active {
+                background-color: rgba(255, 255, 255, 0.08);
             }
 
             #saveBar {
@@ -59,43 +72,99 @@
         </div>
         <br/>
         <div class="container">
+            <ul class="tabs">
+                <li class="tab col s6"><a class="active" href="#pluginTab">Plugin</a></li>
+                <li class="tab col s6"><a href="#configTab">Config</a></li>
+            </ul>
+            <div id="pluginTab">
             <div class="row">
                 <form class="col s12">
                     <div class="row">
                         <div class="input-field col s12">
-                            <input value="MyPlugin" id="name" type="text">
+                            <input id="name" type="text">
                             <label for="name">Name</label>
                         </div>
                     </div>
                     <div class="row">
                         <div class="input-field col s12">
-                            <input value="My Awesome Plugin!" id="description" type="text">
+                            <input id="description" type="text">
                             <label for="description">Description</label>
                         </div>
                     </div>
                     <div class="row">
                         <div class="input-field col s12">
-                            <input value="0.0.0" id="version" type="text">
+                            <input id="version" type="text">
                             <label for="version">Version</label>
                         </div>
                     </div>
                     <div class="row">
                         <div class="input-field col s12">
-                            <input value="inventivetalent" id="author" type="text">
+                            <input id="author" type="text">
                             <label for="author">Author</label>
                         </div>
                     </div>
                     <div class="row">
                         <div class="input-field col s12">
-                            <input value="my.awesome.plugin" id="package" type="text">
+                            <input id="package" type="text">
                             <label for="package">Package</label>
                         </div>
                     </div>
                     <div class="row">
                         <div class="input-field col s12">
-                            <input value="" id="softdepend" type="text">
+                            <input id="softdepend" type="text">
                             <label for="softdepend">Soft-Depend (comma-separated)</label>
                         </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input id="depend" type="text">
+                            <label for="depend">Depend (comma-separated)</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input id="loadbefore" type="text">
+                            <label for="loadbefore">Load before (comma-separated)</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input id="authors" type="text">
+                            <label for="authors">Authors (comma-separated)</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input id="website" type="text">
+                            <label for="website">Website</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input id="prefix" type="text">
+                            <label for="prefix">Prefix</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <select id="load">
+                                <option value="">None</option>
+                                <option value="STARTUP">STARTUP</option>
+                                <option value="POSTWORLD">POSTWORLD</option>
+                            </select>
+                            <label for="load">Load</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <textarea id="libraries" class="materialize-textarea"></textarea>
+                            <label for="libraries">Libraries (one Maven coordinate per line)</label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <h6>Permissions <a href="#" id="addPermission" aria-label="Add permission" class="right-align" style="color:#d2d2d2;"><i class="material-icons right">add</i></a></h6>
+                        <ul class="collection" id="permissionList"></ul>
                     </div>
 
                     <div class="row">
@@ -116,6 +185,15 @@
                         </p>
                     </div>
                 </form>
+            </div>
+            </div>
+            <div id="configTab">
+                <table>
+                    <thead><tr><th>Key path</th><th>Type</th><th>Default</th><th></th></tr></thead>
+                    <tbody id="configList"></tbody>
+                </table>
+                <button type="button" class="btn" id="addConfigKey">Add key</button>
+                <p>The build ships these keys as config.yml. Read them with a Config value node.</p>
             </div>
         </div>
         <div id="saveBar">

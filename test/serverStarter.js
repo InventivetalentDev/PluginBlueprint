@@ -3,8 +3,54 @@ let fs = require("fs-extra");
 let os = require("os");
 let path = require("path");
 const {createLineSplitter, copyPlugin} = require("../out/lib/serverStarter");
+const serverStarter = require("../out/lib/serverStarter");
+const childProcess = require("child_process");
+const {EventEmitter} = require("events");
 
 describe("ServerStarter", function () {
+    describe("server state", function () {
+        let originalSpawn, server, spawnArgs;
+        beforeEach(function () {
+            originalSpawn = childProcess.spawn;
+            server = new EventEmitter();
+            server.stdout = new EventEmitter();
+            server.stderr = new EventEmitter();
+            server.stdin = {write: command => {
+                assert.strictEqual(command, "stop\n");
+                process.nextTick(() => server.emit("exit", 0));
+            }};
+            childProcess.spawn = (...args) => { spawnArgs = args; return server; };
+        });
+        afterEach(function () {
+            if (serverStarter.isRunning()) server.emit("exit", 0);
+            childProcess.spawn = originalSpawn;
+        });
+
+        it("should report start and exit, and wait for a normal stop", async function () {
+            let states = [];
+            assert.strictEqual(serverStarter.startServer("/project", "java", true, undefined, undefined, value => states.push(value)), true);
+            assert.strictEqual(serverStarter.startServer("/project", "java", true), false);
+            assert.ok(spawnArgs[1].includes("-Dcom.mojang.eula.agree=true"));
+            assert.ok(spawnArgs[1].includes("-Dpluginblueprint.debug=true"));
+            server.emit("spawn");
+            assert.deepStrictEqual(states, [true]);
+            let stopping = serverStarter.stopServer();
+            assert.strictEqual(serverStarter.stopServer(), stopping);
+            await stopping;
+            assert.deepStrictEqual(states, [true, false]);
+            assert.strictEqual(serverStarter.isRunning(), false);
+        });
+
+        it("should report a failed start as stopped", function () {
+            let states = [], errors = [];
+            serverStarter.startServer("/project", "java", false, undefined, error => errors.push(error), value => states.push(value));
+            server.emit("error", {message: "Java unavailable"});
+            assert.deepStrictEqual(states, [false]);
+            assert.deepStrictEqual(errors, ["Java unavailable"]);
+            assert.strictEqual(serverStarter.isRunning(), false);
+        });
+    });
+
     describe("#createLineSplitter", function () {
         it("should keep unfinished lines between chunks", function () {
             let lines = [];

@@ -8,6 +8,9 @@ You add and connect nodes to build a plugin without writing code.
 - Builds plugins for Paper 26.3.
 - Finds Java or downloads it, and sets up the Paper test server for you.
 - Five example plugins, with snippets you can import.
+- Command nodes with typed arguments, and a Config tab for `config.yml`.
+- A check before every build that explains problems in plain language.
+- A toolbar with Build & Reload and Test, autosave, and undo for moves.
 - No analytics or crash reporting.
 
 ## Read the documentation
@@ -16,11 +19,18 @@ You add and connect nodes to build a plugin without writing code.
    connect nodes, and compile your first plugin.
 2. [Examples](Examples.md): build a join message, command, block protection,
    starter kit, and timed broadcast.
-3. [Testing your plugin](Testing-your-Plugin.md): start the test server,
+3. [Commands](Commands.md): add a command with arguments, a permission and
+   tab completion.
+4. [Config](Config.md): ship a `config.yml`, read its values, and reload it.
+5. [Testing your plugin](Testing-your-Plugin.md): start the test server,
    connect from Minecraft, and follow execution in the editor.
-4. [Troubleshooting](Troubleshooting.md): find a cause and fix for launch,
+6. [Fixing problems](Fixing-problems.md): what each problem and build error
+   means, and how to fix it.
+7. [Troubleshooting](Troubleshooting.md): find a cause and fix for launch,
    setup, compile, and server problems.
-5. [Updating from version 1](Updating-from-Version-1.md): back up a 1.x project
+8. [Updating from version 1](Updating-from-Version-1.md): back up a 1.x project
    and update its target and nodes for Paper 26.3.
+
+To use your jar on another server, follow [Installing on your server](Installing-on-your-Server.md).
 
 PluginBlueprint is free and open source. If it helps you, you can [pay what you want](https://inventivetalent.shop/l/pluginblueprint?layout=profile).

@@ -2,6 +2,10 @@ import {app, BrowserWindow, ipcMain, dialog, Notification, shell, type IpcMainEv
 import paper = require("./lib/paper");
 import {findJdk, downloadJdk} from "./lib/jdk";
 import javaCompiler = require("./lib/javaCompiler");
+import {makePluginYml} from "./lib/pluginYml";
+import {makeConfigYml} from "./lib/configYml";
+import {defaultAuthor, defaultPackage} from "./lib/projectDefaults";
+import {getSetting, setSetting, type AppSettings} from "./lib/settings";
 import serverStarter = require("./lib/serverStarter");
 import versionControl = require("./lib/versionControl");
 import prompt = require("electron-prompt");
@@ -338,13 +342,14 @@ ipcMain.on("showCreateNewProject", function (event: IpcMainEvent, arg: undefined
     })
 });
 
-function createNewProject(arg: {path: string; name: string}) {
+async function createNewProject(arg: {path: string; name: string}) {
     let projectFilePath = path.join(arg.path, "project.pbp");
     if (fs.existsSync(projectFilePath)) {
         dialog.showErrorBox("Project exists", "There is already a PluginBlueprint project in that directory");
         return;
     }
 
+    let author = await defaultAuthor();
     let progressBar = new ProgressBar({
         indeterminate: false,
         text: "Creating Project...",
@@ -356,8 +361,8 @@ function createNewProject(arg: {path: string; name: string}) {
         name: arg.name,
         creationTime: Date.now(),
         description: "My Awesome Plugin!!",
-        author: "inventivetalent",
-        package: "my.awesome.plugin",
+        author: author,
+        package: defaultPackage(author, arg.name),
         version: "0.0.0",
         type: "paper",
         minecraftVersion: paper.getDataMeta().minecraftVersion,
@@ -389,6 +394,7 @@ function createNewProject(arg: {path: string; name: string}) {
                 fs.writeFileSync(path.join(currentProjectPath, currentProject.name + ".pbp"), projectFilePath, "utf-8");
 
                 fs.ensureDirSync(path.join(arg.path, "src"));
+                fs.ensureDirSync(path.join(arg.path, "resources"));
                 fs.ensureDirSync(path.join(arg.path, "classes"));
                 fs.ensureDirSync(path.join(arg.path, "output"));
                 fs.ensureDirSync(path.join(arg.path, "lib"));
@@ -580,7 +586,8 @@ ipcMain.on("getProjectInfo", function (event: IpcMainEvent, arg: undefined) {
 
 ipcMain.on("updateProjectInfo", function (event: IpcMainEvent, arg: ProjectInfo | null | undefined) {
     if (!arg) return;
-    currentProject = arg;
+    let {isNewProject: editorOnly, ...project} = arg;
+    currentProject = project;
 
     if (win) {
         win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
@@ -615,14 +622,16 @@ ipcMain.on("getGraphData", function (event: IpcMainEvent, arg: undefined) {
     });
 });
 
-function saveGraphData(arg: serializedLGraph, cb?: () => void) {
+function saveGraphData(arg: serializedLGraph & {autosave?: boolean}, cb?: () => void) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
+    let {autosave, ...graph} = arg;
     // backup
-    copyFile(path.join(currentProjectPath, 'graph.pbg'), path.join(currentProjectPath, 'graph.pbg.old')).then(() => {
+    let backup = autosave ? Promise.resolve() : copyFile(path.join(currentProjectPath, 'graph.pbg'), path.join(currentProjectPath, 'graph.pbg.old'));
+    backup.then(() => {
         // write data
-        fs.writeFile(path.join(currentProjectPath!, "graph.pbg"), JSON.stringify(arg), "utf-8", function (err) {
+        fs.writeFile(path.join(currentProjectPath!, "graph.pbg"), JSON.stringify(graph), "utf-8", function (err) {
             if (err) {
                 console.error("Failed to save graph file");
                 console.error(err);
@@ -646,7 +655,7 @@ function saveProject(cb?: () => void) {
     });
 }
 
-ipcMain.on("saveGraphData", function (event: IpcMainEvent, arg: serializedLGraph) {
+ipcMain.on("saveGraphData", function (event: IpcMainEvent, arg: serializedLGraph & {autosave?: boolean}) {
     console.log("saveGraphData");
     saveGraphData(arg, function () {
         event.sender.send("graphDataSaved")
@@ -682,70 +691,24 @@ ipcMain.on("saveThumbnail", function (event: IpcMainEvent, arg: string) {
     });
 });
 
-function saveCodeToFile(code: string) {
-    return new Promise<void>((resolve, reject) => {
-        console.log("saveCode: " + Date.now());
-        if (!currentProject || !currentProjectPath) {
-            return reject();
-        }
-        if (!code) return reject();
+async function saveCodeToFile(code: string) {
+    console.log("saveCode: " + Date.now());
+    if (!currentProject || !currentProjectPath || !code) throw new Error("No project or generated code to save.");
 
-        fs.emptyDir(path.join(currentProjectPath, "src"), function (err) {
-            if (err) return reject(err);
-            fs.mkdirs(path.join(currentProjectPath!, "src", ...currentProject!.package.split(".")), function (err) {
-                if (err) {
-                    console.error("Failed to save code file");
-                    console.error(err);
-                    return reject(err);
-                }
-                fs.writeFile(path.join(currentProjectPath!, "src", ...currentProject!.package.split("."), "GeneratedPlugin.java"), code, "utf-8", function (err) {
-                    if (err) {
-                        console.error("Failed to save code file");
-                        console.error(err);
-                        return reject(err);
-                    }
-
-                    console.log("savedCode: " + Date.now());
-
-                    let manifest = "Generated-By: PluginBlueprint " + app.getVersion() + "\n";
-                    fs.writeFile(path.join(currentProjectPath!, "src", "manifest"), manifest, "utf-8", function (err) {
-                        if (err) {
-                            console.error("Failed to save manifest file");
-                            console.error(err);
-                            return reject(err);
-                        }
-
-                        resolve();
-                    });
-                });
-            });
-        })
-    })
-
-}
-
-function makePluginYml() {
-    let yml = "name: " + JSON.stringify(currentProject!.name) +
-        "\ndescription: " + JSON.stringify(currentProject!.description) +
-        "\nversion: " + JSON.stringify(currentProject!.version) +
-        "\nmain: " + JSON.stringify(currentProject!.package + ".GeneratedPlugin") +
-        "\nauthor: " + JSON.stringify(currentProject!.author) +
-        "\nsoftdepend: [" + (currentProject!.softdepend || []).map(value => JSON.stringify(value)).join(",") + "]" +
-        "\ngenerator: " + JSON.stringify("PluginBlueprint " + app.getVersion()) +
-        "\napi-version: '" + currentProject!.minecraftVersion + "'\n";
-    if (currentProject!.commands) {
-        yml += "commands:\n";
-        for (let i = 0; i < currentProject!.commands.length; i++) {
-            let command = currentProject!.commands[i];
-            yml += "  " + JSON.stringify(command.name) + ":\n";
-            yml += "    description: " + JSON.stringify(command.description) + "\n";
-            yml += "    usage: " + JSON.stringify(command.usage) + "\n";
-            let aliases = typeof command.aliases === "string" ? command.aliases.split(",") : command.aliases || [];
-            aliases = aliases.map(alias => alias.trim()).filter(Boolean);
-            if (aliases.length) yml += "    aliases: [" + aliases.map(alias => JSON.stringify(alias)).join(",") + "]\n";
+    let srcDir = path.join(currentProjectPath, "src");
+    await fs.ensureDir(srcDir);
+    for (let file of await javaCompiler.listJavaSources(srcDir)) {
+        if (path.basename(file) === "GeneratedPlugin.java" && (await fs.readFile(file, "utf-8")).includes("Generated by PluginBlueprint")) {
+            await fs.remove(file);
         }
     }
-    return yml;
+    let oldManifest = path.join(srcDir, "manifest");
+    if (await fs.pathExists(oldManifest) && (await fs.readFile(oldManifest, "utf-8")).startsWith("Generated-By: PluginBlueprint")) {
+        await fs.remove(oldManifest);
+    }
+    await fs.outputFile(path.join(srcDir, ...currentProject.package.split("."), "GeneratedPlugin.java"), code, "utf-8");
+    await fs.outputFile(path.join(currentProjectPath, "lib", "build", "manifest"), "Generated-By: PluginBlueprint " + app.getVersion() + "\n", "utf-8");
+    console.log("savedCode: " + Date.now());
 }
 
 async function compile(progressBar: ProgressBar) {
@@ -754,7 +717,22 @@ async function compile(progressBar: ProgressBar) {
     await fs.emptyDir(path.join(currentProjectPath!, "classes"));
     await javaCompiler.compile(currentProjectPath!, currentProject!, jdk!, paper.getDataMeta().javaVersion,
         paper.getClasspath(path.join(currentProjectPath!, "lib")));
-    await fs.writeFile(path.join(currentProjectPath!, "classes", "plugin.yml"), makePluginYml());
+    let resourcesDir = path.join(currentProjectPath!, "resources");
+    if (await fs.pathExists(resourcesDir)) {
+        await fs.copy(resourcesDir, path.join(currentProjectPath!, "classes"));
+        if (await fs.pathExists(path.join(resourcesDir, "plugin.yml"))) {
+            console.log("resources/plugin.yml is replaced by the generated plugin.yml.");
+            progressBar.detail = "resources/plugin.yml is replaced by the generated plugin.yml.";
+        }
+    }
+    await fs.writeFile(path.join(currentProjectPath!, "classes", "plugin.yml"), makePluginYml(currentProject!, app.getVersion()));
+    if (currentProject!.config?.length) {
+        if (await fs.pathExists(path.join(resourcesDir, "config.yml"))) {
+            console.log("resources/config.yml is replaced by the config table.");
+            progressBar.detail = "resources/config.yml is replaced by the config table.";
+        }
+        await fs.writeFile(path.join(currentProjectPath!, "classes", "config.yml"), makeConfigYml(currentProject!.config));
+    }
     console.log("compiled: " + Date.now());
     currentProject!.lastCompile = Date.now();
 }
@@ -762,6 +740,7 @@ async function compile(progressBar: ProgressBar) {
 async function pack(progressBar: ProgressBar) {
     await ensureJdk(progressBar);
     console.log("package: " + Date.now());
+    await fs.outputFile(path.join(currentProjectPath!, "lib", "build", "manifest"), "Generated-By: PluginBlueprint " + app.getVersion() + "\n", "utf-8");
     await fs.emptyDir(path.join(currentProjectPath!, "output"));
     await javaCompiler.package(currentProjectPath!, currentProject!, jdk!);
     console.log("packaged: " + Date.now());
@@ -802,6 +781,7 @@ interface GeneratedCode {
     code: string | null;
     compile: boolean;
     pack: boolean;
+    reload?: "ifRunning" | "start";
 }
 
 ipcMain.on("codeGenerated", function (event: IpcMainEvent, arg: GeneratedCode) {
@@ -849,6 +829,10 @@ async function generateCompilePackage(arg: GeneratedCode, progressBar: ProgressB
         progressBar.detail = "Packaging...";
         await pack(progressBar);
         progressBar.value++;
+    }
+    if (arg.compile && arg.pack && arg.reload) {
+        if (serverStarter.isRunning()) await reloadPlugin();
+        else if (arg.reload === "start") await startServer();
     }
 }
 
@@ -928,21 +912,42 @@ ipcMain.on("saveCommand", function (event: IpcMainEvent, arg: SavedCommand) {
     }
 });
 
-ipcMain.on("startServer", async function (event: IpcMainEvent, arg: undefined) {
+ipcMain.on("startServer", function (event: IpcMainEvent, arg: undefined) {
+    startServer().catch(err => showCustomErrorDialog(err, "Server Error"));
+});
+
+async function ensureEulaConsent() {
+    while (getSetting("eulaAccepted") !== true) {
+        let {response} = await dialog.showMessageBox({
+            type: "question",
+            message: "Do you agree to the Minecraft EULA to run the test server?",
+            detail: "Read the Minecraft EULA at https://aka.ms/MinecraftEULA. Your agreement is remembered for future starts.",
+            buttons: ["I agree", "Open EULA", "Cancel"],
+            defaultId: 2,
+            cancelId: 2
+        });
+        if (response === 0) setSetting("eulaAccepted", true);
+        else if (response === 1) await shell.openExternal("https://aka.ms/MinecraftEULA");
+        else return false;
+    }
+    return true;
+}
+
+async function startServer() {
     if (!currentProject || !currentProjectPath) {
         return;
     }
-    if (logWin) logWin.destroy();
-    logWin = null;
-
     if (!fs.existsSync(path.join(currentProjectPath, "output", currentProject.name + ".jar"))) {
         dialog.showErrorBox("Error", "Please compile your plugin first!");
         return;
     }
 
+    if (!await ensureEulaConsent()) return;
     if (serverStarter.isRunning()) {
         await serverStarter.stopServer();
     }
+    if (logWin) logWin.destroy();
+    logWin = null;
 
     logWin = new BrowserWindow({
         webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
@@ -976,7 +981,7 @@ ipcMain.on("startServer", async function (event: IpcMainEvent, arg: undefined) {
         logServerError((err as Error).message);
         showCustomErrorDialog(err as Error, "Server Error");
     }
-});
+}
 
 function startProjectServer() {
     let port = "";
@@ -1016,8 +1021,26 @@ function startProjectServer() {
 
                 logWin.webContents.send("log", logData);
             }
-        }, logServerError);
+        }, logServerError, sendServerState);
 }
+
+function sendServerState(running: boolean) {
+    if (win && !win.isDestroyed()) win.webContents.send("serverState", {running});
+}
+
+ipcMain.on("getServerState", function (event: IpcMainEvent, arg: undefined) {
+    event.sender.send("serverState", {running: serverStarter.isRunning()});
+});
+
+ipcMain.handle("getSetting", (event, key: keyof AppSettings) => {
+    if (key !== "eulaAccepted" && key !== "checklistHidden") throw new Error("Unknown setting");
+    return getSetting(key);
+});
+
+ipcMain.handle("setSetting", (event, arg: {key: keyof AppSettings; value: boolean}) => {
+    if ((arg.key !== "eulaAccepted" && arg.key !== "checklistHidden") || typeof arg.value !== "boolean") throw new Error("Invalid setting");
+    setSetting(arg.key, arg.value);
+});
 
 function logServerError(err: string) {
     if (logWin) {
@@ -1086,6 +1109,10 @@ function exportProject(output: string) {
     let zip = new AdmZip();
     zip.addLocalFile(path.join(currentProjectPath, "project.pbp"));
     zip.addLocalFile(path.join(currentProjectPath, "graph.pbg"));
+    for (let directory of ["src", "resources"]) {
+        let folder = path.join(currentProjectPath, directory);
+        if (fs.existsSync(folder)) zip.addLocalFolder(folder, directory);
+    }
     zip.writeZip(output);
 }
 

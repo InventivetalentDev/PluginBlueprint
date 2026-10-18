@@ -4,6 +4,7 @@ import path = require("path");
 import fs = require("fs-extra");
 import type {ClassData, ClassDataFile, ClassDataMeta, ConstructorData, FieldData, MethodData, ParameterData} from "../types/classData";
 
+let sharedDataPromise: Promise<{classStore: Record<string, ClassData>; meta: ClassDataMeta | undefined}> | undefined;
 
 const INTERFACE_DUMMY_CONSTRUCTOR = {
     "name": "....",
@@ -113,8 +114,8 @@ class ClassDataStore {
 
 
     init() {
-        if (!this.initPromise) {
-            this.initPromise = Promise.all([
+        if (!sharedDataPromise) {
+            sharedDataPromise = Promise.all([
                 this.loadClassFile("java"),
                 this.loadClassFile("paper")
             ]).then(() => {
@@ -130,6 +131,13 @@ class ClassDataStore {
                     clazz.isEvent = extendsEvent && hasHandlerList;
                     clazz.isObject = !clazz.isEvent && !clazz.isEnum;
                 }
+                return {classStore: this.classStore, meta: this.meta};
+            });
+        }
+        if (!this.initPromise) {
+            this.initPromise = sharedDataPromise.then(data => {
+                this.classStore = data.classStore;
+                this.meta = data.meta;
             });
         }
         return this.initPromise;
@@ -148,6 +156,15 @@ class ClassDataStore {
         if (!className) return null;
         return this.classStore[className.toLowerCase()];
     }
+
+    isAssignableTo(className: string, targetClass: string): boolean {
+        if (className.toLowerCase() === targetClass.toLowerCase()) return true;
+        const clazz = this.getClass(className);
+        if (!clazz) return false;
+        return clazz.interfaces.some(name => this.isAssignableTo(name, targetClass)) ||
+            !!(clazz.superclass && this.isAssignableTo(clazz.superclass, targetClass));
+    }
+
     getField(className: string | null | undefined, fieldName: string | null | undefined): FieldData | null | undefined {
         if (!className || !fieldName) return null;
         let clazz = this.classStore[className.toLowerCase()];
