@@ -28,9 +28,9 @@ H.fit = function (pad = 60) {
   }
   const w = canvas.canvas.width, h = canvas.canvas.height;
   const s = Math.min(1, (w - 2 * pad) / (x1 - x0), (h - 2 * pad) / (y1 - y0));
-  canvas.scale = s;
-  canvas.offset[0] = (w / s - (x1 - x0)) / 2 - x0;
-  canvas.offset[1] = (h / s - (y1 - y0)) / 2 - y0;
+  canvas.ds.scale = s;
+  canvas.ds.offset[0] = (w / s - (x1 - x0)) / 2 - x0;
+  canvas.ds.offset[1] = (h / s - (y1 - y0)) / 2 - y0;
   canvas.deselectAllNodes();
   canvas.setDirty(true, true); canvas.draw(true, true);
   return {s, box: [x0, y0, x1, y1]};
@@ -43,7 +43,7 @@ H.rect = function (pad = 24) {
     x0 = Math.min(x0, n.pos[0]); y0 = Math.min(y0, n.pos[1] - LiteGraph.NODE_TITLE_HEIGHT);
     x1 = Math.max(x1, n.pos[0] + n.size[0]); y1 = Math.max(y1, n.pos[1] + n.size[1]);
   }
-  const r = canvas.canvas.getBoundingClientRect(), s = canvas.scale, o = canvas.offset;
+  const r = canvas.canvas.getBoundingClientRect(), s = canvas.ds.scale, o = canvas.ds.offset;
   const sx = v => r.left + (v + o[0]) * s, sy = v => r.top + (v + o[1]) * s;
   return {x: Math.max(0, sx(x0) - pad), y: Math.max(r.top, sy(y0) - pad), width: (x1 - x0) * s + 2 * pad, height: (y1 - y0) * s + 2 * pad};
 };
