@@ -3,6 +3,7 @@ import paper = require("./lib/paper");
 import {findJdk, downloadJdk} from "./lib/jdk";
 import javaCompiler = require("./lib/javaCompiler");
 import {makePluginYml} from "./lib/pluginYml";
+import {makeConfigYml} from "./lib/configYml";
 import {defaultAuthor, defaultPackage} from "./lib/projectDefaults";
 import {getSetting, setSetting, type AppSettings} from "./lib/settings";
 import serverStarter = require("./lib/serverStarter");
@@ -725,6 +726,13 @@ async function compile(progressBar: ProgressBar) {
         }
     }
     await fs.writeFile(path.join(currentProjectPath!, "classes", "plugin.yml"), makePluginYml(currentProject!, app.getVersion()));
+    if (currentProject!.config?.length) {
+        if (await fs.pathExists(path.join(resourcesDir, "config.yml"))) {
+            console.log("resources/config.yml is replaced by the config table.");
+            progressBar.detail = "resources/config.yml is replaced by the config table.";
+        }
+        await fs.writeFile(path.join(currentProjectPath!, "classes", "config.yml"), makeConfigYml(currentProject!.config));
+    }
     console.log("compiled: " + Date.now());
     currentProject!.lastCompile = Date.now();
 }

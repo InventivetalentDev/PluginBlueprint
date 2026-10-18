@@ -6,6 +6,7 @@ import {getNullForType, javaType} from "./util";
 import type {INodeInputSlot, LGraph, LGraphNode, LLink} from "../../assets/lib/litegraph/litegraph";
 import type {ClassData, ConstructorData, MethodData} from "../types/classData";
 import type {NativeNode} from "../types/nodes";
+import type {ProjectInfo} from "../types/project";
 
 interface CodegenNode extends LGraphNode {
     nodeType?: string;
@@ -44,8 +45,8 @@ const onDisableMethods: string[] = [];
 const onCommandMethods: string[] = [];
 const onTabCompleteMethods: string[] = [];
 
-function generateClassCode(graph: CodegenGraph, projectInfo: {package: string}) {
-    return new Promise<string>((resolve) => {
+function generateClassCode(graph: CodegenGraph, projectInfo: Pick<ProjectInfo, "package" | "config">) {
+    return new Promise<string>((resolve, reject) => {
         for (const state of [classesByName, fields, eventListenerMethods, objectMethods, enumMethods, generatedMethods, constructorCalls, methodCalls, nativeCalls, javaPluginMethods, onLoadMethods, onEnableMethods, onDisableMethods, onCommandMethods, onTabCompleteMethods]) {
             state.length = 0;
         }
@@ -118,6 +119,7 @@ function generateClassCode(graph: CodegenGraph, projectInfo: {package: string}) 
                     "\n" +
                     "@java.lang.Override\n" +
                     "public void onEnable() {\n" +
+                    (projectInfo.config?.length ? "saveDefaultConfig();\n" : "") +
                     "getServer().getPluginManager().registerEvents(this, this);\n" +
                     "\n" +
                     javaPluginMethods.join("\n") +
@@ -174,7 +176,7 @@ function generateClassCode(graph: CodegenGraph, projectInfo: {package: string}) 
                 console.log(classCode);
 
                 resolve(classCode);
-            });
+            }).catch(reject);
     })
 }
 
@@ -699,6 +701,8 @@ function generateCodeForNativeNode(graph: CodegenGraph, n: number, node: NativeN
 
     let fields1 = node.getFields ? node.getFields(outputVars) : null;
     let body = node.getMethodBody ? node.getMethodBody(inputVars, outputVars) : null;
+    let onEnable = node.getOnEnable ? node.getOnEnable(inputVars, outputVars, outputExecs) : null;
+    if (onEnable) onEnableMethods.push(onEnable);
 
 
     let code = "";

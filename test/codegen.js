@@ -200,6 +200,59 @@ cases["note-ignored"] = graph => {
     H.add(graph, "annotations/Note", {text: "Welcome players\nKeep the greeting short."});
 };
 
+function addCommandArgument(node, type, name) {
+    const menu = node.getMenuOptions({prompt: (title, value, callback) => callback(name)});
+    const entry = menu.find(entry => entry.content === "Add argument");
+    const index = ["word", "text", "int", "double", "boolean", "player"].indexOf(type);
+    entry.submenu.options[index].callback(null, {}, {});
+}
+
+cases["command-basic"] = graph => {
+    const command = H.add(graph, "commands/Command", {name: "Hello!", description: "Say hello", aliases: " Hi!, HEY ",
+        permission: "MyPlugin.Hello!", permissionMessage: "<red>You need permission to say hello."});
+    const sender = H.add(graph, "org.bukkit.command.CommandSender");
+    H.link(command, "sender", sender, "REF");
+    H.link(command, "EXEC", sender, "EXEC");
+    const sendOutput = H.addOptOut(sender, "sendRichMessage(String)");
+    const send = H.add(graph, sender.outputs[sendOutput].type);
+    H.link(sender, sendOutput, send, "REF");
+    H.link(sender, "EXEC", send, "EXEC");
+    const text = H.add(graph, "constants/StringConstant", {string: "<green>Hello!"});
+    H.link(text, 0, send, "message");
+};
+cases["command-args"] = graph => {
+    const command = H.add(graph, "commands/Command", {name: "greet", description: "Greet a player", playersOnly: true});
+    for (const [type, name] of [["word", "greeting"], ["int", "count"], ["player", "target"], ["text", "message"]]) addCommandArgument(command, type, name);
+    const player = H.add(graph, "org.bukkit.entity.Player");
+    H.link(command, "target", player, "REF");
+    H.link(command, "EXEC", player, "EXEC");
+    const log = H.add(graph, "native/ConsoleLog");
+    H.link(player, "EXEC", log, "EXEC");
+    H.link(player, H.addOptOut(player, "getName"), log, 1);
+};
+cases["command-bare"] = graph => {
+    H.add(graph, "commands/Command");
+};
+const configEntries = [
+    {key: "welcome.message", type: "string", default: "Hello, player!"},
+    {key: "count", type: "int", default: "3"},
+    {key: "amount", type: "double", default: "1.5"},
+    {key: "enabled", type: "boolean", default: "true"},
+    {key: "names", type: "list", default: "Alex, Steve"}
+];
+cases["config-values"] = graph => {
+    const event = H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
+    const reload = H.add(graph, "config/ReloadConfig");
+    H.link(event, "EXEC", reload, "EXEC");
+    for (const entry of configEntries) {
+        const value = H.add(graph, "config/ConfigValue", {key: entry.key, type: entry.type});
+        const log = H.add(graph, "native/ConsoleLog");
+        H.link(reload, "EXEC", log, "EXEC");
+        H.link(value, 0, log, 1);
+    }
+    return {config: configEntries};
+};
+
 describe("Codegen", function () {
     this.timeout(30000);
     before(async function () {
@@ -209,8 +262,8 @@ describe("Codegen", function () {
     for (const [name, build] of Object.entries(cases)) {
         it(name + " matches its snapshot", async function () {
             const graph = await H.setup();
-            build(graph);
-            const code = (await H.gen(graph, true)).replace(/\r\n/g, "\n");
+            const projectInfo = build(graph);
+            const code = (await H.gen(graph, true, projectInfo)).replace(/\r\n/g, "\n");
             if (name === "note-ignored") assert.strictEqual(code, fs.readFileSync(path.join(snapshotDir, "join-message.java"), "utf8"));
             const file = path.join(snapshotDir, name + ".java");
             if (process.env.UPDATE_SNAPSHOTS === "1") fs.writeFileSync(file, code);
@@ -233,6 +286,84 @@ describe("Codegen", function () {
             }
         });
     }
+    it("rejects generation when a method reference links to a missing node", async function () {
+        const graph = await H.setup();
+        const send = H.add(graph, "org.bukkit.command.CommandSender#sendMessage(java.lang.String)");
+        const slot = H.inIdx(send, "REF");
+        send.inputs[slot].link = 1;
+        graph.links[1] = new (H.LiteGraph().LLink)(1, send.inputs[slot].type, 999, 0, send.id, slot);
+        await assert.rejects(H.gen(graph), TypeError);
+    });
+    it("keeps Command arguments and outputs together through menus, removal and serialization", async function () {
+        const graph = await H.setup();
+        const command = H.add(graph, "commands/Command");
+        assert.strictEqual(command.title, "/mycommand");
+        assert.deepStrictEqual(command.outputs.map(output => output.name), ["EXEC", "sender", "player", "args"]);
+        addCommandArgument(command, "int", "!amount!");
+        addCommandArgument(command, "text", "");
+        assert.deepStrictEqual(command.properties.arguments, [{name: "amount", type: "int"}, {name: "arg2", type: "text"}]);
+        assert(command.outputs.slice(4).every(output => output.removable));
+        let menu = command.getMenuOptions({});
+        assert.strictEqual(menu.find(entry => entry.content === "Add argument").disabled, true);
+        assert(!menu.find(entry => entry.content === "Properties").submenu.options.some(entry => entry.content === "arguments"));
+        graph.configure(graph.serialize());
+        const restored = graph.getNodeById(command.id);
+        assert.deepStrictEqual(restored.properties.arguments, command.properties.arguments);
+        assert.deepStrictEqual(restored.outputs.map(output => output.type), ["@EXEC", "org.bukkit.command.CommandSender", "org.bukkit.entity.Player", "java.lang.String[]", "int", "java.lang.String"]);
+        restored.removeOutput(5);
+        assert.deepStrictEqual(restored.properties.arguments, [{name: "amount", type: "int"}]);
+        assert.strictEqual(!!restored.getMenuOptions({}).find(entry => entry.content === "Add argument").disabled, false);
+    });
+    it("parses doubles and booleans, completes booleans and cleans names again at generation", async function () {
+        const graph = await H.setup();
+        const command = H.add(graph, "commands/Command");
+        addCommandArgument(command, "double", "amount");
+        addCommandArgument(command, "boolean", "enabled");
+        command.properties.name = "!";
+        command.properties.aliases = " YES!, ?? ";
+        command.properties.permission = "MyPlugin.USE!";
+        const code = await H.gen(graph);
+        assert(code.includes('registerCommand("mycommand", "", java.util.List.of("yes"),'));
+        assert(code.includes('.hasPermission("myplugin.use")'));
+        assert(code.includes("java.lang.Double.parseDouble(args[0])"));
+        assert(code.includes('!"true".equalsIgnoreCase(args[1]) && !"false".equalsIgnoreCase(args[1])'));
+        assert(code.includes('if (index == 1) return java.util.List.of("true", "false").stream().filter(value -> value.startsWith(prefix)).toList();'));
+        assert(!code.includes("Only players can use this command."));
+    });
+    it("updates Config value types and disconnects changed outputs without caching reads", async function () {
+        const graph = await H.setup();
+        const value = H.add(graph, "config/ConfigValue");
+        assert.deepStrictEqual(value.widgets[0].options.values(), []);
+        global.projectInfo = {config: configEntries.map(entry => ({...entry}))};
+        try {
+            assert.deepStrictEqual(value.widgets[0].options.values(), configEntries.map(entry => entry.key));
+            value.widgets[0].callback("welcome.message");
+            const log = H.add(graph, "native/ConsoleLog");
+            H.link(value, 0, log, 1);
+            value.widgets[0].callback("count");
+            assert.strictEqual(log.inputs[1].link, null);
+            assert.strictEqual(value.properties.type, "int");
+            assert.strictEqual(value.outputs[0].type, "int");
+            assert.strictEqual(value.outputs[0].label, "count");
+            assert.strictEqual(value.getOutputExpression(0), 'getConfig().getInt("count")');
+            graph.configure(graph.serialize());
+            assert.strictEqual(graph.getNodeById(value.id).widgets[0].value, "count");
+            const restored = graph.getNodeById(value.id);
+            global.projectInfo.config.find(entry => entry.key === "count").type = "double";
+            restored.widgets[0].callback("count");
+            assert.strictEqual(restored.outputs[0].type, "double");
+            global.projectInfo.config.find(entry => entry.key === "count").type = "int";
+            restored.widgets[0].callback("count");
+        } finally {
+            delete global.projectInfo;
+        }
+        const restoredValue = graph.getNodeById(value.id);
+        const log = graph._nodes.find(node => node.type === "native/ConsoleLog");
+        H.link(restoredValue, 0, log, 1);
+        graph.configure(graph.serialize());
+        assert.notStrictEqual(graph.getNodeById(log.id).inputs[1].link, null);
+        assert.strictEqual(graph.getNodeById(value.id).outputs[0].type, "int");
+    });
     it("classifies only Bukkit events with a handler list as events", function () {
         assert.strictEqual(classStore.getClass("org.bukkit.event.player.PlayerJoinEvent").isEvent, true);
         assert.strictEqual(classStore.getClass("org.bukkit.event.player.PlayerEvent").isEvent, false);

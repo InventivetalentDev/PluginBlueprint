@@ -24,8 +24,15 @@ export interface ProjectInfo {
     libraries?: string[];
     permissions?: ProjectPermission[];
     commands?: ProjectCommand[];
+    config?: ConfigEntry[];
     gitUser?: string;
     isNewProject?: boolean;
+}
+
+export interface ConfigEntry {
+    key: string;
+    type: "string" | "int" | "double" | "boolean" | "list";
+    default: string;
 }
 
 export interface ProjectPermission {

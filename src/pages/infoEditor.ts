@@ -4,12 +4,17 @@ import {getCurrentWindow} from "@electron/remote";
 import setWindowMenu = require("../lib/windowMenu");
 const prompt = require('electron-prompt') as typeof import('electron-prompt');
 import $ = require("jquery");
+import {makeConfigYml} from "../lib/configYml";
 
-import type {ProjectInfo, ProjectCommand, ProjectPermission} from "../types/project";
+import type {ConfigEntry, ProjectInfo, ProjectCommand, ProjectPermission} from "../types/project";
 
 let projectInfo: Partial<ProjectInfo> = {};
 let commands: ProjectCommand[] = [];
 let permissions: ProjectPermission[] = [];
+let config: ConfigEntry[] = [];
+let configAdded = false;
+
+M.Tabs.init(document.querySelectorAll(".tabs"));
 
 setWindowMenu([
     {
@@ -60,6 +65,7 @@ function updateProjectInfo() {
     projectInfo.libraries = ($("#libraries").val() as string).split(/\r?\n/).map(value => value.trim()).filter(Boolean);
     projectInfo.permissions = permissions.filter(permission => permission.name);
     projectInfo.commands = commands || [];
+    if (projectInfo.config !== undefined || configAdded) projectInfo.config = config.filter(entry => entry.key);
 
     ipcRenderer.send("updateProjectInfo", projectInfo);
 }
@@ -103,6 +109,9 @@ ipcRenderer.on("projectInfo", function (event, arg: ProjectInfo) {
     $("#libraries").val((arg.libraries || []).join("\n"));
     permissions = arg.permissions || [];
     updatePermissionList();
+    config = arg.config || [];
+    configAdded = false;
+    updateConfigList();
     M.FormSelect.init(document.querySelectorAll("#load"));
     M.textareaAutoResize($("#libraries"));
     M.updateTextFields();
@@ -180,4 +189,56 @@ $("#addPermission").on("click", function (event) {
     event.preventDefault();
     permissions.push({name: ""});
     updatePermissionList();
+});
+
+function validateConfigKeys() {
+    let accepted: ConfigEntry[] = [];
+    $("#configList tr").each(function (i) {
+        let message = "";
+        if (config[i].key) {
+            try {
+                makeConfigYml([...accepted, config[i]]);
+                accepted.push(config[i]);
+            } catch (error) {
+                message = error instanceof Error ? error.message : String(error);
+            }
+        }
+        $(this).find(".config-key").toggleClass("invalid", !!message).attr("aria-invalid", String(!!message));
+        $(this).find(".helper-text").text(message);
+    });
+}
+
+function updateConfigList() {
+    $("#configList").empty();
+    for (let i = 0; i < config.length; i++) {
+        let entry = config[i];
+        let row = $('<tr><td><div class="input-field"><input class="config-key" type="text" aria-label="Key path"><span class="helper-text"></span></div></td><td><select class="config-type" aria-label="Type"><option value="string">Text</option><option value="int">Whole number</option><option value="double">Number</option><option value="boolean">True/false</option><option value="list">List</option></select></td><td><input class="config-default" type="text" aria-label="Default"></td><td><a href="#!" class="delete-config" aria-label="Delete key"><i class="material-icons">delete</i></a></td></tr>');
+        row.find(".helper-text").attr("id", "config-error-" + i);
+        row.find(".config-key").val(entry.key).attr("aria-describedby", "config-error-" + i).on("input", function () {
+            entry.key = ($(this).val() as string).trim();
+            validateConfigKeys();
+        });
+        row.find(".config-default").val(entry.default).attr("placeholder", entry.type === "list" ? "a, b, c" : "").on("input", function () {
+            entry.default = $(this).val() as string;
+        });
+        row.find(".config-type").val(entry.type).on("change", function () {
+            let value = $(this).val();
+            entry.type = value === "int" || value === "double" || value === "boolean" || value === "list" ? value : "string";
+            row.find(".config-default").attr("placeholder", entry.type === "list" ? "a, b, c" : "");
+        });
+        row.find(".delete-config").on("click", function (event) {
+            event.preventDefault();
+            config.splice(i, 1);
+            updateConfigList();
+        });
+        row.appendTo($("#configList"));
+    }
+    M.FormSelect.init(document.querySelectorAll(".config-type"));
+    validateConfigKeys();
+}
+
+$("#addConfigKey").on("click", function () {
+    configAdded = true;
+    config.push({key: "", type: "string", default: ""});
+    updateConfigList();
 });

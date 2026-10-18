@@ -59,6 +59,11 @@
         </div>
         <br/>
         <div class="container">
+            <ul class="tabs">
+                <li class="tab col s6"><a class="active" href="#pluginTab">Plugin</a></li>
+                <li class="tab col s6"><a href="#configTab">Config</a></li>
+            </ul>
+            <div id="pluginTab">
             <div class="row">
                 <form class="col s12">
                     <div class="row">
@@ -167,6 +172,15 @@
                         </p>
                     </div>
                 </form>
+            </div>
+            </div>
+            <div id="configTab">
+                <table>
+                    <thead><tr><th>Key path</th><th>Type</th><th>Default</th><th></th></tr></thead>
+                    <tbody id="configList"></tbody>
+                </table>
+                <button type="button" class="btn" id="addConfigKey">Add key</button>
+                <p>The build ships these keys as config.yml. Read them with a Config value node.</p>
             </div>
         </div>
         <div id="saveBar">

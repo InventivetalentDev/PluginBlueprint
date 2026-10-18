@@ -46,6 +46,8 @@ import flowNodes = require("./nodes/flow");
 import logicNodes = require("./nodes/logic");
 import eventNodes = require("./nodes/events");
 import annotationNodes = require("./nodes/annotations");
+import commandNodes = require("./nodes/commands");
+import configNodes = require("./nodes/config");
 
 const nodes: [string, NodeModule][] = [
     // category, import
@@ -58,7 +60,9 @@ const nodes: [string, NodeModule][] = [
     ["flow", require("./nodes/flow") as typeof flowNodes],
     ["logic", require("./nodes/logic") as typeof logicNodes],
     ["events", require("./nodes/events") as typeof eventNodes],
-    ["annotations", require("./nodes/annotations") as typeof annotationNodes]
+    ["annotations", require("./nodes/annotations") as typeof annotationNodes],
+    ["commands", require("./nodes/commands") as typeof commandNodes],
+    ["config", require("./nodes/config") as typeof configNodes]
 ];
 
 const classStore = new ClassDataStore();
