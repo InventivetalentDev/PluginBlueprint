@@ -809,7 +809,7 @@ function debugCall(nodeId) {
 
 function outputExpression(graph, linkInfo) {
     const origin = graph.getNodeById(linkInfo.origin_id);
-    return origin.getOutputExpression ? origin.getOutputExpression(linkInfo.origin_slot) : nodeOutput(linkInfo.origin_id, linkInfo.origin_slot);
+    return origin && origin.getOutputExpression ? origin.getOutputExpression(linkInfo.origin_slot) : nodeOutput(linkInfo.origin_id, linkInfo.origin_slot);
 }
 
 function javaPluginReturn(graph, methodName, defaultValue) {
