@@ -1,11 +1,11 @@
-const fs = require("fs-extra");
-const path = require("path");
-const {execFile} = require("child_process");
-const {promisify} = require("util");
-const {createHash} = require("crypto");
+import fs = require("fs-extra");
+import path = require("path");
+import {execFile} from "child_process";
+import {promisify} from "util";
+import {createHash} from "crypto";
 const run = promisify(execFile);
 
-function jdkTools(home) {
+function jdkTools(home: string | null) {
     let suffix = process.platform === "win32" ? ".exe" : "";
     return {
         java: home ? path.resolve(home, "bin", "java" + suffix) : "java",
@@ -14,8 +14,8 @@ function jdkTools(home) {
     };
 }
 
-async function findJdk(requiredMajor, jdkDir) {
-    let homes = [];
+async function findJdk(requiredMajor: number, jdkDir: string) {
+    let homes: (string | null)[] = [];
     if (process.env.JAVA_HOME) homes.push(process.env.JAVA_HOME);
     homes.push(null);
     let managed = path.join(jdkDir, String(requiredMajor));
@@ -40,13 +40,13 @@ async function findJdk(requiredMajor, jdkDir) {
     return null;
 }
 
-async function downloadJdk(major, jdkDir, onProgress) {
-    let os = {win32: "windows", darwin: "mac", linux: "linux"}[process.platform];
-    let architecture = {x64: "x64", arm64: "aarch64"}[process.arch];
+async function downloadJdk(major: number, jdkDir: string, onProgress?: (fraction: number) => void) {
+    let os = ({win32: "windows", darwin: "mac", linux: "linux"} as Partial<Record<NodeJS.Platform, string>>)[process.platform];
+    let architecture = ({x64: "x64", arm64: "aarch64"} as Partial<Record<NodeJS.Architecture, string>>)[process.arch];
     if (!os || !architecture) throw new Error("Unsupported JDK platform: " + process.platform + "/" + process.arch);
     let response = await fetch("https://api.adoptium.net/v3/assets/latest/" + major + "/hotspot?architecture=" + architecture + "&image_type=jdk&os=" + os + "&vendor=eclipse");
     if (!response.ok) throw new Error("JDK metadata: HTTP " + response.status);
-    let pkg = (await response.json())[0].binary.package;
+    let pkg = (await response.json() as {binary: {package: {name: string; link: string; size: number; checksum: string}}}[])[0].binary.package;
     await fs.ensureDir(jdkDir);
     let archive = path.join(jdkDir, pkg.name);
     let target = path.join(jdkDir, String(major));
@@ -57,7 +57,7 @@ async function downloadJdk(major, jdkDir, onProgress) {
         let received = 0;
         let file = await fs.open(archive, "w");
         try {
-            for await (let chunk of response.body) {
+            for await (let chunk of response.body!) {
                 hash.update(chunk);
                 await fs.write(file, chunk);
                 received += chunk.length;
@@ -68,17 +68,17 @@ async function downloadJdk(major, jdkDir, onProgress) {
         }
         if (hash.digest("hex") !== pkg.checksum) throw new Error("JDK SHA-256 mismatch");
         await fs.emptyDir(target);
-        let tar = process.platform === "win32" ? path.join(process.env.SystemRoot, "System32", "tar.exe") : "tar";
+        let tar = process.platform === "win32" ? path.join(process.env.SystemRoot!, "System32", "tar.exe") : "tar";
         await run(tar, ["-xf", archive, "-C", target]);
         let folders = (await fs.readdir(target, {withFileTypes: true})).filter(entry => entry.isDirectory());
         if (folders.length !== 1) throw new Error("Expected one JDK folder in " + target);
         let tools = jdkTools(path.join(target, folders[0].name, ...(os === "mac" ? ["Contents", "Home"] : [])));
         let result = await run(tools.javac, ["-version"]);
-        let version = Number((result.stdout + result.stderr).match(/javac\s+(?:1\.)?(\d+)/)[1]);
+        let version = Number((result.stdout + result.stderr).match(/javac\s+(?:1\.)?(\d+)/)![1]);
         return Object.assign(tools, {version});
     } finally {
         await fs.remove(archive);
     }
 }
 
-module.exports = {findJdk, downloadJdk};
+export {findJdk, downloadJdk};

@@ -1,23 +1,23 @@
-const path = require("path");
-const fs = require("fs-extra");
-const {spawn} = require("child_process");
-const {copyFile} = require("./util");
+import path = require("path");
+import fs = require("fs-extra");
+import {spawn, type ChildProcessWithoutNullStreams} from "child_process";
+import {copyFile} from "./util";
 
 let running = false;
-let instance = null;
-let stopPromise = null;
+let instance: ChildProcessWithoutNullStreams | null = null;
+let stopPromise: Promise<void> | null = null;
 
-async function copyPlugin(projectPath, projectInfo) {
+async function copyPlugin(projectPath: string, projectInfo: {name: string}) {
     let projectName = projectInfo.name;
     await fs.mkdirs(path.join(projectPath, "lib", "plugins"));
     return copyFile(path.join(projectPath, "output", projectName + ".jar"), path.join(projectPath, "lib", "plugins", projectName + ".jar"));
 }
 
-function createLineSplitter(onLine) {
+function createLineSplitter(onLine?: (line: string) => void) {
     let tail = "";
-    function split(chunk) {
+    function split(chunk: Buffer | string) {
         let lines = (tail + chunk.toString()).split("\n");
-        tail = lines.pop();
+        tail = lines.pop()!;
         for (let i = 0; i < lines.length; i++) {
             if (onLine) onLine(lines[i].replace(/\r$/, ""));
         }
@@ -32,7 +32,7 @@ function createLineSplitter(onLine) {
     return split;
 }
 
-function startServer(projectPath, java, debug, outCb, errCb) {
+function startServer(projectPath: string, java: string, debug: boolean, outCb?: (line: string) => void, errCb?: (line: string) => void) {
     if (running || instance) return false;
     let args = ["-Xmx2G", "-Dcom.mojang.eula.agree=true"];
     if (debug) args.push("-Dpluginblueprint.debug=true");
@@ -67,7 +67,7 @@ function stopServer() {
     if (stopPromise) return stopPromise;
     if (!instance) return Promise.resolve();
     let server = instance;
-    stopPromise = new Promise(resolve => {
+    stopPromise = new Promise<void>(resolve => {
         let timeout = setTimeout(() => server.kill("SIGKILL"), 30000);
         server.once("exit", () => {
             clearTimeout(timeout);
@@ -79,7 +79,7 @@ function stopServer() {
     return stopPromise;
 }
 
-function sendCommandToInstance(cmd, cb) {
+function sendCommandToInstance(cmd: string, cb?: (error?: Error | null) => void) {
     console.log(cmd);
     if (!running) return;
     if (!instance) return;
@@ -96,14 +96,7 @@ function killInstance() {
 }
 
 
-module.exports = {
-    copyPlugin: copyPlugin,
-    createLineSplitter: createLineSplitter,
-    startServer: startServer,
-    stopServer: stopServer,
-    sendCommandToInstance: sendCommandToInstance,
-    killInstance: killInstance,
-    isRunning: () => {
-        return running;
-    }
+export {copyPlugin, createLineSplitter, startServer, stopServer, sendCommandToInstance, killInstance};
+export const isRunning = () => {
+    return running;
 };

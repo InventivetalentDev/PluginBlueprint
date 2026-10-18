@@ -1,13 +1,18 @@
-const git = require("isomorphic-git");
-const fs = require("fs");
-const http = require("isomorphic-git/http/node");
-const path = require("path");
-const prompt = require("electron-prompt");
-const {app, safeStorage} = require("electron");
-const {copyFile} = require("./util");
+import git = require("isomorphic-git");
+import fs = require("fs");
+import http = require("isomorphic-git/http/node");
+import path = require("path");
+import prompt = require("electron-prompt");
+import {app, safeStorage} from "electron";
+import {copyFile} from "./util";
 
-function init(projectPath) {
-    return new Promise((resolve, reject) => {
+interface GitProject {
+    name: string;
+    gitUser?: string;
+}
+
+function init(projectPath: string) {
+    return new Promise<string>((resolve, reject) => {
         copyFile(path.join(__dirname, "../../assets/projectGitignore.txt"), path.join(projectPath, ".gitignore"))
             .then(() => {
                 return git.init({fs, dir: projectPath})
@@ -34,8 +39,8 @@ function init(projectPath) {
     })
 }
 
-function openOrInit(projectPath) {
-    return new Promise((resolve, reject) => {
+function openOrInit(projectPath: string) {
+    return new Promise<string | string[]>((resolve, reject) => {
         git.listFiles({fs, dir: projectPath}).then((files) => {
             console.log("git files:", files);
             if (!files || files.length === 0) {// no repo here
@@ -47,8 +52,8 @@ function openOrInit(projectPath) {
     })
 }
 
-function addAllAndCommit(projectPath, project, msg) {
-    return new Promise((resolve, reject) => {
+function addAllAndCommit(projectPath: string, project: GitProject, msg?: string) {
+    return new Promise<string>((resolve, reject) => {
         git.statusMatrix({fs, dir: projectPath})
             .then((status) => {// https://isomorphic-git.org/docs/en/snippets#git-add-a-
                 return Promise.all(
@@ -76,15 +81,15 @@ function addAllAndCommit(projectPath, project, msg) {
     })
 }
 
-function listRemotes(projectPath) {
+function listRemotes(projectPath: string) {
     return git.listRemotes({fs, dir: projectPath})
 }
 
-function setRemote(projectPath, url) {
+function setRemote(projectPath: string, url: string) {
     return git.addRemote({fs, dir: projectPath, remote: "origin", url: url, force: true});
 }
 
-function push(projectPath, project) {
+function push(projectPath: string, project: GitProject) {
     return getOrRequestCredentials(project)
         .then((creds) => {
             return git.push({
@@ -96,11 +101,11 @@ function push(projectPath, project) {
         })
 }
 
-function getOrRequestCredentials(project) {
+function getOrRequestCredentials(project: GitProject) {
     return Promise.resolve().then(() => {
         let credentialFile = path.join(app.getPath("userData"), "git-credentials.json");
         let service = "pluginblueprint-git-" + project.name;
-        let credentials = {};
+        let credentials: Record<string, Record<string, string>> = {};
         let canEncrypt = safeStorage.isEncryptionAvailable();
         if (canEncrypt && fs.existsSync(credentialFile)) {
             credentials = JSON.parse(fs.readFileSync(credentialFile, "utf-8"));
@@ -124,7 +129,7 @@ function getOrRequestCredentials(project) {
 }
 
 function requestCredentials() {
-    return new Promise((resolve, reject) => {
+    return new Promise<{u: string; p: string}>((resolve, reject) => {
         prompt({
             title: "Git Username",
             label: "Username",
@@ -155,4 +160,4 @@ function requestCredentials() {
     })
 }
 
-module.exports = {init, openOrInit, addAllAndCommit, listRemotes, setRemote, push, getOrRequestCredentials};
+export {init, openOrInit, addAllAndCommit, listRemotes, setRemote, push, getOrRequestCredentials};

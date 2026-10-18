@@ -1,13 +1,13 @@
-const {execFile} = require("child_process");
-const path = require("path");
-const fs = require("fs-extra");
+import {execFile} from "child_process";
+import path = require("path");
+import fs = require("fs-extra");
 
-function compile(rootDir, projectInfo, jdk, javaVersion, classpath) {
-    return new Promise((resolve, reject) => {
+function compile(rootDir: string, projectInfo: {package: string}, jdk: {javac: string}, javaVersion: number, classpath: string[]) {
+    return new Promise<{out: string; err: string}>((resolve, reject) => {
         let argfile = path.join(rootDir, "lib", "javac.args");
         let args = ["-encoding", "UTF-8", "--release", String(javaVersion), "-cp", classpath.join(path.delimiter),
             "-d", path.join(rootDir, "classes"), path.join(rootDir, "src", ...projectInfo.package.split("."), "GeneratedPlugin.java")];
-        let quote = value => '"' + value.replaceAll('\\', '\\\\').replaceAll('"', '\\"') + '"';
+        let quote = (value: string) => '"' + value.replaceAll('\\', '\\\\').replaceAll('"', '\\"') + '"';
         fs.writeFile(argfile, args.map(quote).join("\n"), "utf-8", (err) => {
             if (err) return reject(err);
             console.log("Running " + jdk.javac + " @" + argfile);
@@ -30,8 +30,8 @@ function compile(rootDir, projectInfo, jdk, javaVersion, classpath) {
     })
 }
 
-function packageJar(rootDir, projectInfo, jdk) {
-    return new Promise((resolve, reject) => {
+function packageJar(rootDir: string, projectInfo: {name: string}, jdk: {jar: string}) {
+    return new Promise<{out: string; err: string}>((resolve, reject) => {
         let args = ["cfm", path.join(rootDir, "output", projectInfo.name + ".jar"), path.join(rootDir, "src", "manifest"),
             "-C", path.join(rootDir, "classes"), "."];
         console.log("Running " + jdk.jar + " " + args.join(" "));
@@ -53,7 +53,4 @@ function packageJar(rootDir, projectInfo, jdk) {
     })
 }
 
-module.exports = {
-    compile: compile,
-    package: packageJar
-};
+export {compile, packageJar as package};

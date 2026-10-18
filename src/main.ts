@@ -1,15 +1,16 @@
-const {app, BrowserWindow, ipcMain, dialog, Notification, shell} = require('electron');
-const paper = require("./lib/paper");
-const {findJdk, downloadJdk} = require("./lib/jdk");
-const javaCompiler = require("./lib/javaCompiler");
-const serverStarter = require("./lib/serverStarter");
-const versionControl = require("./lib/versionControl");
-const prompt = require("electron-prompt");
-const path = require("path");
-const fs = require("fs-extra");
-const ProgressBar = require('electron-progressbar');
-const {copyFile} = require("./lib/util");
-const AdmZip = require("adm-zip");
+import {app, BrowserWindow, ipcMain, dialog, Notification, shell, type IpcMainEvent, type JumpListItem} from 'electron';
+import paper = require("./lib/paper");
+import {findJdk, downloadJdk} from "./lib/jdk";
+import javaCompiler = require("./lib/javaCompiler");
+import serverStarter = require("./lib/serverStarter");
+import versionControl = require("./lib/versionControl");
+import prompt = require("electron-prompt");
+import path = require("path");
+import fs = require("fs-extra");
+import ProgressBar = require('electron-progressbar');
+import {copyFile} from "./lib/util";
+import type {serializedLGraph, SerializedLGraphNode, SerializedLGraphGroup} from "../assets/lib/litegraph/litegraph";
+import AdmZip = require("adm-zip");
 
 require("@electron/remote/main").initialize();
 
@@ -17,9 +18,9 @@ const DEFAULT_TITLE = "PluginBlueprint Editor";
 const APP_MODEL_ID = "inventivetalent.PluginBlueprint";
 const jdkDir = path.join(app.getPath("userData"), "jdk");
 const paperCacheDir = path.join(app.getPath("userData"), "paper");
-let jdk;
+let jdk: Awaited<ReturnType<typeof findJdk>> | undefined;
 
-async function ensureJdk(progressBar) {
+async function ensureJdk(progressBar?: Pick<ProgressBar, "detail">) {
     if (jdk) return jdk;
     let major = paper.getDataMeta().javaVersion;
     jdk = await findJdk(major, jdkDir);
@@ -37,40 +38,52 @@ async function ensureJdk(progressBar) {
     return jdk;
 }
 
-async function ensureProjectServer(progressBar) {
+async function ensureProjectServer(progressBar?: Pick<ProgressBar, "detail">) {
     await ensureJdk(progressBar);
     await paper.ensureServer({
-        libDir: path.join(currentProjectPath, "lib"),
+        libDir: path.join(currentProjectPath!, "lib"),
         cacheDir: paperCacheDir,
-        minecraftVersion: currentProject.minecraftVersion,
-        java: jdk.java,
+        minecraftVersion: currentProject!.minecraftVersion,
+        java: jdk!.java,
         onProgress: text => { if (progressBar) progressBar.detail = text; }
     });
 }
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
-let win;
-let logWin;
-let errWin;
-let editorWin;
-let commandWin;
+let win: BrowserWindow | null | undefined;
+let logWin: BrowserWindow | null | undefined;
+let errWin: BrowserWindow | null | undefined;
+let editorWin: BrowserWindow | null | undefined;
+let commandWin: BrowserWindow | null | undefined;
 
 let debug = false;
 let quitting = false;
 let unsavedChanges = 0;
 let uncompiledChanges = 0;
 
-ipcMain.on("setChangeState", function (event, arg) {
+interface ChangeState {
+    unsaved?: number;
+    uncompiled?: number;
+}
+
+ipcMain.on("setChangeState", function (event: IpcMainEvent, arg: ChangeState) {
     if (arg.unsaved !== undefined) unsavedChanges = arg.unsaved;
     if (arg.uncompiled !== undefined) uncompiledChanges = arg.uncompiled;
 });
 
-let currentProject;
-let currentProjectPath;
-let isNewProject;
+let currentProject: ProjectInfo | null | undefined;
+let currentProjectPath: string | null | undefined;
+let isNewProject: boolean | undefined;
 
-let recentProjects = [];
+interface RecentProject {
+    path: string;
+    name: string;
+    editorVersion: string;
+    thumbnail?: string;
+}
+
+let recentProjects: RecentProject[] = [];
 
 function init() {
     console.log("" +
@@ -106,13 +119,13 @@ function showWindow() {
     uncompiledChanges = 0;
 
     // and load the index.html of the app.
-    win.loadFile('index.html');
-    win.once('ready-to-show', () => {
-        win.show();
+    win!.loadFile('index.html');
+    win!.once('ready-to-show', () => {
+        win!.show();
 
         // Open the DevTools.
         if (debug) {
-            win.webContents.openDevTools({
+            win!.webContents.openDevTools({
                 mode: "detach"
             });
         }
@@ -120,7 +133,7 @@ function showWindow() {
         checkFileAssociation();
     });
 
-    win.on("close", function (e) {
+    win!.on("close", function (e) {
         if (unsavedChanges > 0) {
             let c = dialog.showMessageBoxSync({
                 type: "question",
@@ -135,7 +148,7 @@ function showWindow() {
     });
 
     // Emitted when the window is closed.
-    win.on('closed', () => {
+    win!.on('closed', () => {
         serverStarter.stopServer();
         logWin = null;
         // Dereference the window object, usually you would store windows
@@ -204,23 +217,23 @@ function readRecentProjects() {
     if (!fs.existsSync(recentProjectFile)) {
         return;
     }
-    fs.readFile(recentProjectFile, function (err, data) {
+    fs.readFile(recentProjectFile, function (err, buffer) {
         if (err) {
             console.warn(err);
             return;
         }
-        data = JSON.parse(data);
+        let data: string[] = JSON.parse(buffer.toString());
 
-        let promises = [];
+        let promises: Promise<Partial<RecentProject>>[] = [];
         for (let i = 0; i < data.length; i++) {
             promises.push(new Promise(resolve => {
-                fs.readFile(path.join(data[i], "project.pbp"), function (err, projectData) {
+                fs.readFile(path.join(data[i], "project.pbp"), function (err, buffer) {
                     if (err) {
                         console.warn(err);
                         resolve({});
                         return;
                     }
-                    projectData = JSON.parse(projectData);
+                    let projectData: ProjectInfo = JSON.parse(buffer.toString());
 
                     fs.readFile(path.join(data[i], "thumb.pbt"), "base64", function (err, thumb) {
                         if (err) console.warn(err);
@@ -237,7 +250,7 @@ function readRecentProjects() {
 
         Promise.all(promises).then((projects) => {
             projects = projects || [];
-            recentProjects = projects.filter(p => p && p.path);
+            recentProjects = projects.filter(p => p && p.path) as RecentProject[];
 
             if (win) {
                 win.webContents.send("recentProjects", recentProjects);
@@ -262,13 +275,13 @@ function writeRecentProjects() {
     });
 }
 
-ipcMain.on("getRecentProjects", function (event, arg) {
+ipcMain.on("getRecentProjects", function (event: IpcMainEvent, arg: undefined) {
     event.sender.send("recentProjects", recentProjects || []);
 });
 
 function updateJumpList() {
     if (!app.isPackaged || process.platform !== 'win32') return;// Won't recent projects won't work properly if the app is running from the electron.exe wrapper
-    let recentProjectItems = [];
+    let recentProjectItems: JumpListItem[] = [];
     for (let i = 0; i < recentProjects.length; i++) {
         recentProjectItems.push({
             type: "task",
@@ -287,14 +300,14 @@ function updateJumpList() {
     ])
 }
 
-ipcMain.on("openGraph", function (event, arg) {
+ipcMain.on("openGraph", function (event: IpcMainEvent, arg: undefined) {
     if (win) {
         win.loadFile('pages/graph.html');
     }
 });
 
-ipcMain.on("showCreateNewProject", function (event, arg) {
-    let projectPath = dialog.showOpenDialogSync({
+ipcMain.on("showCreateNewProject", function (event: IpcMainEvent, arg: undefined) {
+    let projectPath: string | string[] | undefined = dialog.showOpenDialogSync({
         properties: ["openDirectory"]
     });
     console.log(projectPath);
@@ -324,7 +337,7 @@ ipcMain.on("showCreateNewProject", function (event, arg) {
     })
 });
 
-function createNewProject(arg) {
+function createNewProject(arg: {path: string; name: string}) {
     let projectFilePath = path.join(arg.path, "project.pbp");
     if (fs.existsSync(projectFilePath)) {
         dialog.showErrorBox("Project exists", "There is already a PluginBlueprint project in that directory");
@@ -383,7 +396,7 @@ function createNewProject(arg) {
                     await ensureProjectServer(progressBar);
                 } catch (err) {
                     console.error(err);
-                    dialog.showErrorBox("Server setup failed", err.message);
+                    dialog.showErrorBox("Server setup failed", (err as Error).message);
                 }
                 progressBar.value++;
                 progressBar.detail = "Setting up graph file...";
@@ -398,23 +411,23 @@ function createNewProject(arg) {
 
                     let i = recentProjects.map(function (e) {
                         return e.path;
-                    }).indexOf(currentProjectPath);
+                    }).indexOf(currentProjectPath!);
                     if (i !== -1) {
                         recentProjects.splice(i, 1);
                     }
                     recentProjects.unshift({
-                        path: currentProjectPath,
-                        name: currentProject.name,
-                        editorVersion: currentProject.editorVersion
+                        path: currentProjectPath!,
+                        name: currentProject!.name,
+                        editorVersion: currentProject!.editorVersion
                     });
                     writeRecentProjects();
 
-                    app.addRecentDocument(path.join(currentProjectPath, currentProject.name + ".pbp"));
+                    app.addRecentDocument(path.join(currentProjectPath!, currentProject!.name + ".pbp"));
                     updateJumpList();
 
                     progressBar.detail = "Creating initial commit...";
 
-                    versionControl.init(currentProjectPath).then(repo => {
+                    versionControl.init(currentProjectPath!).then(repo => {
                         progressBar.value++;
                         console.log(repo);
 
@@ -422,7 +435,7 @@ function createNewProject(arg) {
 
                         if (win) {
                             win.loadFile('pages/graph.html');
-                            win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                            win!.setTitle(DEFAULT_TITLE + " [" + currentProject!.name + "]");
                             progressBar.value++;
                         }
                     }).catch(err => {
@@ -436,8 +449,8 @@ function createNewProject(arg) {
 }
 
 
-ipcMain.on("showOpenProject", function (event, arg) {
-    let p = dialog.showOpenDialogSync({
+ipcMain.on("showOpenProject", function (event: IpcMainEvent, arg: undefined) {
+    let p: string | string[] | undefined = dialog.showOpenDialogSync({
         properties: ["openFile"],
         filters: [
             {name: 'Plugin Blueprint Projects', extensions: ['pbp']}
@@ -459,7 +472,7 @@ ipcMain.on("showOpenProject", function (event, arg) {
     openProject(p);
 });
 
-function openProject(arg) {
+function openProject(arg: string) {
     console.log("openProject", arg);
     if (!arg || arg.length === 0) return;
     let projectFilePath = path.join(arg, "project.pbp");
@@ -468,13 +481,13 @@ function openProject(arg) {
         dialog.showErrorBox("Not found", "Could not find a PluginBlueprint project in that directory");
         return;
     }
-    fs.readFile(projectFilePath, "utf-8", function (err, data) {
+    fs.readFile(projectFilePath, "utf-8", function (err, json) {
         if (err) {
             console.error("Failed to read project file");
             console.error(err);
             return;
         }
-        data = JSON.parse(data);
+        let data: ProjectInfo = JSON.parse(json);
 
 
         function doOpen() {
@@ -503,7 +516,7 @@ function openProject(arg) {
 
                 if (win) {
                     win.loadFile('pages/graph.html');
-                    win.setTitle(DEFAULT_TITLE + " [" + currentProject.name + "]");
+                    win!.setTitle(DEFAULT_TITLE + " [" + currentProject!.name + "]");
                 }
             }).catch(err => {
                 console.error(err);
@@ -555,16 +568,36 @@ function openProject(arg) {
     })
 }
 
-ipcMain.on("openProject", function (event, arg) {
+ipcMain.on("openProject", function (event: IpcMainEvent, arg: string) {
     openProject(arg);
 });
 
-ipcMain.on("getProjectInfo", function (event, arg) {
+ipcMain.on("getProjectInfo", function (event: IpcMainEvent, arg: undefined) {
     let proj = Object.assign({}, currentProject || {}, {isNewProject});
     event.sender.send("projectInfo", proj);
 });
 
-ipcMain.on("updateProjectInfo", function (event, arg) {
+interface ProjectInfo {
+    name: string;
+    creationTime: number;
+    description: string;
+    author: string;
+    package: string;
+    version: string;
+    type: string;
+    minecraftVersion: string;
+    lastSave: number;
+    lastCompile: number;
+    editorVersion: string;
+    buildNumber: number;
+    debug?: boolean;
+    softdepend?: string[];
+    commands?: ProjectCommand[];
+    gitUser?: string;
+    isNewProject?: boolean;
+}
+
+ipcMain.on("updateProjectInfo", function (event: IpcMainEvent, arg: ProjectInfo | null | undefined) {
     if (!arg) return;
     currentProject = arg;
 
@@ -573,7 +606,7 @@ ipcMain.on("updateProjectInfo", function (event, arg) {
         win.webContents.send("projectInfo", currentProject);
     }
 
-    fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
+    fs.writeFile(path.join(currentProjectPath!, "project.pbp"), JSON.stringify(currentProject!), "utf-8", function (err) {
         if (err) {
             console.error("Failed to write project file");
             console.error(err);
@@ -582,7 +615,7 @@ ipcMain.on("updateProjectInfo", function (event, arg) {
     })
 });
 
-ipcMain.on("getGraphData", function (event, arg) {
+ipcMain.on("getGraphData", function (event: IpcMainEvent, arg: undefined) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
@@ -593,7 +626,7 @@ ipcMain.on("getGraphData", function (event, arg) {
             return;
         }
 
-        event.sender.send("graphData", JSON.parse(data));
+        event.sender.send("graphData", JSON.parse(data.toString()));
 
         if (isNewProject) {
             importSnippet(path.join(__dirname, "..", "assets", "snippets", "onEnableLog.pbs"));
@@ -601,14 +634,14 @@ ipcMain.on("getGraphData", function (event, arg) {
     });
 });
 
-function saveGraphData(arg, cb) {
+function saveGraphData(arg: serializedLGraph, cb?: () => void) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
     // backup
     copyFile(path.join(currentProjectPath, 'graph.pbg'), path.join(currentProjectPath, 'graph.pbg.old')).then(() => {
         // write data
-        fs.writeFile(path.join(currentProjectPath, "graph.pbg"), JSON.stringify(arg), "utf-8", function (err) {
+        fs.writeFile(path.join(currentProjectPath!, "graph.pbg"), JSON.stringify(arg), "utf-8", function (err) {
             if (err) {
                 console.error("Failed to save graph file");
                 console.error(err);
@@ -620,9 +653,9 @@ function saveGraphData(arg, cb) {
     });
 }
 
-function saveProject(cb) {
-    currentProject.lastSave = Date.now();
-    fs.writeFile(path.join(currentProjectPath, "project.pbp"), JSON.stringify(currentProject), "utf-8", function (err) {
+function saveProject(cb?: () => void) {
+    currentProject!.lastSave = Date.now();
+    fs.writeFile(path.join(currentProjectPath!, "project.pbp"), JSON.stringify(currentProject!), "utf-8", function (err) {
         if (err) {
             console.error("Failed to write project file");
             console.error(err);
@@ -632,7 +665,7 @@ function saveProject(cb) {
     });
 }
 
-ipcMain.on("saveGraphData", function (event, arg) {
+ipcMain.on("saveGraphData", function (event: IpcMainEvent, arg: serializedLGraph) {
     console.log("saveGraphData");
     saveGraphData(arg, function () {
         event.sender.send("graphDataSaved")
@@ -640,11 +673,11 @@ ipcMain.on("saveGraphData", function (event, arg) {
 });
 
 
-ipcMain.on("saveGraphDataAndClose", function (event, arg) {
+ipcMain.on("saveGraphDataAndClose", function (event: IpcMainEvent, arg: serializedLGraph) {
     console.log("saveGraphData");
     saveGraphData(arg, function () {
-        win.loadFile('index.html');
-        win.setTitle(DEFAULT_TITLE);
+        win!.loadFile('index.html');
+        win!.setTitle(DEFAULT_TITLE);
         currentProject = null;
         currentProjectPath = null;
         unsavedChanges = 0;
@@ -652,7 +685,7 @@ ipcMain.on("saveGraphDataAndClose", function (event, arg) {
     });
 });
 
-ipcMain.on("saveThumbnail", function (event, arg) {
+ipcMain.on("saveThumbnail", function (event: IpcMainEvent, arg: string) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
@@ -661,15 +694,15 @@ ipcMain.on("saveThumbnail", function (event, arg) {
     fs.writeFile(path.join(currentProjectPath, "thumb.pbt"), data, "base64", function (err) {
         let i = recentProjects.map(function (e) {
             return e.path;
-        }).indexOf(currentProjectPath);
+        }).indexOf(currentProjectPath!);
         if (i !== -1) {
             recentProjects[i].thumbnail = data;
         }
     });
 });
 
-function saveCodeToFile(code) {
-    return new Promise((resolve, reject) => {
+function saveCodeToFile(code: string) {
+    return new Promise<void>((resolve, reject) => {
         console.log("saveCode: " + Date.now());
         if (!currentProject || !currentProjectPath) {
             return reject();
@@ -678,13 +711,13 @@ function saveCodeToFile(code) {
 
         fs.emptyDir(path.join(currentProjectPath, "src"), function (err) {
             if (err) return reject(err);
-            fs.mkdirs(path.join(currentProjectPath, "src", ...currentProject.package.split(".")), function (err) {
+            fs.mkdirs(path.join(currentProjectPath!, "src", ...currentProject!.package.split(".")), function (err) {
                 if (err) {
                     console.error("Failed to save code file");
                     console.error(err);
                     return reject(err);
                 }
-                fs.writeFile(path.join(currentProjectPath, "src", ...currentProject.package.split("."), "GeneratedPlugin.java"), code, "utf-8", function (err) {
+                fs.writeFile(path.join(currentProjectPath!, "src", ...currentProject!.package.split("."), "GeneratedPlugin.java"), code, "utf-8", function (err) {
                     if (err) {
                         console.error("Failed to save code file");
                         console.error(err);
@@ -694,7 +727,7 @@ function saveCodeToFile(code) {
                     console.log("savedCode: " + Date.now());
 
                     let manifest = "Generated-By: PluginBlueprint " + app.getVersion() + "\n";
-                    fs.writeFile(path.join(currentProjectPath, "src", "manifest"), manifest, "utf-8", function (err) {
+                    fs.writeFile(path.join(currentProjectPath!, "src", "manifest"), manifest, "utf-8", function (err) {
                         if (err) {
                             console.error("Failed to save manifest file");
                             console.error(err);
@@ -711,18 +744,18 @@ function saveCodeToFile(code) {
 }
 
 function makePluginYml() {
-    let yml = "name: " + JSON.stringify(currentProject.name) +
-        "\ndescription: " + JSON.stringify(currentProject.description) +
-        "\nversion: " + JSON.stringify(currentProject.version) +
-        "\nmain: " + JSON.stringify(currentProject.package + ".GeneratedPlugin") +
-        "\nauthor: " + JSON.stringify(currentProject.author) +
-        "\nsoftdepend: [" + (currentProject.softdepend || []).map(value => JSON.stringify(value)).join(",") + "]" +
+    let yml = "name: " + JSON.stringify(currentProject!.name) +
+        "\ndescription: " + JSON.stringify(currentProject!.description) +
+        "\nversion: " + JSON.stringify(currentProject!.version) +
+        "\nmain: " + JSON.stringify(currentProject!.package + ".GeneratedPlugin") +
+        "\nauthor: " + JSON.stringify(currentProject!.author) +
+        "\nsoftdepend: [" + (currentProject!.softdepend || []).map(value => JSON.stringify(value)).join(",") + "]" +
         "\ngenerator: " + JSON.stringify("PluginBlueprint " + app.getVersion()) +
-        "\napi-version: '" + currentProject.minecraftVersion + "'\n";
-    if (currentProject.commands) {
+        "\napi-version: '" + currentProject!.minecraftVersion + "'\n";
+    if (currentProject!.commands) {
         yml += "commands:\n";
-        for (let i = 0; i < currentProject.commands.length; i++) {
-            let command = currentProject.commands[i];
+        for (let i = 0; i < currentProject!.commands.length; i++) {
+            let command = currentProject!.commands[i];
             yml += "  " + JSON.stringify(command.name) + ":\n";
             yml += "    description: " + JSON.stringify(command.description) + "\n";
             yml += "    usage: " + JSON.stringify(command.usage) + "\n";
@@ -734,32 +767,32 @@ function makePluginYml() {
     return yml;
 }
 
-async function compile(progressBar) {
+async function compile(progressBar: ProgressBar) {
     await ensureProjectServer(progressBar);
     console.log("compile: " + Date.now());
-    await fs.emptyDir(path.join(currentProjectPath, "classes"));
-    await javaCompiler.compile(currentProjectPath, currentProject, jdk, paper.getDataMeta().javaVersion,
-        paper.getClasspath(path.join(currentProjectPath, "lib")));
-    await fs.writeFile(path.join(currentProjectPath, "classes", "plugin.yml"), makePluginYml());
+    await fs.emptyDir(path.join(currentProjectPath!, "classes"));
+    await javaCompiler.compile(currentProjectPath!, currentProject!, jdk!, paper.getDataMeta().javaVersion,
+        paper.getClasspath(path.join(currentProjectPath!, "lib")));
+    await fs.writeFile(path.join(currentProjectPath!, "classes", "plugin.yml"), makePluginYml());
     console.log("compiled: " + Date.now());
-    currentProject.lastCompile = Date.now();
+    currentProject!.lastCompile = Date.now();
 }
 
-async function pack(progressBar) {
+async function pack(progressBar: ProgressBar) {
     await ensureJdk(progressBar);
     console.log("package: " + Date.now());
-    await fs.emptyDir(path.join(currentProjectPath, "output"));
-    await javaCompiler.package(currentProjectPath, currentProject, jdk);
+    await fs.emptyDir(path.join(currentProjectPath!, "output"));
+    await javaCompiler.package(currentProjectPath!, currentProject!, jdk!);
     console.log("packaged: " + Date.now());
 }
 
-function showCustomErrorDialog(error, title, message) {
+function showCustomErrorDialog(error: string | {message?: string; msg?: string}, title?: string, message?: string) {
     if (errWin) errWin.destroy();
     errWin = null;
 
     errWin = new BrowserWindow({
         webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
-        parent: win,
+        parent: win!,
         width: 1000,
         height: 600,
         modal: false,
@@ -772,7 +805,7 @@ function showCustomErrorDialog(error, title, message) {
     errWin.setMenu(null);
     errWin.setTitle(title || "An Error occurred!");
     errWin.loadFile('pages/error.html', {query: {
-        error: typeof error === "string" ? error : error.message || error.msg,
+        error: typeof error === "string" ? error : (error.message || error.msg)!,
         message: message || ""
     }});
     errWin.show();
@@ -784,7 +817,13 @@ function showCustomErrorDialog(error, title, message) {
     }
 }
 
-ipcMain.on("codeGenerated", function (event, arg) {
+interface GeneratedCode {
+    code: string | null;
+    compile: boolean;
+    pack: boolean;
+}
+
+ipcMain.on("codeGenerated", function (event: IpcMainEvent, arg: GeneratedCode) {
     let max = 0;
     if (arg.code) max++;
     if (arg.compile) max++;
@@ -814,7 +853,7 @@ ipcMain.on("codeGenerated", function (event, arg) {
 });
 
 // async/await to preserve execution order
-async function generateCompilePackage(arg, progressBar) {
+async function generateCompilePackage(arg: GeneratedCode, progressBar: ProgressBar) {
     if (arg.code) {
         progressBar.detail = "Generating code...";
         await saveCodeToFile(arg.code);
@@ -832,15 +871,15 @@ async function generateCompilePackage(arg, progressBar) {
     }
 }
 
-ipcMain.on("openOutputDir", function (event, arg) {
-    shell.openPath(path.join(currentProjectPath, "output"));
+ipcMain.on("openOutputDir", function (event: IpcMainEvent, arg: undefined) {
+    shell.openPath(path.join(currentProjectPath!, "output"));
 });
 
-ipcMain.on("openProjectInfoEditor", function (event, arg) {
+ipcMain.on("openProjectInfoEditor", function (event: IpcMainEvent, arg: undefined) {
     console.log("openProjectInfoEditor");
     let child = new BrowserWindow({
         webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
-        parent: win,
+        parent: win!,
         title: DEFAULT_TITLE,
         width: 600,
         height: 800,
@@ -859,11 +898,23 @@ ipcMain.on("openProjectInfoEditor", function (event, arg) {
     child.show();
 });
 
-ipcMain.on("openCommandEditor", function (event, arg) {
+interface ProjectCommand {
+    name: string;
+    description: string;
+    usage: string;
+    aliases?: string | string[];
+}
+
+interface CommandEditor {
+    command: Partial<ProjectCommand>;
+    index: number;
+}
+
+ipcMain.on("openCommandEditor", function (event: IpcMainEvent, arg: CommandEditor) {
     console.log("openCommandEditor");
     let child = new BrowserWindow({
         webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
-        parent: win,
+        parent: win!,
         title: DEFAULT_TITLE,
         width: 600,
         height: 500,
@@ -885,7 +936,12 @@ ipcMain.on("openCommandEditor", function (event, arg) {
     child.show();
 });
 
-ipcMain.on("saveCommand", function (event, arg) {
+interface SavedCommand extends CommandEditor {
+    command: ProjectCommand;
+    isNew: boolean;
+}
+
+ipcMain.on("saveCommand", function (event: IpcMainEvent, arg: SavedCommand) {
     if (editorWin) {
         if (arg.isNew) {
             editorWin.webContents.send("commandAdded", arg.command);
@@ -898,7 +954,7 @@ ipcMain.on("saveCommand", function (event, arg) {
     }
 });
 
-ipcMain.on("startServer", async function (event, arg) {
+ipcMain.on("startServer", async function (event: IpcMainEvent, arg: undefined) {
     if (!currentProject || !currentProjectPath) {
         return;
     }
@@ -916,7 +972,7 @@ ipcMain.on("startServer", async function (event, arg) {
 
     logWin = new BrowserWindow({
         webPreferences: {nodeIntegration: true, contextIsolation: false, sandbox: false},
-        parent: win,
+        parent: win!,
         width: 800,
         height: 1000,
         modal: false,
@@ -937,20 +993,20 @@ ipcMain.on("startServer", async function (event, arg) {
         });
     }
     try {
-        await ensureProjectServer({set detail(text) {
+        await ensureProjectServer({set detail(text: string) {
             if (logWin) logWin.webContents.send("log", {type: "out", content: text});
         }});
         await serverStarter.copyPlugin(currentProjectPath, currentProject);
         startProjectServer();
     } catch (err) {
-        logServerError(err.message);
-        showCustomErrorDialog(err, "Server Error");
+        logServerError((err as Error).message);
+        showCustomErrorDialog(err as Error, "Server Error");
     }
 });
 
 function startProjectServer() {
     let port = "";
-    serverStarter.startServer(currentProjectPath, jdk.java, !!currentProject.debug,
+    serverStarter.startServer(currentProjectPath!, jdk!.java, !!currentProject!.debug,
         (log) => {
             if (logWin) {
                 if (log.indexOf("Starting Minecraft server on") !== -1) {
@@ -969,14 +1025,14 @@ function startProjectServer() {
                     return;
                 }
 
-                let logData = {
+                let logData: {type: string; content: string; href?: string; hasNode?: boolean} = {
                     type: "out",
                     content: log
                 };
                 if (log.indexOf("Caused by:") === 0) {
                     logData.href = "https://www.google.com/search?q=" + log;
                 }
-                if (log.indexOf(currentProject.package) !== -1) {
+                if (log.indexOf(currentProject!.package) !== -1) {
                     if (log.indexOf("node_") !== -1) {
                         logData.hasNode = true;
 
@@ -989,7 +1045,7 @@ function startProjectServer() {
         }, logServerError);
 }
 
-function logServerError(err) {
+function logServerError(err: string) {
     if (logWin) {
         logWin.webContents.send("log", {
             type: "err",
@@ -998,17 +1054,17 @@ function logServerError(err) {
     }
 }
 
-ipcMain.on("sendServerCommand", function (event, arg) {
+ipcMain.on("sendServerCommand", function (event: IpcMainEvent, arg: string) {
     serverStarter.sendCommandToInstance(arg);
 });
 
-ipcMain.on("stopServer", async function (event, arg) {
+ipcMain.on("stopServer", async function (event: IpcMainEvent, arg: undefined) {
     if (logWin) logWin.destroy();
     logWin = null;
     await serverStarter.stopServer();
 });
 
-ipcMain.on("reloadPlugin", function (event, arg) {
+ipcMain.on("reloadPlugin", function (event: IpcMainEvent, arg: undefined) {
     reloadPlugin().catch(err => showCustomErrorDialog(err, "Server Error"));
 });
 
@@ -1016,26 +1072,30 @@ async function reloadPlugin() {
     if (!currentProject || !serverStarter.isRunning()) return;
     console.log("Reloading plugin...");
     await serverStarter.stopServer();
-    await serverStarter.copyPlugin(currentProjectPath, currentProject);
+    await serverStarter.copyPlugin(currentProjectPath!, currentProject!);
     startProjectServer();
     console.log("Plugin reloaded!");
     showNotification("Plugin reloaded!");
 }
 
-ipcMain.on("highlightNode", function (event, arg) {
+interface HighlightNode {
+    node: number;
+}
+
+ipcMain.on("highlightNode", function (event: IpcMainEvent, arg: HighlightNode) {
     if (win) {
         win.webContents.send("highlightNode", arg);
     }
 });
 
-ipcMain.on("showExportDialog", function (event, arg) {
+ipcMain.on("showExportDialog", function (event: IpcMainEvent, arg: undefined) {
     console.log("showExportDialog");
     showExportDialog();
 });
 
 function showExportDialog() {
     if (!currentProject || !currentProjectPath) return;
-    dialog.showSaveDialog(win, {
+    dialog.showSaveDialog(win!, {
         defaultPath: path.join(currentProjectPath, currentProject.name + ".zip"),
         filters: [{
             name: "ZIP File",
@@ -1047,7 +1107,7 @@ function showExportDialog() {
     })
 }
 
-function exportProject(output) {
+function exportProject(output: string) {
     if (!currentProject || !currentProjectPath) return;
     let zip = new AdmZip();
     zip.addLocalFile(path.join(currentProjectPath, "project.pbp"));
@@ -1055,9 +1115,16 @@ function exportProject(output) {
     zip.writeZip(output);
 }
 
-ipcMain.on("exportSnippet", function (event, arg) {
-    dialog.showSaveDialog(win, {
-        defaultPath: path.join(currentProjectPath, currentProject.name + "-snippet.pbs"),
+interface Snippet {
+    nodes: SerializedLGraphNode[];
+    links: {id: number; oId: number; oSlot: number; tId: number; tSlot: number; type: string | number}[];
+    groups: SerializedLGraphGroup[];
+    zoom: number;
+}
+
+ipcMain.on("exportSnippet", function (event: IpcMainEvent, arg: Snippet) {
+    dialog.showSaveDialog(win!, {
+        defaultPath: path.join(currentProjectPath!, currentProject!.name + "-snippet.pbs"),
         filters: [{
             name: "PluginBlueprint Snippet",
             extensions: ["pbs"]
@@ -1070,9 +1137,9 @@ ipcMain.on("exportSnippet", function (event, arg) {
     })
 });
 
-ipcMain.on("showImportSnippet", function (event, arg) {
-    dialog.showOpenDialog(win, {
-        defaultPath: currentProjectPath,
+ipcMain.on("showImportSnippet", function (event: IpcMainEvent, arg: undefined) {
+    dialog.showOpenDialog(win!, {
+        defaultPath: currentProjectPath!,
         filters: [{
             name: "PluginBlueprint Snippet",
             extensions: ["pbs"]
@@ -1083,18 +1150,18 @@ ipcMain.on("showImportSnippet", function (event, arg) {
     });
 });
 
-function importSnippet(file) {
+function importSnippet(file: string) {
     if (!file) {
         return;
     }
     fs.readFile(file, function (err, data) {
         if (err) throw err;
         if (!win) return;
-        win.webContents.send("importSnippet", JSON.parse(data));
+        win.webContents.send("importSnippet", JSON.parse(data.toString()));
     });
 }
 
-ipcMain.on("gitAddAndCommit", function (event, arg) {
+ipcMain.on("gitAddAndCommit", function (event: IpcMainEvent, arg: undefined) {
     if (!currentProjectPath || !currentProject) return;
     versionControl.openOrInit(currentProjectPath).then(() => {
         prompt({
@@ -1104,7 +1171,7 @@ ipcMain.on("gitAddAndCommit", function (event, arg) {
             value: "Update things!"
         }).then((r) => {
             if (r) {
-                versionControl.addAllAndCommit(currentProjectPath, currentProject, r).then(repo => {
+                versionControl.addAllAndCommit(currentProjectPath!, currentProject!, r).then(repo => {
                     showNotification("Committed '" + r + "'");
                     event.sender.send("committed");
                 }).catch((err) => {
@@ -1119,15 +1186,15 @@ ipcMain.on("gitAddAndCommit", function (event, arg) {
     })
 });
 
-ipcMain.on("gitPush", function (event, arg) {
+ipcMain.on("gitPush", function (event: IpcMainEvent, arg: undefined) {
     if (!currentProjectPath || !currentProject) return;
     versionControl.openOrInit(currentProjectPath).then(() => {
-        versionControl.listRemotes(currentProjectPath).then(remotes => {
+        versionControl.listRemotes(currentProjectPath!).then(remotes => {
             if (!remotes || remotes.length === 0) {
                 dialog.showErrorBox("Missing Remote", "Please configure a remote first");
             } else {
                 saveProject(() => {
-                    versionControl.push(currentProjectPath, currentProject).then((pushResponse) => {
+                    versionControl.push(currentProjectPath!, currentProject!).then((pushResponse) => {
                         console.log(pushResponse);
                         showNotification("Pushed to origin");
                         event.sender.send("pushed");//TODO: different event
@@ -1143,10 +1210,10 @@ ipcMain.on("gitPush", function (event, arg) {
     });
 });
 
-ipcMain.on("gitChangeRemote", function (event, arg) {
+ipcMain.on("gitChangeRemote", function (event: IpcMainEvent, arg: undefined) {
     if (!currentProjectPath || !currentProject) return;
     versionControl.openOrInit(currentProjectPath).then(() => {
-        versionControl.listRemotes(currentProjectPath).then(remotes => {
+        versionControl.listRemotes(currentProjectPath!).then(remotes => {
             prompt({
                 title: "Change Remote",
                 label: "Remote URL",
@@ -1154,7 +1221,7 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
                 value: remotes && remotes.length > 0 ? remotes[0].url : null
             }).then((r) => {
                 if (r) {
-                    versionControl.setRemote(currentProjectPath, r).then(() => {
+                    versionControl.setRemote(currentProjectPath!, r).then(() => {
                         showNotification("Remote changed to " + r);
                         event.sender.send("remoteChanged");
                     }).catch((err) => {
@@ -1170,7 +1237,7 @@ ipcMain.on("gitChangeRemote", function (event, arg) {
     });
 });
 
-ipcMain.on("checkUpdate", function (event) {
+ipcMain.on("checkUpdate", function (event: IpcMainEvent) {
     checkUpdate().then(u => {
         event.sender.send("updateInfo", u);
     })
@@ -1181,7 +1248,7 @@ function checkUpdate() {
         headers: {"User-Agent": "PluginBlueprint/" + app.getVersion()}
     }).then(response => {
         if (response.status !== 200) return {hasUpdate: false};
-        return response.json().then(release => {
+        return response.json().then((release: {tag_name: string}) => {
             let currentVersion = app.getVersion();
             let updateVersion = release.tag_name.replace(/^v/, "");
             let currentParts = currentVersion.split(".").map(Number);
@@ -1203,7 +1270,7 @@ function checkUpdate() {
     });
 }
 
-function showNotification(body, title) {
+function showNotification(body: string, title?: string) {
     let notification = new Notification({
         title: title || "PluginBlueprint",
         body: body || "-message-",

@@ -1,26 +1,33 @@
-const fs = require("fs-extra");
-const path = require("path");
-const {createHash} = require("crypto");
-const {execFile} = require("child_process");
-const {promisify} = require("util");
-const {copyFile} = require("./util");
+import fs = require("fs-extra");
+import path = require("path");
+import {createHash} from "crypto";
+import {execFile} from "child_process";
+import {promisify} from "util";
+import {copyFile} from "./util";
+import type {ClassDataMeta} from "../types/classData";
 const run = promisify(execFile);
 const USER_AGENT = "PluginBlueprint/" + require("../../package.json").version + " (https://github.com/InventivetalentDev/PluginBlueprint)";
-let meta;
+let meta: ClassDataMeta | undefined;
 
 function getDataMeta() {
-    if (!meta) meta = JSON.parse(fs.readFileSync(path.join(__dirname, "../../data/classes/paper.json"), "utf-8")).meta;
+    if (!meta) meta = JSON.parse(fs.readFileSync(path.join(__dirname, "../../data/classes/paper.json"), "utf-8")).meta as ClassDataMeta;
     return meta;
 }
 
-async function ensureServer({libDir, cacheDir, minecraftVersion, java, onProgress}) {
+async function ensureServer({libDir, cacheDir, minecraftVersion, java, onProgress}: {
+    libDir: string;
+    cacheDir: string;
+    minecraftVersion: string;
+    java: string;
+    onProgress?: (text: string) => void;
+}) {
     let serverJar = path.join(libDir, "paper.jar");
     if (await fs.pathExists(serverJar) && await fs.pathExists(path.join(libDir, "versions", minecraftVersion))) return;
     let response = await fetch("https://fill.papermc.io/v3/projects/paper/versions/" + encodeURIComponent(minecraftVersion) + "/builds/latest", {
         headers: {"User-Agent": USER_AGENT}
     });
     if (!response.ok) throw new Error("Paper metadata: HTTP " + response.status);
-    let build = await response.json();
+    let build = await response.json() as {id: number; downloads: Record<string, {url: string; checksums: {sha256: string}}>};
     let artifact = build.downloads["server:default"];
     let cachedJar = path.join(cacheDir, "paper-" + minecraftVersion + "-" + build.id + ".jar");
     await fs.ensureDir(cacheDir);
@@ -41,9 +48,9 @@ async function ensureServer({libDir, cacheDir, minecraftVersion, java, onProgres
     await run(java, ["-Dpaperclip.patchonly=true", "-jar", "paper.jar"], {cwd: libDir});
 }
 
-function getClasspath(libDir) {
-    let jars = [];
-    function visit(directory) {
+function getClasspath(libDir: string) {
+    let jars: string[] = [];
+    function visit(directory: string) {
         if (!fs.existsSync(directory)) return;
         for (let entry of fs.readdirSync(directory, {withFileTypes: true})) {
             let file = path.join(directory, entry.name);
@@ -56,4 +63,4 @@ function getClasspath(libDir) {
     return jars.sort();
 }
 
-module.exports = {getDataMeta, ensureServer, getClasspath};
+export {getDataMeta, ensureServer, getClasspath};
