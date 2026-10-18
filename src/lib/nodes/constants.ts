@@ -1,9 +1,14 @@
-const Colors = require("../colors");
-const {shapeAndColorsForSlotType, getNumberSuffix, handleDescDrawBackground} = require("../util");
+import Colors = require("../colors");
+import {shapeAndColorsForSlotType, getNumberSuffix, handleDescDrawBackground} from "../util";
+import {handleDrawTitleBox} from "../fontAwesomeHelper";
+import type {NativeNode, NodeModule} from "../../types/nodes";
+import type {INodeOutputSlot} from "../../../assets/lib/litegraph/litegraph";
+
+type AddNullableOutput = (name: string, type: string | -1 | null, options?: Partial<INodeOutputSlot>) => INodeOutputSlot;
 
 // String Constant
 
-function StringConstant() {
+function StringConstant(this: NativeNode) {
     this.classType = "native";
     this.desc = "A constant String";
     this.iconName = "align-left";
@@ -12,18 +17,18 @@ function StringConstant() {
 }
 
 StringConstant.prototype.color = Colors.STRING_OFF;
-StringConstant.prototype.getFields = function (output) {
+StringConstant.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
     return ["java.lang.String " + output[0] + " = " + JSON.stringify(this.properties.string)];
 };
-StringConstant.prototype.onPropertyChanged = function (k, p) {
+StringConstant.prototype.onPropertyChanged = function (this: NativeNode, k: string, p: unknown): void {
     this.outputs[0].label = this.properties.string;
     this.size = this.computeSize();
 };
-StringConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
+StringConstant.prototype.onDrawTitleBox = handleDrawTitleBox;
 
 // Number Constant
 
-function NumberConstant() {
+function NumberConstant(this: NativeNode) {
     this.classType = "native";
     this.desc = "A constant Number";
     this.iconName = "sort-numeric-down";//TODO: find a better icon
@@ -33,19 +38,19 @@ function NumberConstant() {
 }
 
 NumberConstant.prototype.color = Colors.NUMBER_OFF;
-NumberConstant.prototype.getFields = function (output) {
+NumberConstant.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
     return [this.properties.type + " " + output[0] + " = " + this.properties.number + getNumberSuffix(this.properties.type)];
 };
-NumberConstant.prototype.onPropertyChanged = function (k, p) {
+NumberConstant.prototype.onPropertyChanged = function (this: NativeNode, k: string, p: unknown): void {
     this.outputs[0].label = this.properties.type + " " + this.properties.number;
-    this.outputs[0].type = this.properties.type;
+    this.outputs[0].type = this.properties.type!;
     this.size = this.computeSize();
 };
-NumberConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
+NumberConstant.prototype.onDrawTitleBox = handleDrawTitleBox;
 
 // Boolean Constant
 
-function BooleanConstant() {
+function BooleanConstant(this: NativeNode) {
     this.classType = "native";
     this.desc = "A constant boolean";
     this.iconName = "toggle-on";
@@ -54,32 +59,32 @@ function BooleanConstant() {
 }
 
 BooleanConstant.prototype.color = Colors.BOOLEAN_OFF;
-BooleanConstant.prototype.getFields = function (output) {
+BooleanConstant.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
     return ["boolean " + output[0] + " = " + this.properties.value];
 };
-BooleanConstant.prototype.onPropertyChanged = function (k, p) {
+BooleanConstant.prototype.onPropertyChanged = function (this: NativeNode, k: string, p: unknown): void {
     this.outputs[0].label = "" + this.properties.value;
     this.size = this.computeSize();
 };
-BooleanConstant.prototype.onDrawTitleBox = require("../fontAwesomeHelper").handleDrawTitleBox;
+BooleanConstant.prototype.onDrawTitleBox = handleDrawTitleBox;
 
 // Null Constant
 
-function Null() {
+function Null(this: NativeNode) {
     this.classType = "native";
     this.desc = "Null constant";
-    this.addOutput("null", null, shapeAndColorsForSlotType("object"));
+    (this.addOutput as AddNullableOutput)("null", null, shapeAndColorsForSlotType("object"));
 }
 
 Null.prototype.color = Colors.OBJECT_OFF;
-Null.prototype.getFields = function (output) {
+Null.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
     return ["java.lang.Object " + output[0] + " = null"];
 };
 
 
-module.exports = [
+export = [
     StringConstant,
     NumberConstant,
     BooleanConstant,
     Null
-];
+] satisfies NodeModule;
