@@ -9,7 +9,8 @@ function setWindowMenu(template) {
 
     const items = [{role: "appMenu"}, ...template, {role: "windowMenu"}];
     if (!template.some(function (item) { return item.label === "Edit"; })) {
-        items.splice(1, 0, {role: "editMenu"});
+        const fileIndex = template.findIndex(function (item) { return item.label === "File"; });
+        items.splice(fileIndex === -1 ? 1 : fileIndex + 2, 0, {role: "editMenu"});
     }
     const menu = Menu.buildFromTemplate(items);
     function activateMenu() {
