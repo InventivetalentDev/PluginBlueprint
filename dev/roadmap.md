@@ -89,7 +89,7 @@ Do this right after L1, while Phase 1's golden tests guard behaviour.
 - Plan it as one setup track (tooling and shared types), then parallel tracks by area: main process, generators, built-in nodes, renderer pages.
 
 - [x] Setup track done 2026-10-18: code lives in `src/`, `tsc` (TypeScript 7) builds `out/`, the app runs from `out/main.js`, and shared types for class data, the node contract and litegraph are in `src/types/`. Tests, the dev app and a packaged macOS build were verified.
-- [ ] Area tracks: main process, generators, built-in nodes, renderer pages. Then turn `allowJs` off.
+- [x] Area tracks done 2026-10-18: the main process, generators, built-in nodes and page scripts are strict TypeScript; the inline page scripts moved to `src/pages/`, and `allowJs` is off. Snapshots unchanged; the dev app (command editor, Undo/Redo, snippet export and import, error page included) and a packaged macOS build were verified. Suspected bugs found while typing were kept as they were, for a later fix.
 
 ### E1 Electron hardening (M)
 
