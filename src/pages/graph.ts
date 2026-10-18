@@ -335,7 +335,7 @@ function serializeHistory() {
 function codeState(state: string | null | undefined) {
     if (!state) return state;
     let data: ReturnType<Graph["serialize"]> = JSON.parse(state);
-    return JSON.stringify({...data, groups: [], nodes: data.nodes.map(({pos, size, title, ...node}) => node)});
+    return JSON.stringify({...data, groups: [], nodes: data.nodes.map(({pos, size, title, flags, ...node}) => node)});
 }
 
 function trackGraphChange() {
