@@ -9,7 +9,8 @@ import path = require("path");
 import fs = require("fs-extra");
 import ProgressBar = require('electron-progressbar');
 import {copyFile} from "./lib/util";
-import type {serializedLGraph, SerializedLGraphNode, SerializedLGraphGroup} from "../assets/lib/litegraph/litegraph";
+import type {serializedLGraph} from "../assets/lib/litegraph/litegraph";
+import type {ProjectInfo, ProjectCommand, Snippet} from "./types/project";
 import AdmZip = require("adm-zip");
 
 require("@electron/remote/main").initialize();
@@ -577,26 +578,6 @@ ipcMain.on("getProjectInfo", function (event: IpcMainEvent, arg: undefined) {
     event.sender.send("projectInfo", proj);
 });
 
-interface ProjectInfo {
-    name: string;
-    creationTime: number;
-    description: string;
-    author: string;
-    package: string;
-    version: string;
-    type: string;
-    minecraftVersion: string;
-    lastSave: number;
-    lastCompile: number;
-    editorVersion: string;
-    buildNumber: number;
-    debug?: boolean;
-    softdepend?: string[];
-    commands?: ProjectCommand[];
-    gitUser?: string;
-    isNewProject?: boolean;
-}
-
 ipcMain.on("updateProjectInfo", function (event: IpcMainEvent, arg: ProjectInfo | null | undefined) {
     if (!arg) return;
     currentProject = arg;
@@ -898,13 +879,6 @@ ipcMain.on("openProjectInfoEditor", function (event: IpcMainEvent, arg: undefine
     child.show();
 });
 
-interface ProjectCommand {
-    name: string;
-    description: string;
-    usage: string;
-    aliases?: string | string[];
-}
-
 interface CommandEditor {
     command: Partial<ProjectCommand>;
     index: number;
@@ -1113,13 +1087,6 @@ function exportProject(output: string) {
     zip.addLocalFile(path.join(currentProjectPath, "project.pbp"));
     zip.addLocalFile(path.join(currentProjectPath, "graph.pbg"));
     zip.writeZip(output);
-}
-
-interface Snippet {
-    nodes: SerializedLGraphNode[];
-    links: {id: number; oId: number; oSlot: number; tId: number; tSlot: number; type: string | number}[];
-    groups: SerializedLGraphGroup[];
-    zoom: number;
 }
 
 ipcMain.on("exportSnippet", function (event: IpcMainEvent, arg: Snippet) {

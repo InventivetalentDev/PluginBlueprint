@@ -2,10 +2,7 @@ import Colors = require("../colors");
 import {shapeAndColorsForSlotType, isPrimitiveType, handleDescDrawBackground} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
 import type {NativeNode, NodeModule} from "../../types/nodes";
-import type {ContextMenuItem, INodeInputSlot, INodeOutputSlot} from "../../../assets/lib/litegraph/litegraph";
-
-type AddNullableInput = (name: string, type: string | -1 | null, options?: Partial<INodeInputSlot>) => INodeInputSlot;
-type AddNullableOutput = (name: string, type: string | -1 | null, options?: Partial<INodeOutputSlot>) => INodeOutputSlot;
+import type {ContextMenuItem} from "../../../assets/lib/litegraph/litegraph";
 
 
 // Cast
@@ -15,8 +12,8 @@ function Cast(this: NativeNode) {
     this.desc = "Cast an object to another";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
-    (this.addInput as AddNullableInput)("", null);
-    (this.addOutput as AddNullableOutput)("", null);
+    this.addInput("", null);
+    this.addOutput("", null);
     this.addProperty("castTo", "java.lang.Object", "string");
 }
 
@@ -44,7 +41,7 @@ function InstanceOf(this: NativeNode) {
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
 
-    (this.addInput as AddNullableInput)("", null, shapeAndColorsForSlotType("object"));
+    this.addInput("", null, shapeAndColorsForSlotType("object"));
 
     this.addOutput("instanceof java.lang.Object", "boolean", shapeAndColorsForSlotType("boolean"));
 
@@ -74,7 +71,7 @@ function StringFormat(this: NativeNode) {
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addInput("Format", "java.lang.String", shapeAndColorsForSlotType("java.lang.String"));
-    (this.addInput as AddNullableInput)("Variable", null);
+    this.addInput("Variable", null);
     this.addOutput("Formatted", "java.lang.String", shapeAndColorsForSlotType("java.lang.String"));
 
     this.optional_inputs = [["Variable", null, {}]];
@@ -105,7 +102,7 @@ function ConsoleLog(this: NativeNode) {
     this.desc = "Log something to the console";
     this.iconName = "print";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
-    (this.addInput as AddNullableInput)("", null);
+    this.addInput("", null);
 }
 
 ConsoleLog.title = "ConsoleLog";

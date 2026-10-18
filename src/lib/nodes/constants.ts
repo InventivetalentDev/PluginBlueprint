@@ -2,9 +2,6 @@ import Colors = require("../colors");
 import {shapeAndColorsForSlotType, getNumberSuffix, handleDescDrawBackground} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
 import type {NativeNode, NodeModule} from "../../types/nodes";
-import type {INodeOutputSlot} from "../../../assets/lib/litegraph/litegraph";
-
-type AddNullableOutput = (name: string, type: string | -1 | null, options?: Partial<INodeOutputSlot>) => INodeOutputSlot;
 
 // String Constant
 
@@ -73,7 +70,7 @@ BooleanConstant.prototype.onDrawTitleBox = handleDrawTitleBox;
 function Null(this: NativeNode) {
     this.classType = "native";
     this.desc = "Null constant";
-    (this.addOutput as AddNullableOutput)("null", null, shapeAndColorsForSlotType("object"));
+    this.addOutput("null", null, shapeAndColorsForSlotType("object"));
 }
 
 Null.prototype.color = Colors.OBJECT_OFF;

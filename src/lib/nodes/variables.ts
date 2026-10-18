@@ -2,10 +2,6 @@ import Colors = require("../colors");
 import {shapeAndColorsForSlotType, typeSwitchEnum, parseTypeSwitchEnum, handleDescDrawBackground} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
 import type {NativeNode, NodeModule} from "../../types/nodes";
-import type {INodeInputSlot, INodeOutputSlot} from "../../../assets/lib/litegraph/litegraph";
-
-type AddNullableInput = (name: string, type: string | -1 | null, options?: Partial<INodeInputSlot>) => INodeInputSlot;
-type AddNullableOutput = (name: string, type: string | -1 | null, options?: Partial<INodeOutputSlot>) => INodeOutputSlot;
 
 function Set(this: NativeNode) {
     this.classType = "native";
@@ -13,7 +9,7 @@ function Set(this: NativeNode) {
     this.iconName = "sign-in-alt";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
-    (this.addInput as AddNullableInput)("myVariable", null);
+    this.addInput("myVariable", null);
     this.addProperty("name", "myVariable", "string");
     this.addProperty("type", "string", "enum", {values: typeSwitchEnum})
 }
@@ -45,7 +41,7 @@ function Get(this: NativeNode) {
     this.classType = "native";
     this.desc = "Get the value of a variable";
     this.iconName = "sign-out-alt";
-    (this.addOutput as AddNullableOutput)("myVariable", null);
+    this.addOutput("myVariable", null);
     this.addProperty("name", "myVariable", "string");
     this.addProperty("type", "string", "enum", {values: typeSwitchEnum})
 }

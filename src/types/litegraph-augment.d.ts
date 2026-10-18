@@ -1,5 +1,5 @@
 import "../../assets/lib/litegraph/litegraph";
-import type {INodeSlot, LGraphGroup, LGraphNode, LGraphNodeConstructor, Vector2, Vector4} from "../../assets/lib/litegraph/litegraph";
+import type {INodeInputSlot, INodeOutputSlot, INodeSlot, LGraphGroup, LGraphNode, LGraphNodeConstructor, Vector2, Vector4} from "../../assets/lib/litegraph/litegraph";
 import type {SlotOptions} from "./nodes";
 import type {IconName, IconPrefix} from "@fortawesome/fontawesome-svg-core";
 
@@ -8,6 +8,8 @@ export type OptionalSlot = [name: string, type: SlotType, options?: Partial<INod
 
 declare module "../../assets/lib/litegraph/litegraph" {
     interface LGraphNode {
+        addInput(name: string, type: SlotType, options?: Partial<INodeInputSlot>): INodeInputSlot;
+        addOutput(name: string, type: SlotType, options?: Partial<INodeOutputSlot>): INodeOutputSlot;
         desc?: string;
         description?: string;
         descBlockHeight?: number;

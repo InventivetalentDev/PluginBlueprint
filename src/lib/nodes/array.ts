@@ -1,10 +1,6 @@
 import Colors = require("../colors");
 import {shapeAndColorsForSlotType} from "../util";
 import type {NativeNode, NodeModule} from "../../types/nodes";
-import type {INodeInputSlot, INodeOutputSlot} from "../../../assets/lib/litegraph/litegraph";
-
-type AddNullableInput = (name: string, type: string | -1 | null, options?: Partial<INodeInputSlot>) => INodeInputSlot;
-type AddNullableOutput = (name: string, type: string | -1 | null, options?: Partial<INodeOutputSlot>) => INodeOutputSlot;
 
 
 function MakeArray(this: NativeNode) {
@@ -56,9 +52,9 @@ function SetIndex(this: NativeNode) {
     this.desc = "Set an array item at a specific index";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
-    (this.addInput as AddNullableInput)("Array", null);
+    this.addInput("Array", null);
     this.addInput("index", "int", shapeAndColorsForSlotType("int"));
-    (this.addInput as AddNullableInput)("Value", null);
+    this.addInput("Value", null);
 }
 
 SetIndex.prototype.getMethodBody = function (this: NativeNode, input: (string | null)[], output: string[]): string {
@@ -74,9 +70,9 @@ function GetIndex(this: NativeNode) {
     this.desc = "Get an item from an array from a specific index";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
-    (this.addInput as AddNullableInput)("Array", null);
+    this.addInput("Array", null);
     this.addInput("index", "int", shapeAndColorsForSlotType("int"));
-    (this.addOutput as AddNullableOutput)("Value", null);
+    this.addOutput("Value", null);
 }
 
 GetIndex.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
@@ -96,7 +92,7 @@ function Length(this: NativeNode) {
     this.desc = "Get the length of an array";
     this.addInput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
     this.addOutput("EXEC", "@EXEC", shapeAndColorsForSlotType("@EXEC"));
-    (this.addInput as AddNullableInput)("Array", null);
+    this.addInput("Array", null);
     this.addOutput("length", "int", shapeAndColorsForSlotType("int"));
 }
 
