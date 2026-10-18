@@ -10,3 +10,4 @@ dist/
 
 tools/classdata/.cache/
 tools/classdata/build/
+tools/codegen-harness/out/

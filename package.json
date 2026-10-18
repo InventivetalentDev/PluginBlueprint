@@ -35,7 +35,7 @@
       "assets/material-icons/*",
       "node_modules/materialize-css/dist/css/*",
       "!.*/**",
-      "!{docs,test,tools}/**"
+      "!{dev,docs,test,tools}/**"
     ],
     "nsis": {
       "oneClick": false,

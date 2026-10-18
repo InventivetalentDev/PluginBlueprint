@@ -1,0 +1,8 @@
+name: "EvidencePlugin"
+description: "My Awesome Plugin!!"
+version: "0.0.0-b1"
+main: "my.awesome.plugin.GeneratedPlugin"
+author: "inventivetalent"
+softdepend: []
+generator: "PluginBlueprint 2.0.0"
+api-version: '26.3'
