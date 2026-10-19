@@ -25,7 +25,7 @@ The documentation source is in [`docs/`](docs/Home.md).
 
 ## Support
 
-PluginBlueprint is free and open source. If it helps you, you can [pay what you want](https://inventivetalent.shop/l/pluginblueprint?layout=profile).
+PluginBlueprint is free and open source. If it helps you, you can [pay what you want](https://pluginblueprint.net/get).
 
 ## Requirements
 

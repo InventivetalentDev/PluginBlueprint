@@ -33,4 +33,4 @@ You add and connect nodes to build a plugin without writing code.
 
 To use your jar on another server, follow [Installing on your server](Installing-on-your-Server.md).
 
-PluginBlueprint is free and open source. If it helps you, you can [pay what you want](https://inventivetalent.shop/l/pluginblueprint?layout=profile).
+PluginBlueprint is free and open source. If it helps you, you can [pay what you want](https://pluginblueprint.net/get).
