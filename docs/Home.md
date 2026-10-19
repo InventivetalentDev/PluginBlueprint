@@ -22,13 +22,14 @@ You add and connect nodes to build a plugin without writing code.
 3. [Commands](Commands.md): add a command with arguments, a permission and
    tab completion.
 4. [Config](Config.md): ship a `config.yml`, read its values, and reload it.
-5. [Testing your plugin](Testing-your-Plugin.md): start the test server,
+5. [Subgraphs](Subgraphs.md): group nodes, add pins, and edit nested graphs.
+6. [Testing your plugin](Testing-your-Plugin.md): start the test server,
    connect from Minecraft, and follow execution in the editor.
-6. [Fixing problems](Fixing-problems.md): what each problem and build error
+7. [Fixing problems](Fixing-problems.md): what each problem and build error
    means, and how to fix it.
-7. [Troubleshooting](Troubleshooting.md): find a cause and fix for launch,
+8. [Troubleshooting](Troubleshooting.md): find a cause and fix for launch,
    setup, compile, and server problems.
-8. [Updating from version 1](Updating-from-Version-1.md): back up a 1.x project
+9. [Updating from version 1](Updating-from-Version-1.md): back up a 1.x project
    and update its target and nodes for Paper 26.3.
 
 To use your jar on another server, follow [Installing on your server](Installing-on-your-Server.md).

@@ -18,8 +18,9 @@ import History = require("../lib/history");
 import $ = require("jquery");
 const KeyPics = require("key.pics") as typeof import("key.pics");
 import {updateLinkColors} from "../lib/util";
-import {validateGraph, classStore} from "../lib/graphValidator";
+import {validateProject, classStore} from "../lib/graphValidator";
 import {pickNodeKeys, SourceError} from "../lib/sourceChecks";
+import {flattenGraph, eachGraph, canvasPath, resolvePath, pathOf, convertToSubgraph, SUBGRAPH_INPUT, SUBGRAPH_OUTPUT, type NodePath} from "../lib/subgraphs";
 import {buildSearchEntries, searchNodes} from "../lib/nodeSearch";
 import {openPicker} from "../lib/picker";
 import type {SearchEntry} from "../lib/nodeSearch";
@@ -134,7 +135,7 @@ let theMenu = setWindowMenu([
             {
                 label: "Check for problems",
                 accelerator: "CommandOrControl+Shift+K",
-                click: () => showProblems(validateGraph(graph, projectInfo))
+                click: () => showProblems(validateProject(graph as unknown as Graph, projectInfo))
             },
             {
                 type: "separator"
@@ -340,17 +341,26 @@ graph.onAfterChange = function () {
     trackGraphChange();
 };
 
+type HistoryGraph = Omit<ReturnType<Graph["serialize"]>, "nodes"> & {nodes: (ReturnType<GraphNode["serialize"]> & {subgraph?: HistoryGraph})[]};
+
 function serializeHistory() {
     let data = graph.serialize();
     // Selecting a node brings it to the front without changing the project.
-    data.nodes.sort((a, b) => a.id - b.id);
+    function sort(data: HistoryGraph) {
+        data.nodes.sort((a, b) => a.id - b.id);
+        for (const node of data.nodes) if (node.subgraph) sort(node.subgraph);
+    }
+    sort(data);
     return JSON.stringify(data);
 }
 
 function codeState(state: string | null | undefined) {
     if (!state) return state;
-    let data: ReturnType<Graph["serialize"]> = JSON.parse(state);
-    return JSON.stringify({...data, groups: [], nodes: data.nodes.map(({pos, size, title, flags, ...node}) => node)});
+    function strip(data: HistoryGraph): object {
+        return {...data, groups: [], nodes: data.nodes.sort((a, b) => a.id - b.id).map(({pos, size, title, flags, subgraph, ...node}) =>
+            ({...node, ...(subgraph ? {subgraph: strip(subgraph)} : {})}))};
+    }
+    return JSON.stringify(strip(JSON.parse(state)));
 }
 
 function trackGraphChange() {
@@ -451,8 +461,60 @@ canvas.onNodeMoved = () => trackGraphChange();
 canvas.onShowNodePanel = function () {};
 console.log(canvas);
 
+const subgraphViews: {scale: number; offset: [number, number]}[] = [];
+const openSubgraph = canvas.openSubgraph;
+canvas.openSubgraph = function (inner) {
+    if (this.graph === inner) return;
+    subgraphViews.push({scale: this.ds.scale, offset: [this.ds.offset[0], this.ds.offset[1]]});
+    openSubgraph.call(this, inner);
+    this.ds.scale = 1;
+    this.ds.offset = [0, 0];
+};
+const closeSubgraph = canvas.closeSubgraph;
+canvas.closeSubgraph = function () {
+    const view = subgraphViews.pop();
+    if (!view) return;
+    closeSubgraph.call(this);
+    this.ds.scale = view.scale;
+    this.ds.offset = view.offset;
+};
+function closeAllSubgraphs() {
+    const view = subgraphViews[0];
+    canvas.setGraph(graph as unknown as Graph);
+    if (view) {
+        canvas.ds.scale = view.scale;
+        canvas.ds.offset = view.offset;
+    }
+    subgraphViews.length = 0;
+}
+canvas.drawSubgraphPanel = function () {
+    if (this.drawButton(10, 10, 90, 30, "‹ Back")) this.closeSubgraph();
+};
+canvas.getExtraMenuOptions = function (...args: unknown[]) {
+    const options = args[1] as ({content?: string} | null)[];
+    if (!canvasPath(canvas).length || options.some(option => option?.content === "Close subgraph")) return [];
+    return [{content: "Close subgraph", callback: () => canvas.closeSubgraph()}];
+};
+graph.onGetNodeMenuOptions = function (options) {
+    const selected = Object.values(canvas.selected_nodes);
+    if (selected.length < 2) return;
+    options.push({
+        content: "Convert to subgraph",
+        disabled: selected.some(node => node.type === SUBGRAPH_INPUT || node.type === SUBGRAPH_OUTPUT),
+        callback: () => {
+            history.track(serializeHistory());
+            history.pause();
+            const id = convertToSubgraph(canvas.graph, selected.map(node => node.id));
+            history.unpause();
+            canvas.selectNode(canvas.graph.getNodeById(id)!);
+            trackGraphChange();
+        }
+    });
+};
+let generatedPaths = new Map<number, NodePath>();
+
 const problemsPanel = document.querySelector<HTMLElement>("#problemsPanel")!;
-const problemBadges = new Map<number, Problem["severity"]>();
+const problemBadges = new Map<string, Problem["severity"]>();
 
 function showProblems(problems: Problem[]) {
     problemsPanel.hidden = false;
@@ -464,25 +526,26 @@ function showProblems(problems: Problem[]) {
     problemBadges.clear();
     if (!problems.length) rows.textContent = "No problems found.";
     for (const problem of problems) {
-        const row = document.createElement(problem.nodeId === undefined ? "div" : "button");
+        const path = problem.path?.length ? problem.path : problem.nodeId === undefined ? undefined : [problem.nodeId];
+        const row = document.createElement(path ? "button" : "div");
         row.className = "problem-row " + problem.severity;
         row.textContent = `${problem.severity === "error" ? "Error" : "Warning"}: ${problem.message}`;
-        if (problem.nodeId !== undefined) {
-            const nodeId = problem.nodeId;
-            row.addEventListener("click", () => focusNode(nodeId));
-            if (problemBadges.get(nodeId) !== "error") problemBadges.set(nodeId, problem.severity);
+        if (path) {
+            row.addEventListener("click", () => focusPath(path));
+            const key = path.join("/");
+            if (problemBadges.get(key) !== "error") problemBadges.set(key, problem.severity);
         }
         rows.append(row);
     }
-    graph.setDirtyCanvas(true, false);
+    canvas.setDirty(true, true);
 }
 
 function refreshProblems() {
-    if (!problemsPanel.hidden) showProblems(validateGraph(graph, projectInfo));
+    if (!problemsPanel.hidden) showProblems(validateProject(graph as unknown as Graph, projectInfo));
 }
 
 function checkBeforeBuild() {
-    const problems = validateGraph(graph, projectInfo);
+    const problems = validateProject(graph as unknown as Graph, projectInfo);
     if (problems.length || !problemsPanel.hidden) showProblems(problems);
     if (problems.some(problem => problem.severity === "error")) {
         $("#overlay").stop(true, true).hide();
@@ -493,7 +556,8 @@ function checkBeforeBuild() {
 
 function codeGenerationFailed(error: unknown) {
     $("#overlay").stop(true, true).hide();
-    showProblems([{severity: "error", nodeId: error instanceof SourceError ? error.nodeId : undefined, message: "Code generation failed: " + (error instanceof Error ? error.message : String(error))}]);
+    const path = error instanceof SourceError ? error.path ?? (error.nodeId === undefined ? undefined : pathOf(generatedPaths, error.nodeId)) : undefined;
+    showProblems([{severity: "error", nodeId: path?.[0], path, message: "Code generation failed: " + (error instanceof Error ? error.message : String(error))}]);
 }
 
 document.querySelector("#closeProblems")!.addEventListener("click", () => {
@@ -507,8 +571,16 @@ canvas.onDrawForeground = function (ctx) {
     ctx.font = "bold 12px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    for (const [id, severity] of problemBadges) {
-        const node = graph.getNodeById(id);
+    const openPath = canvasPath(canvas);
+    const visible = new Map<number, Problem["severity"]>();
+    for (const [key, severity] of problemBadges) {
+        const path = key.split("/").map(Number);
+        if (!openPath.every((id, i) => path[i] === id) || path.length <= openPath.length) continue;
+        const id = path[openPath.length];
+        if (visible.get(id) !== "error") visible.set(id, severity);
+    }
+    for (const [id, severity] of visible) {
+        const node = canvas.graph.getNodeById(id);
         if (!node) continue;
         const width = node.flags.collapsed ? (node as GraphNode & {_collapsed_width?: number})._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH : node.size[0];
         const x = node.pos[0] + width;
@@ -553,7 +625,7 @@ ipcRenderer.on("serverState", function (event, arg: {running: boolean}) {
 ipcRenderer.send("getServerState");
 
 const findInput = document.querySelector<HTMLInputElement>("#findInput")!;
-let findMatches: GraphNode[] = [];
+let findMatches: NodePath[] = [];
 let findIndex = -1;
 
 function openFind() {
@@ -565,19 +637,20 @@ function openFind() {
 
 function findNodes() {
     let query = findInput.value.toLowerCase();
-    findMatches = query ? graph._nodes.filter(node =>
-        node.title.toLowerCase().includes(query) || (node.type || "").toLowerCase().includes(query)) : [];
+    findMatches = [];
+    if (query) eachGraph(graph as unknown as Graph, (inner, path) => {
+        for (const node of (inner as unknown as PageGraph)._nodes) {
+            if (node.title.toLowerCase().includes(query) || (node.type || "").toLowerCase().includes(query)) findMatches.push([...path, node.id]);
+        }
+    });
     findIndex = findMatches.length ? 0 : -1;
     showFindMatch();
 }
 
 function showFindMatch() {
     $("#findCount").text((findIndex + 1) + " of " + findMatches.length);
-    let node = findMatches[findIndex];
-    if (node) {
-        canvas.selectNode(node);
-        canvas.centerOnNode(node);
-    }
+    const path = findMatches[findIndex];
+    if (path) focusPath(path);
 }
 
 findInput.addEventListener("input", findNodes);
@@ -603,13 +676,15 @@ function addBukkitNode(className: string, classType: unknown) {
     let node = LiteGraph.createNode(nodeName);
     if (!node) return;
     console.log(node);
-    graph.add(node);
+    canvas.graph.add(node);
 }
 
 function generateCode() {
     if (!checkBeforeBuild()) return;
     $("#overlay").fadeIn();
-    CodeGenerator.generateClassCode(graph, projectInfo as ProjectInfo).then((code) => {
+    const flat = flattenGraph(graph as unknown as Graph);
+    generatedPaths = flat.paths;
+    CodeGenerator.generateClassCode(flat.graph, projectInfo as ProjectInfo).then((code) => {
         ipcRenderer.send("codeGenerated", {code: code, compile: false, pack: false});
     }).catch(codeGenerationFailed);
 }
@@ -618,7 +693,9 @@ function generateCode() {
 function generateCodeCompilePackage(reload?: "ifRunning" | "start") {
     if (!checkBeforeBuild()) return;
     $("#overlay").fadeIn();
-    CodeGenerator.generateClassCode(graph, projectInfo as ProjectInfo).then((code) => {
+    const flat = flattenGraph(graph as unknown as Graph);
+    generatedPaths = flat.paths;
+    CodeGenerator.generateClassCode(flat.graph, projectInfo as ProjectInfo).then((code) => {
         ipcRenderer.send("codeGenerated", {code: code, compile: true, pack: true, ...(reload ? {reload} : {})});
     }).catch(codeGenerationFailed);
 }
@@ -668,6 +745,7 @@ function makeThumbnail() {
 }
 
 function undo() {
+    closeAllSubgraphs();
     console.log("canUndo: " + history.canUndo());
     history.pause();
     if (history.canUndo()) {
@@ -685,6 +763,7 @@ function undo() {
 }
 
 function redo() {
+    closeAllSubgraphs();
     console.log("canRedo: " + history.canRedo());
     history.pause();
     if (history.canRedo()) {
@@ -721,8 +800,8 @@ function serializeSnippet(): Snippet {
         nodeIds.push(n.id);
         nodes.push(n);
     }
-    for (let l in graph.links) {
-        let link = graph.links[l];
+    for (let l in canvas.graph.links) {
+        let link = canvas.graph.links[l];
         if (nodeIds.indexOf(link.origin_id) >= 0 && nodeIds.indexOf(link.target_id) >= 0) {
             links.push({
                 id: link.id,
@@ -736,8 +815,8 @@ function serializeSnippet(): Snippet {
     }
 
     let groups = [];
-    for (let i = 0; i < graph._groups.length; i++) {
-        let g = graph._groups[i];
+    for (let i = 0; i < (canvas.graph as unknown as PageGraph)._groups.length; i++) {
+        let g = (canvas.graph as unknown as PageGraph)._groups[i];
         let include = false;
         for (let j = 0; j < nodePositions.length; j++) {
             if (g.isPointInside(nodePositions[j][0], nodePositions[j][1])) {
@@ -766,6 +845,7 @@ function serializeSnippet(): Snippet {
 Object.assign(window, {serializeSnippet});
 
 function configureSnippet(data: Snippet) {
+    const graph = canvas.graph as unknown as PageGraph;
     $("#overlay").fadeIn();
 
     history.track(serializeHistory());
@@ -882,6 +962,7 @@ ipcRenderer.on("graphData", function (event, arg: ReturnType<Graph["serialize"]>
     if (!arg) {
         console.warn("Empty graph data");
     }
+    closeAllSubgraphs();
     if (graph && arg && arg.nodes) {
         arg.nodes = arg.nodes.map(pickNodeKeys);
         graph.configure(arg);
@@ -898,9 +979,9 @@ ipcRenderer.on("generateDone", function (event, arg) {
     uncompiledChanges = 0;
     ipcRenderer.send("setChangeState", {uncompiled: uncompiledChanges});
 
-    for (let i = 0; i < graph._nodes.length; i++) {
-        delete graph._nodes[i].has_errors;
-    }
+    eachGraph(graph as unknown as Graph, inner => {
+        for (const node of (inner as unknown as PageGraph)._nodes) delete node.has_errors;
+    });
 });
 ipcRenderer.on("generateError", function (event, arg: string | Error) {
     $("#overlay").fadeOut();
@@ -950,12 +1031,12 @@ function highlightAffectedNodes(arg: string | Error, deselectFirst: boolean) {
     const affectedNodes = explained.length || text.includes("\n\njavac output:") ? explained : [...text.matchAll(/node_([0-9]+)/g)].slice(0, 1);
 
     if (deselectFirst) {
-        for (let i = 0; i < graph._nodes.length; i++) {
-            delete graph._nodes[i].has_errors;
-        }
+        eachGraph(graph as unknown as Graph, inner => {
+            for (const node of (inner as unknown as PageGraph)._nodes) delete node.has_errors;
+        });
     }
     for (const affectedNode of affectedNodes) {
-        let n = graph.getNodeById(parseInt(affectedNode[1]));
+        let n = resolvePath(graph as unknown as Graph, pathOf(generatedPaths, parseInt(affectedNode[1])));
         if (n) {
             n.has_errors = true;
         }
@@ -970,7 +1051,7 @@ function updateTitle() {
 
 ipcRenderer.on("debugCall", function (event, arg: {node: number; type: string}) {
     console.log("debugCall", arg);
-    let node = graph.getNodeById(arg.node);
+    let node = resolvePath(graph as unknown as Graph, pathOf(generatedPaths, arg.node));
     if (node) {
         console.log(node);
         if (arg.type === "exec") {
@@ -981,9 +1062,9 @@ ipcRenderer.on("debugCall", function (event, arg: {node: number; type: string}) 
                     console.log(input);
                     if (!input) continue;
                     if (input.type === "@EXEC") {
-                        let linkInfo = input.link ? graph.links[input.link] : null;
+                        let linkInfo = input.link ? node.graph!.links[input.link] : null;
                         if (linkInfo) {
-                            let originNode = graph.getNodeById(linkInfo.origin_id);
+                            let originNode = node.graph!.getNodeById(linkInfo.origin_id);
                             if (originNode) {
                                 console.log("Trigger slot", linkInfo.origin_slot, "in node", linkInfo.origin_id, " - triggered by", node.id);
                                 originNode.triggerSlot(linkInfo.origin_slot);
@@ -1003,8 +1084,14 @@ ipcRenderer.on("debugCall", function (event, arg: {node: number; type: string}) 
     }
 });
 
-function focusNode(id: number) {
-    let node = graph.getNodeById(id);
+function focusPath(path: NodePath) {
+    closeAllSubgraphs();
+    for (let i = 0; i < path.length - 1; i++) {
+        const node = canvas.graph.getNodeById(path[i]);
+        if (!node?.subgraph) return;
+        canvas.openSubgraph(node.subgraph);
+    }
+    let node = canvas.graph.getNodeById(path[path.length - 1]);
     if (node) {
         console.log(node);
         canvas.selectNode(node);
@@ -1013,8 +1100,9 @@ function focusNode(id: number) {
 }
 
 ipcRenderer.on("highlightNode", function (event, arg: {node: number}) {
-    focusNode(arg.node);
-    if (graph.getNodeById(arg.node)) canvas.setZoom(2);
+    const path = pathOf(generatedPaths, arg.node);
+    focusPath(path);
+    if (resolvePath(graph as unknown as Graph, path)) canvas.setZoom(2);
 });
 
 // The help bar stays until the search has been used once.

@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const H = require("./support/harness");
 const ClassDataStore = require("../out/lib/classDataStore");
-const {validateGraph, classStore} = require("../out/lib/graphValidator");
+const {validateGraph, validateProject, classStore} = require("../out/lib/graphValidator");
 
 const nativeTypes = [
     "arithmetic/Add", "arithmetic/Subtract", "arithmetic/Multiply", "arithmetic/Divide", "arithmetic/Modulus",
@@ -32,6 +32,24 @@ describe("GraphValidator", function () {
     before(async function () { await H.setup(); await classStore.init(); stub("commands/Command", "name"); stub("config/ConfigValue", "key"); });
     beforeEach(async function () { graph = await H.setup(); });
 
+    it("maps an inner problem to the original node path", function () {
+        const sub = H.add(graph, "graph/Subgraph");
+        const nested = H.add(sub.subgraph, "graph/Subgraph");
+        const code = H.add(nested.subgraph, "code/JavaCode", {codeInputs: [{name: "bad name", type: "int"}]});
+        const problem = validateProject(graph, {}).find(problem => problem.message.includes("isn't a Java name"));
+        assert(problem);
+        assert.strictEqual(problem.nodeId, sub.id);
+        assert.deepStrictEqual(problem.path, [sub.id, nested.id, code.id]);
+    });
+    it("flags boundary nodes at the root and returns damaged boundary errors", function () {
+        const input = H.add(graph, "graph/SubgraphInput");
+        const problems = validateProject(graph, {});
+        assert(problems.some(problem => problem.nodeId === input.id && problem.message.includes("must be inside a subgraph")));
+        const sub = H.add(graph, "graph/Subgraph");
+        H.add(sub.subgraph, "graph/SubgraphInput");
+        sub.inputs[0].boundaryId = 999;
+        assert(validateProject(graph, {}).some(problem => problem.path[0] === sub.id && problem.message.includes("boundaryId")));
+    });
     it("shares loaded class data and metadata between instances", async function () {
         const first = new ClassDataStore();
         const second = new ClassDataStore();

@@ -14,7 +14,7 @@ interface SourceClasses {
 }
 
 export class SourceError extends Error {
-    constructor(message: string, readonly nodeId?: number) {
+    constructor(message: string, readonly nodeId?: number, readonly path?: number[]) {
         super(message);
     }
 }
@@ -204,8 +204,18 @@ export function sourceType(node: SourceNode, type: unknown): string {
     return type;
 }
 
-export const NODE_KEYS = ["id", "type", "pos", "size", "flags", "order", "mode", "inputs", "outputs", "title", "properties", "color", "bgcolor", "boxcolor", "shape", "widgets_values"];
+export const NODE_KEYS = ["id", "type", "pos", "size", "flags", "order", "mode", "inputs", "outputs", "title", "properties", "color", "bgcolor", "boxcolor", "shape", "widgets_values", "subgraph"];
+export const SUBGRAPH_KEYS = ["last_node_id", "last_link_id", "nodes", "links", "groups", "config", "extra", "version"];
 
 export function pickNodeKeys<T extends object>(node: T): T {
-    return Object.fromEntries(Object.entries(node).filter(([key]) => NODE_KEYS.includes(key))) as T;
+    const picked = Object.fromEntries(Object.entries(node).filter(([key]) => NODE_KEYS.includes(key)));
+    if (picked.subgraph && Object.getPrototypeOf(picked.subgraph) === Object.prototype) {
+        picked.subgraph = Object.fromEntries(Object.entries(picked.subgraph).filter(([key]) => SUBGRAPH_KEYS.includes(key)));
+        if (Array.isArray(picked.subgraph.nodes)) picked.subgraph.nodes = picked.subgraph.nodes.map(pickNodeKeys);
+    } else delete picked.subgraph;
+    return picked as T;
+}
+
+export function nestedNodes<T extends {subgraph?: {nodes?: T[]}}>(nodes: T[]): T[] {
+    return nodes.flatMap(node => [node, ...nestedNodes(node.subgraph?.nodes || [])]);
 }

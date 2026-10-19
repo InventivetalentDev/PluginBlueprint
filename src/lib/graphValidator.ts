@@ -1,10 +1,11 @@
 import {LiteGraph, LGraph, LGraphNode} from "../../assets/lib/litegraph/litegraph";
 import ClassDataStore = require("./classDataStore");
 import {parseTypeSwitchEnum} from "./util";
-import {graphIdProblems, propertyProblems} from "./sourceChecks";
+import {graphIdProblems, propertyProblems, SourceError} from "./sourceChecks";
+import {flattenGraph, pathOf, subgraphProblems, type NodePath} from "./subgraphs";
 import type {ProjectInfo} from "../types/project";
 
-export interface Problem { severity: "error" | "warning"; nodeId?: number; message: string; }
+export interface Problem { severity: "error" | "warning"; nodeId?: number; path?: NodePath; message: string; }
 
 type ValidationProjectInfo = Partial<Pick<ProjectInfo, "commands" | "config">>;
 type ValidationNode = LGraphNode & {
@@ -176,4 +177,20 @@ export function validateGraph(graph: LGraph | ValidationGraph, projectInfo: Vali
         }
     }
     return problems;
+}
+
+export function validateProject(root: LGraph, projectInfo: ValidationProjectInfo): Problem[] {
+    const problems = subgraphProblems(root);
+    let flat;
+    try {
+        flat = flattenGraph(root);
+    } catch (error) {
+        if (!(error instanceof SourceError)) throw error;
+        return [...problems, {severity: "error", nodeId: error.path?.[0] ?? error.nodeId, path: error.path, message: error.message}];
+    }
+    return [...problems, ...validateGraph(flat.graph, projectInfo).map(problem => {
+        if (problem.nodeId === undefined) return problem;
+        const path = pathOf(flat.paths, problem.nodeId);
+        return {...problem, nodeId: path[0], path};
+    })];
 }

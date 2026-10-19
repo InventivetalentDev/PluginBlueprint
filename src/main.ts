@@ -1152,7 +1152,7 @@ function importSnippet(file: string) {
         if (err) throw err;
         if (!win) return;
         const snippet = JSON.parse(data.toString());
-        const codeNodes = snippet.nodes.filter((node: {type: string}) => node.type === "code/JavaCode");
+        const codeNodes = require("./lib/sourceChecks").nestedNodes(snippet.nodes).filter((node: {type: string}) => node.type === "code/JavaCode");
         if (codeNodes.length) {
             const preview = codeNodes.map((node: {properties?: {code?: unknown}}) => typeof node.properties?.code === "string" ? node.properties.code.split("\n").slice(0, 10).join("\n") : "").join("\n\n");
             const {response} = await dialog.showMessageBox(win, {

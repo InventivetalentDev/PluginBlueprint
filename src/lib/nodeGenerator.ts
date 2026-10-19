@@ -51,6 +51,7 @@ import annotationNodes = require("./nodes/annotations");
 import commandNodes = require("./nodes/commands");
 import configNodes = require("./nodes/config");
 import codeNodes = require("./nodes/code");
+import subgraphNodes = require("./nodes/subgraph");
 
 const nodes: [string, NodeModule][] = [
     // category, import
@@ -66,7 +67,8 @@ const nodes: [string, NodeModule][] = [
     ["annotations", require("./nodes/annotations") as typeof annotationNodes],
     ["commands", require("./nodes/commands") as typeof commandNodes],
     ["config", require("./nodes/config") as typeof configNodes],
-    ["code", require("./nodes/code") as typeof codeNodes]
+    ["code", require("./nodes/code") as typeof codeNodes],
+    ["graph", require("./nodes/subgraph") as typeof subgraphNodes]
 ];
 
 const classStore = new ClassDataStore();

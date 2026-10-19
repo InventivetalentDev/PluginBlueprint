@@ -1,7 +1,14 @@
 const assert = require("assert");
-const {isGraphId, graphIdProblems, isJavaIdentifier, isJavaTypeName, isNumberValue, isBooleanValue, isCharValue, javaCharLiteral, numberTypes, propertyProblems, sourceProperty, sourceType, SourceError, NODE_KEYS, pickNodeKeys} = require("../out/lib/sourceChecks");
+const {isGraphId, graphIdProblems, isJavaIdentifier, isJavaTypeName, isNumberValue, isBooleanValue, isCharValue, javaCharLiteral, numberTypes, propertyProblems, sourceProperty, sourceType, SourceError, NODE_KEYS, pickNodeKeys, nestedNodes} = require("../out/lib/sourceChecks");
 
 describe("SourceChecks", function () {
+    it("finds Java code nodes in nested subgraphs", function () {
+        const code = {type: "code/JavaCode"};
+        const nested = {type: "graph/Subgraph", subgraph: {nodes: [code]}};
+        const nodes = [{type: "constants/StringConstant"}, {type: "graph/Subgraph", subgraph: {nodes: [nested]}}, {type: "graph/Subgraph"}];
+        assert.deepStrictEqual(nestedNodes(nodes).filter(node => node.type === "code/JavaCode"), [code]);
+        assert.strictEqual(nodes.length, 3);
+    });
     it("accepts only non-negative safe integers for graph ids", function () {
         for (const value of [0, 1, 42, Number.MAX_SAFE_INTEGER]) assert(isGraphId(value));
         for (const value of [-1, 1.5, "1", "1;x", NaN, Infinity, null, undefined, Number.MAX_SAFE_INTEGER + 1, {}]) assert(!isGraphId(value));
@@ -94,9 +101,9 @@ describe("SourceChecks", function () {
         assert.strictEqual(sourceType(node, "java.lang.String[]"), "java.lang.String[]");
         assert.throws(() => sourceType(node, "int x;"), error => error instanceof SourceError && error.nodeId === 42);
     });
-    it("copies only serialized node keys and keeps nested values by reference", function () {
+    it("copies only serialized node keys and keeps properties by reference", function () {
         const properties = {number: 5};
-        const node = {...Object.fromEntries(NODE_KEYS.map(key => [key, key])), properties, className: "Injected", classType: "event", nodeType: "BukkitClassNode"};
+        const node = {...Object.fromEntries(NODE_KEYS.map(key => [key, key])), properties, subgraph: {nodes: []}, className: "Injected", classType: "event", nodeType: "BukkitClassNode"};
         const picked = pickNodeKeys(node);
         assert.notStrictEqual(picked, node);
         assert.deepStrictEqual(Object.keys(picked), NODE_KEYS);
