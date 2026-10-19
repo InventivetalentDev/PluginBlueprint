@@ -48,6 +48,7 @@ import eventNodes = require("./nodes/events");
 import annotationNodes = require("./nodes/annotations");
 import commandNodes = require("./nodes/commands");
 import configNodes = require("./nodes/config");
+import codeNodes = require("./nodes/code");
 
 const nodes: [string, NodeModule][] = [
     // category, import
@@ -62,7 +63,8 @@ const nodes: [string, NodeModule][] = [
     ["events", require("./nodes/events") as typeof eventNodes],
     ["annotations", require("./nodes/annotations") as typeof annotationNodes],
     ["commands", require("./nodes/commands") as typeof commandNodes],
-    ["config", require("./nodes/config") as typeof configNodes]
+    ["config", require("./nodes/config") as typeof configNodes],
+    ["code", require("./nodes/code") as typeof codeNodes]
 ];
 
 const classStore = new ClassDataStore();
