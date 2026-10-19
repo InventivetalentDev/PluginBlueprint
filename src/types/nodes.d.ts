@@ -5,6 +5,11 @@ export interface CommandArgument {
     type: "word" | "text" | "int" | "double" | "boolean" | "player";
 }
 
+export interface CodeSlot {
+    name: string;
+    type: string;
+}
+
 export interface SlotOptions {
     locked?: boolean;
     nameLocked?: boolean;
@@ -42,6 +47,9 @@ export interface NativeNode extends LGraphNode {
         playersOnly?: boolean;
         arguments?: CommandArgument[];
         key?: string;
+        code?: string;
+        codeInputs?: CodeSlot[];
+        codeOutputs?: CodeSlot[];
     };
     getFields?(output: string[]): string[];
     getOnEnable?(input: (string | null)[], output: string[], exec: string[][]): string;

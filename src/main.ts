@@ -1148,10 +1148,24 @@ function importSnippet(file: string) {
     if (!file) {
         return;
     }
-    fs.readFile(file, function (err, data) {
+    fs.readFile(file, async function (err, data) {
         if (err) throw err;
         if (!win) return;
-        win.webContents.send("importSnippet", JSON.parse(data.toString()));
+        const snippet = JSON.parse(data.toString());
+        const codeNodes = snippet.nodes.filter((node: {type: string}) => node.type === "code/JavaCode");
+        if (codeNodes.length) {
+            const preview = codeNodes.map((node: {properties?: {code?: unknown}}) => typeof node.properties?.code === "string" ? node.properties.code.split("\n").slice(0, 10).join("\n") : "").join("\n\n");
+            const {response} = await dialog.showMessageBox(win, {
+                type: "warning",
+                buttons: ["Cancel", "Add snippet"],
+                defaultId: 0,
+                cancelId: 0,
+                message: `This snippet contains ${codeNodes.length} Java code ${codeNodes.length === 1 ? "node" : "nodes"}.`,
+                detail: "Java code nodes run whatever code they contain on your server. Only add this snippet if you trust where it came from.\n\n" + preview
+            });
+            if (response !== 1) return;
+        }
+        win.webContents.send("importSnippet", snippet);
     });
 }
 
