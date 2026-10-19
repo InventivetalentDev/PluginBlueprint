@@ -405,33 +405,19 @@ describe("Codegen", function () {
             assert(code.includes(" = true;"));
         });
     }
-    it("keeps Java code declarations and links through menus, removal and serialization", async function () {
+    it("keeps Java code declarations and links through adding, removal and serialization", async function () {
         const graph = await H.setup();
         const node = H.add(graph, "code/JavaCode");
-        const ContextMenu = H.LiteGraph().ContextMenu;
-        let types;
-        let answer;
-        const canvas = {prompt(title, value, callback) { callback(answer); }};
-        const add = (direction, name, type) => {
-            types = undefined;
-            answer = name;
-            node.getMenuOptions(canvas).find(entry => entry.content === "Add " + direction + "…").callback(null, {}, {});
-            if (types) types.find(entry => entry.content === type).callback(null, {}, {});
-        };
-        H.LiteGraph().ContextMenu = function (entries) { types = entries; };
-        try {
-            add("input", "player", "org.bukkit.entity.Player");
-            add("output", "greeting", "java.lang.String");
-            add("input", "greeting", "int");
-            add("output", "bad name", "int");
-            assert.strictEqual(node.inputs.length, 2);
-            assert.strictEqual(node.outputs.length, 2);
-            answer = "greeting = player.getName();";
-            node.getMenuOptions(canvas)[0].callback(null, {}, {});
-            assert.strictEqual(node.properties.code, answer);
-        } finally {
-            H.LiteGraph().ContextMenu = ContextMenu;
-        }
+        const add = (direction, name, type) => node.addCodeSlot(direction === "input", name, type);
+        add("input", "player", "org.bukkit.entity.Player");
+        add("output", "greeting", "java.lang.String");
+        assert.strictEqual(add("input", "greeting", "int"), -1);
+        assert.strictEqual(add("output", "bad name", "int"), -1);
+        assert.strictEqual(node.inputs.length, 2);
+        assert.strictEqual(node.outputs.length, 2);
+        const answer = "greeting = player.getName();";
+        node.getMenuOptions({prompt(title, value, callback) { callback(answer); }})[0].callback(null, {}, {});
+        assert.strictEqual(node.properties.code, answer);
         const log = H.add(graph, "native/ConsoleLog");
         H.link(node, "greeting", log, 1);
         const saved = graph.serialize();

@@ -315,15 +315,19 @@ graph.onNodeAdded = function (n) {
         n.size = n.computeSize();
     }
     trackGraphChange();
-    // hide inside the history's timeout to prevent hiding it instantly
-    if (!history.paused) {
-        $("#helpBox").hide();
-    }
+    updateEmptyHint();
 };
 graph.onNodeRemoved = function (n) {
     console.debug("[HISTORY] onNodeRemoved");
     trackGraphChange();
+    updateEmptyHint();
 };
+graph.onConfigure = function () {
+    updateEmptyHint();
+};
+function updateEmptyHint() {
+    $("#emptyHint").prop("hidden", graph._nodes.length > 0);
+}
 graph.onConnectionChange = function () {
     console.debug("[HISTORY] onConnectionChange");
     trackGraphChange();
@@ -390,6 +394,11 @@ LGraphCanvas.prototype.showSearchBox = function (event) {
         getConstructor: (owner, signature) => classStore.getConstructor(owner, signature),
         getTitle: type => (LiteGraph.registered_node_types[type] as {title?: string}).title
     });
+    $("#helpBox").hide();
+    try {
+        localStorage.setItem("searchUsed", "1");
+    } catch (e) {
+    }
     openPicker({
         x: event.clientX, y: event.clientY,
         placeholder: "Search nodes",
@@ -528,6 +537,10 @@ $("body")[0].addEventListener("keydown", function (event) {
 });
 canvas.resize();
 
+$("#searchNodes").on("click", () => {
+    const rect = canvas.canvas.getBoundingClientRect();
+    canvas.showSearchBox(new MouseEvent("dblclick", {clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2}));
+});
 $("#saveGraph").on("click", () => saveGraph());
 $("#buildReload").on("click", () => generateCodeCompilePackage("ifRunning"));
 $("#testPlugin").on("click", () => generateCodeCompilePackage("start"));
@@ -873,6 +886,7 @@ ipcRenderer.on("graphData", function (event, arg: ReturnType<Graph["serialize"]>
         arg.nodes = arg.nodes.map(pickNodeKeys);
         graph.configure(arg);
     }
+    updateEmptyHint();
     $("#overlay").fadeOut();
 
     history.unpause();
@@ -1003,7 +1017,8 @@ ipcRenderer.on("highlightNode", function (event, arg: {node: number}) {
     if (graph.getNodeById(arg.node)) canvas.setZoom(2);
 });
 
-// HelpBox timeout
-setTimeout(function () {
-    $("#helpBox").hide();
-}, 60000);
+// The help bar stays until the search has been used once.
+try {
+    if (localStorage.getItem("searchUsed")) $("#helpBox").hide();
+} catch (e) {
+}

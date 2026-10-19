@@ -122,6 +122,17 @@
                 height: 70%;
             }
 
+            #emptyHint {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #ffffffa0;
+                font-size: 20px;
+                pointer-events: none;
+                z-index: 17;
+            }
+
             #problemsPanel {
                 position: absolute;
                 bottom: 12px;
@@ -209,6 +220,7 @@
     </head>
     <body>
         <div id="toolbar" role="toolbar" aria-label="Editor actions">
+            <button id="searchNodes" type="button" title="Search nodes to add (or double-click the canvas)">Search</button>
             <button id="saveGraph" type="button">Save</button>
             <button id="buildReload" type="button">Build &amp; Reload</button>
             <button id="testPlugin" type="button">Test</button>
@@ -225,9 +237,10 @@
                 <img src="../assets/images/spinner.svg">
             </div>
         </div>
+        <div id="emptyHint" hidden>Double-click anywhere to add a node</div>
         <div id="helpBox">
             <div class="helpBox-shortcut">
-                <i class="keypics" data-type="mouse" data-color="dark" data-label="x2" data-fontFamily="RobotoMono">left</i>&nbsp;Search / Auto-Link
+                <i class="keypics" data-type="mouse" data-color="dark" data-label="x2" data-fontFamily="RobotoMono">left</i>&nbsp;Search nodes
             </div>
             <div class="helpBox-shortcut">
                 <i class="keypics" data-type="mouse" data-color="dark" data-fontFamily="RobotoMono">right</i>&nbsp;Menu

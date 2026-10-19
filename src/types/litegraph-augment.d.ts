@@ -1,5 +1,5 @@
 import "../../assets/lib/litegraph/litegraph";
-import type {INodeInputSlot, INodeOutputSlot, INodeSlot, LGraphGroup, LGraphNode, LGraphNodeConstructor, Vector2, Vector4} from "../../assets/lib/litegraph/litegraph";
+import type {INodeInputSlot, INodeOutputSlot, INodeSlot, LGraphGroup, LGraphNode, LGraphNodeConstructor, LLink, Vector2, Vector4} from "../../assets/lib/litegraph/litegraph";
 import type {SlotOptions} from "./nodes";
 import type {IconName, IconPrefix} from "@fortawesome/fontawesome-svg-core";
 
@@ -23,6 +23,8 @@ declare module "../../assets/lib/litegraph/litegraph" {
         onInputDblClick?(slot: number, event: MouseEvent): void;
         onOutputDblClick?(slot: number, event: MouseEvent): void;
         triggerSlot(slot: number, param?: unknown, link_id?: number): void;
+        connectByType(slot: number | string, target: LGraphNode, type: SlotType, options?: object): LLink | null;
+        connectByTypeOutput(slot: number | string, source: LGraphNode, type: SlotType, options?: object): LLink | null;
     }
 
     interface LGraph {
@@ -31,6 +33,7 @@ declare module "../../assets/lib/litegraph/litegraph" {
         onNodeRemoved(node: LGraphNode): void;
         onConnectionChange(): void;
         onAfterChange?(graph: LGraph, info?: LGraphNode | LGraphGroup): void;
+        onConfigure?(data: object): void;
         add(group: LGraphGroup): void;
     }
 
