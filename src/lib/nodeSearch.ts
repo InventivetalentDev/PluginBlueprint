@@ -44,6 +44,8 @@ export const aliases: Record<string, string[]> = {
     config: ["config/ConfigValue", "config/ReloadConfig"],
     variable: ["variables/Set", "variables/Get"],
     log: ["native/ConsoleLog"],
+    code: ["code/JavaCode"],
+    java: ["code/JavaCode"],
     timer: ["org.bukkit.scheduler.BukkitScheduler#runTaskTimer(org.bukkit.plugin.Plugin, java.lang.Runnable, long, long)"],
     delay: ["org.bukkit.scheduler.BukkitScheduler#runTaskLater(org.bukkit.plugin.Plugin, java.lang.Runnable, long)"]
 };
