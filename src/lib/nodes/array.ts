@@ -1,6 +1,7 @@
 import Colors = require("../colors");
-import {shapeAndColorsForSlotType} from "../util";
-import {sourceProperty} from "../sourceChecks";
+import {shapeAndColorsForSlotType, updateLinkColors} from "../util";
+import {isJavaTypeName, sourceProperty} from "../sourceChecks";
+import type {LLink} from "../../../assets/lib/litegraph/litegraph";
 import type {NativeNode, NodeModule} from "../../types/nodes";
 
 
@@ -18,6 +19,12 @@ function MakeArray(this: NativeNode) {
 }
 
 MakeArray.title = "MakeArray";
+MakeArray.prototype.onConnectionsChange = function (this: NativeNode, type: number, slot: number, connected: boolean, linkInfo: LLink | null): void {
+    updateLinkColors(type, this, slot);
+    if (type !== LiteGraph.INPUT || !connected || !linkInfo || this.properties.type !== "java.lang.Object") return;
+    const originType = this.graph?.getNodeById(linkInfo.origin_id)?.outputs[linkInfo.origin_slot]?.type;
+    if (originType !== "@EXEC" && isJavaTypeName(originType)) this.setProperty("type", originType);
+};
 MakeArray.prototype.onPropertyChanged = function (this: NativeNode, p: string, v: unknown): void {
     if (p === "type") {
         let shapeAndColor = shapeAndColorsForSlotType(this.properties.type!);
