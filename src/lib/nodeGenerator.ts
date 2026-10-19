@@ -5,6 +5,8 @@ import {LiteGraph, LGraph, LGraphCanvas, LGraphNode} from "../../assets/lib/lite
 import Colors = require("./colors");
 import ClassDataStore = require("./classDataStore");
 import {shapeAndColorsForSlotType, isPrimitiveType, updateLinkColors, scrollSpeedForLength, handleDescDrawBackground, handleDescOnBounding, isNumberType, javaType} from "./util";
+import {firstSentence} from "./nodeSearch";
+import {openPicker} from "./picker";
 
 import type {ContextMenuItem, IContextMenuItem, IContextMenuOptions, INodeSlot, LGraphNodeConstructor} from "../../assets/lib/litegraph/litegraph";
 import type {ClassData, ConstructorData, FieldData, MethodData} from "../types/classData";
@@ -433,6 +435,43 @@ function init() {
                 },
                 {
                     content: "Outputs", has_submenu: true, disabled: !this.optional_outputs || this.optional_outputs.length === 0, callback: function (v: ContextMenuItem, opts: IContextMenuOptions, e: MouseEvent, prev_menu: Menu | undefined, node: LGraphNode) {
+                        const classNode = node as LGraphNode & {classType?: string; className?: string};
+                        if (["class", "object", "event"].includes(classNode.classType || "")) {
+                            const groups = new Map<string, NonNullable<OptionalSlot>[]>();
+                            function addGroup(name: string | null | undefined) {
+                                if (!name || groups.has(name)) return;
+                                groups.set(name, []);
+                                const clazz = classStore.getClass(name);
+                                for (const parent of clazz?.interfaces || []) addGroup(parent);
+                                if (clazz?.superclass !== "java.lang.Object" && clazz?.superclass !== "java.lang.Enum") addGroup(clazz?.superclass);
+                            }
+                            addGroup(classNode.className);
+                            for (const entry of node.optional_outputs || []) {
+                                if (!entry || node.findOutputSlot(entry[0]) !== -1) continue;
+                                const slot = entry[2];
+                                if (entry[1]?.toString().includes("{") || classStore.getClass(slot?.className)?.isDeprecated ||
+                                    classStore.getMethod(slot?.className, slot?.methodSignature)?.isDeprecated) continue;
+                                const owner = slot?.className || classNode.className!;
+                                if (!groups.has(owner)) groups.set(owner, []);
+                                groups.get(owner)!.push(entry);
+                            }
+                            const entries = [...groups.values()].flat();
+                            openPicker({
+                                x: e.clientX, y: e.clientY,
+                                placeholder: "Filter outputs",
+                                items: entries.map((entry, index) => ({
+                                    value: String(index), label: entry[0],
+                                    detail: firstSentence(classStore.getMethod(entry[2]?.className, entry[2]?.methodSignature)?.comment),
+                                    group: classStore.getClass(entry[2]?.className || classNode.className)?.simpleName
+                                })),
+                                onPick: value => {
+                                    const entry = entries[Number(value)];
+                                    node.addOutput(entry[0], entry[1], entry[2]);
+                                    node.setDirtyCanvas(true, true);
+                                }
+                            });
+                            return false;
+                        }
                         return showOptionalSlotMenu(v, Object.assign({}, opts, {
                             skipDuplicates: true,
                             type: LiteGraph.OUTPUT
