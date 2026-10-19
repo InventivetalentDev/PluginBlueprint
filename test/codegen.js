@@ -84,6 +84,20 @@ cases["type-variable"] = graph => {
     H.link(get, "EXEC", valueOf, "EXEC");
     H.link(get, "RETURN", valueOf, "obj");
 };
+cases["char-constant"] = graph => {
+    const event = H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
+    const translate = H.add(graph, "org.bukkit.ChatColor#translateAlternateColorCodes(char, java.lang.String)");
+    H.link(event, "EXEC", translate, "EXEC");
+    H.link(H.add(graph, "constants/CharConstant", {char: "&"}), 0, translate, "altColorChar");
+    H.link(H.add(graph, "constants/StringConstant", {string: "&aWelcome!"}), 0, translate, "textToTranslate");
+    let previous = translate;
+    for (const char of ["'", "\\", "\n", "\u00a7", "\0"]) {
+        const valueOf = H.add(graph, "java.lang.String#valueOf(char)");
+        H.link(previous, "EXEC", valueOf, "EXEC");
+        H.link(H.add(graph, "constants/CharConstant", {char}), 0, valueOf, "c");
+        previous = valueOf;
+    }
+};
 cases["object-input"] = graph => {
     const event = H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
     const valueOf = H.add(graph, "java.lang.String#valueOf(java.lang.Object)");

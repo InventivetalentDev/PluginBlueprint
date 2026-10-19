@@ -127,10 +127,12 @@ Connect both kinds of links as shown in the examples.
 
 ### Set a constant
 
-1. Double-click a `String`, number, or `boolean` input to create a connected
-   constant node.
+1. Double-click a `String`, number, `char`, or `boolean` input to create a
+   connected constant node.
 2. Right-click the constant and open **Properties**.
 3. Set its value. For a Number constant, set the `type` as well as the `number`.
+   For a Char constant, enter one character, such as `&` for
+   `ChatColor.translateAlternateColorCodes`.
 
 String constants can contain quotes and backslashes.
 You don't need to remove those characters before compiling.

@@ -1,5 +1,5 @@
 const assert = require("assert");
-const {isGraphId, graphIdProblems, isJavaIdentifier, isJavaTypeName, isNumberValue, isBooleanValue, numberTypes, propertyProblems, sourceProperty, sourceType, SourceError, NODE_KEYS, pickNodeKeys} = require("../out/lib/sourceChecks");
+const {isGraphId, graphIdProblems, isJavaIdentifier, isJavaTypeName, isNumberValue, isBooleanValue, isCharValue, javaCharLiteral, numberTypes, propertyProblems, sourceProperty, sourceType, SourceError, NODE_KEYS, pickNodeKeys} = require("../out/lib/sourceChecks");
 
 describe("SourceChecks", function () {
     it("accepts only non-negative safe integers for graph ids", function () {
@@ -39,6 +39,13 @@ describe("SourceChecks", function () {
         }
         for (const value of ["5;", NaN, Infinity, -Infinity, "Infinity", "1e2", " 5", "+5", "", true, null, {}]) assert(!isNumberValue(value, "double"));
     });
+    it("accepts one UTF-16 code unit as a char and writes it as a Java literal", function () {
+        for (const value of ["", "ab", "\u{1F600}", 5, null]) assert(!isCharValue(value), String(value));
+        for (const [value, literal] of [["&", "'&'"], ["\u00a7", "'\u00a7'"], ["'", "'\\''"], ["\\", "'\\\\'"], ["\n", "'\\n'"], ["\r", "'\\r'"], ["\t", "'\\t'"], ["\0", "(char) 0"], ["\u007f", "(char) 127"], ["\ud83d", "(char) 55357"]]) {
+            assert(isCharValue(value));
+            assert.strictEqual(javaCharLiteral(value), literal);
+        }
+    });
     it("accepts only boolean values and legacy boolean text", function () {
         for (const value of [true, false, "true", "false"]) assert(isBooleanValue(value));
         for (const value of ["TRUE", "false;", 0, 1, null, undefined, {}]) assert(!isBooleanValue(value));
@@ -50,6 +57,7 @@ describe("SourceChecks", function () {
     for (const [type, property, valid, invalid] of [
         ["constants/NumberConstant", "type", "int", "int;"],
         ["constants/NumberConstant", "number", "5", "5;"],
+        ["constants/CharConstant", "char", "&", "&;"],
         ["constants/BooleanConstant", "value", "false", "false;"],
         ["variables/Set", "name", "café", "class"],
         ["variables/Get", "type", "string", "int x;"],

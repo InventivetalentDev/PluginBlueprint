@@ -63,6 +63,21 @@ export function isBooleanValue(value: unknown): boolean {
     return value === true || value === false || value === "true" || value === "false";
 }
 
+// A Java char is one UTF-16 code unit, so emoji and other characters outside the BMP don't fit.
+export function isCharValue(value: unknown): value is string {
+    return typeof value === "string" && value.length === 1;
+}
+
+const charEscapes: Record<string, string> = {"\b": "\\b", "\t": "\\t", "\n": "\\n", "\f": "\\f", "\r": "\\r", "'": "\\'", "\\": "\\\\"};
+
+export function javaCharLiteral(value: string): string {
+    if (charEscapes[value]) return "'" + charEscapes[value] + "'";
+    const code = value.charCodeAt(0);
+    // javac decodes \u escapes before it reads literals, so other control characters and lone surrogates use their number.
+    if (code < 0x20 || code === 0x7f || (code >= 0xd800 && code <= 0xdfff)) return "(char) " + code;
+    return "'" + value + "'";
+}
+
 function firstBadCodeSlot(slots: ({name?: unknown; type?: unknown} | null | undefined)[], node: SourceNode, property: string): {slot: typeof slots[number]; reason: "name" | "type" | "duplicate"} | undefined {
     const inputs = property === "codeOutputs" && Array.isArray(node.properties.codeInputs) ? node.properties.codeInputs : [];
     for (let index = 0; index < slots.length; index++) {
@@ -106,6 +121,10 @@ const rules: {
         node: node => node.type === "constants/NumberConstant", property: "number",
         check: (value, node) => isNumberValue(value, typeof node.properties.type === "string" ? node.properties.type : ""),
         message: title => `The number on "${title}" isn't valid for its type. Enter a finite number, and use a whole number for byte, char, short, int or long.`
+    },
+    {
+        node: node => node.type === "constants/CharConstant", property: "char", check: isCharValue,
+        message: title => `The character on "${title}" isn't valid. Enter exactly one character, such as &. Emoji don't fit in a char; use a String constant for those.`
     },
     {
         node: node => node.type === "constants/BooleanConstant", property: "value", check: isBooleanValue,

@@ -1,7 +1,7 @@
 import Colors = require("../colors");
 import {shapeAndColorsForSlotType, getNumberSuffix, handleDescDrawBackground} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
-import {sourceProperty} from "../sourceChecks";
+import {sourceProperty, isCharValue, javaCharLiteral} from "../sourceChecks";
 import type {NativeNode, NodeModule} from "../../types/nodes";
 
 // String Constant
@@ -49,6 +49,27 @@ NumberConstant.prototype.onPropertyChanged = function (this: NativeNode, k: stri
 NumberConstant.prototype.onDrawTitleBox = handleDrawTitleBox;
 NumberConstant.prototype.onConfigure = NumberConstant.prototype.onPropertyChanged;
 
+// Char Constant
+
+function CharConstant(this: NativeNode) {
+    this.classType = "native";
+    this.desc = "A constant character (char), such as & for color codes";
+    this.iconName = "font";
+    this.addOutput("", "char", {color_off: Colors.NUMBER_OFF, color_on: Colors.NUMBER_ON});
+    this.addProperty("char", "", "string");
+}
+
+CharConstant.prototype.color = Colors.NUMBER_OFF;
+CharConstant.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
+    return ["char " + output[0] + " = " + javaCharLiteral(sourceProperty(this, "char"))];
+};
+CharConstant.prototype.onPropertyChanged = function (this: NativeNode, k: string, p: unknown): void {
+    this.outputs[0].label = isCharValue(this.properties.char) ? "char " + javaCharLiteral(this.properties.char) : "char";
+    this.size = this.computeSize();
+};
+CharConstant.prototype.onDrawTitleBox = handleDrawTitleBox;
+CharConstant.prototype.onConfigure = CharConstant.prototype.onPropertyChanged;
+
 // Boolean Constant
 
 function BooleanConstant(this: NativeNode) {
@@ -87,6 +108,7 @@ Null.prototype.getFields = function (this: NativeNode, output: string[]): string
 export = [
     StringConstant,
     NumberConstant,
+    CharConstant,
     BooleanConstant,
     Null
 ] satisfies NodeModule;

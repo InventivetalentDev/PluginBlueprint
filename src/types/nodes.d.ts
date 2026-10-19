@@ -35,6 +35,7 @@ export interface NativeNode extends LGraphNode {
         type?: string;
         name?: string;
         string?: string;
+        char?: string;
         number?: number;
         value?: boolean;
         castTo?: string;
