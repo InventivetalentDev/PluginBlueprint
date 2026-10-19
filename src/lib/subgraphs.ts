@@ -238,6 +238,13 @@ export function convertToSubgraph(graph: LGraph, nodeIds: number[]): number {
     data.nodes = data.nodes.filter(node => !selected.has(node.id));
     data.nodes.splice(index, 0, sub);
     data.links = writeLinks(outerLinks);
-    graph.configure(data);
+    const owner = graph._subgraph_node;
+    if (owner) owner._syncPaused = true;
+    try {
+        graph.configure(data);
+    } finally {
+        if (owner) owner._syncPaused = false;
+    }
+    owner?.syncSlots();
     return sub.id;
 }

@@ -206,6 +206,23 @@ describe("Subgraphs", function () {
         assert.deepStrictEqual(targets(flat.graph, a), [b.id]);
         assert.deepStrictEqual(targets(flat.graph, b), [outside.id]);
     });
+    it("keeps the owner's outer EXEC link when converting inside a subgraph", function () {
+        const event = H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
+        const sub = H.add(graph, SUBGRAPH);
+        const input = pin(sub, true);
+        const a = H.add(sub.subgraph, "native/ConsoleLog");
+        const b = H.add(sub.subgraph, "native/ConsoleLog");
+        const outer = H.link(event, "EXEC", sub, 0);
+        H.link(input, 0, a, "EXEC");
+        H.link(input, 0, b, "EXEC");
+        const id = convertToSubgraph(sub.subgraph, [a.id, b.id]);
+        assert.strictEqual(sub.inputs.length, 1);
+        assert.notStrictEqual(sub.inputs[0].link, null);
+        assert.strictEqual(sub.inputs[0].link, outer.id);
+        assert.deepStrictEqual(targets(graph, event, H.outIdx(event, "EXEC")), [sub.id]);
+        const flat = flattenGraph(graph);
+        assert.deepStrictEqual(targets(flat.graph, flat.graph.getNodeById(event.id), H.outIdx(event, "EXEC")), [flatNode(flat, [sub.id, id, a.id]).id, flatNode(flat, [sub.id, id, b.id]).id]);
+    });
     it("validates and generates a converted method with an outside REF connection", async function () {
         await classStore.init();
         const command = H.add(graph, "commands/Command", {name: "hello"});
