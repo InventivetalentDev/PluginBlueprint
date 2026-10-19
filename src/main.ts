@@ -1238,13 +1238,13 @@ ipcMain.on("checkUpdate", function (event: IpcMainEvent) {
 });
 
 function checkUpdate() {
-    return fetch("https://api.github.com/repos/InventivetalentDev/PluginBlueprint/releases/latest", {
+    return fetch("https://pluginblueprint.net/api/latest", {
         headers: {"User-Agent": "PluginBlueprint/" + app.getVersion()}
     }).then(response => {
         if (response.status !== 200) return {hasUpdate: false};
-        return response.json().then((release: {tag_name: string}) => {
+        return response.json().then((latest: {version: string}) => {
             let currentVersion = app.getVersion();
-            let updateVersion = release.tag_name.replace(/^v/, "");
+            let updateVersion = latest.version;
             let currentParts = currentVersion.split(".").map(Number);
             let updateParts = updateVersion.split(".").map(Number);
             let hasUpdate = false;
