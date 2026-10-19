@@ -208,23 +208,24 @@ export function convertToSubgraph(graph: LGraph, nodeIds: number[]): number {
             const first = group[0];
             const origin = nodeById(first.oId);
             const output = origin.outputs[first.oSlot];
+            const type = typeof output.type === "string" ? output.type : "";
             const boundary = LiteGraph.createNode(input ? SUBGRAPH_INPUT : SUBGRAPH_OUTPUT)!.serialize();
             boundary.id = ++inner.last_node_id;
-            boundary.properties = {name: output.name, type: output.type};
+            boundary.properties = {name: output.name, type};
             boundary.pos = [sub.pos[0] + (input ? -220 : 320), sub.pos[1] + (input ? sub.inputs.length : sub.outputs.length) * 80];
-            const pin = {name: output.name, type: output.type, ...shapeAndColorsForSlotType(output.type, {boundaryId: boundary.id, nameLocked: true, locked: true})};
+            const pin = {name: output.name, type, ...shapeAndColorsForSlotType(type, {boundaryId: boundary.id, nameLocked: true, locked: true})};
             const ids = new Set(group.map(link => link.id));
             const replacement: LinkData = {id: input ? ++data.last_link_id : ++inner.last_link_id, oId: origin.id, oSlot: first.oSlot,
-                tId: input ? sub.id : boundary.id, tSlot: input ? sub.inputs.length : 0, type: String(output.type)};
+                tId: input ? sub.id : boundary.id, tSlot: input ? sub.inputs.length : 0, type};
             output.links = output.links!.flatMap(id => id === first.id ? [replacement.id] : ids.has(id) ? [] : [id]);
             if (input) {
                 sub.inputs.push({...pin, link: replacement.id});
-                boundary.outputs[0] = {...boundary.outputs[0], name: output.name, type: output.type, links: group.map(link => link.id)};
+                boundary.outputs[0] = {...boundary.outputs[0], name: output.name, type, links: group.map(link => link.id)};
                 for (const link of group) Object.assign(link, {oId: boundary.id, oSlot: 0});
                 internal.push(...group);
                 outerLinks.push(replacement);
             } else {
-                boundary.inputs[0] = {...boundary.inputs[0], name: output.name, type: output.type, link: replacement.id};
+                boundary.inputs[0] = {...boundary.inputs[0], name: output.name, type, link: replacement.id};
                 const slot = sub.outputs.length;
                 sub.outputs.push({...pin, links: group.map(link => link.id)});
                 for (const link of group) Object.assign(link, {oId: sub.id, oSlot: slot});

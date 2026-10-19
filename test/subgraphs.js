@@ -206,6 +206,28 @@ describe("Subgraphs", function () {
         assert.deepStrictEqual(targets(flat.graph, a), [b.id]);
         assert.deepStrictEqual(targets(flat.graph, b), [outside.id]);
     });
+    it("converts a wildcard output without introducing validation errors", async function () {
+        await classStore.init();
+        const text = H.add(graph, "constants/StringConstant");
+        const cast = H.add(graph, "native/Cast");
+        const log = H.add(graph, "native/ConsoleLog");
+        H.link(text, 0, cast, 1);
+        H.link(cast, 1, log, 1);
+        assert.deepStrictEqual(validateProject(graph, {}).filter(problem => problem.severity === "error"), []);
+        const id = convertToSubgraph(graph, [cast.id, text.id]);
+        const sub = graph.getNodeById(id);
+        const output = sub.subgraph.getNodeById(sub.outputs[0].boundaryId);
+        assert.deepStrictEqual(validateProject(graph, {}).filter(problem => problem.severity === "error"), []);
+        assert.strictEqual(sub.outputs[0].type, "");
+        assert.strictEqual(output.properties.type, "");
+        assert.strictEqual(output.inputs[0].type, "");
+        const flat = flattenGraph(graph);
+        const link = flat.graph.links[flat.graph.getNodeById(log.id).inputs[1].link];
+        assert.strictEqual(link.origin_id, flatNode(flat, [id, cast.id]).id);
+        assert.strictEqual(link.origin_slot, 1);
+        assert.strictEqual(link.target_id, log.id);
+        assert.strictEqual(link.target_slot, 1);
+    });
     it("keeps the owner's outer EXEC link when converting inside a subgraph", function () {
         const event = H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
         const sub = H.add(graph, SUBGRAPH);
@@ -277,6 +299,19 @@ describe("Subgraphs", function () {
         sub.subgraph.remove(output);
         assert.strictEqual(sub.outputs.length, 0);
         assert.strictEqual(log.inputs[1].link, null);
+    });
+    it("disconnects only the incompatible input when retyping an output pin", function () {
+        const sub = H.add(graph, SUBGRAPH);
+        const output = pin(sub, false, "java.lang.String");
+        const format = H.add(graph, "native/StringFormat");
+        const variable = H.addOptIn(format, "Variable");
+        const wildcard = H.link(sub, 0, format, variable);
+        H.link(sub, 0, format, "Format");
+        output.setProperty("type", "int");
+        assert.strictEqual(format.inputs[H.inIdx(format, "Format")].link, null);
+        assert.strictEqual(format.inputs[variable].link, wildcard.id);
+        assert.strictEqual(graph.links[wildcard.id], wildcard);
+        assert.deepStrictEqual(sub.outputs[0].links, [wildcard.id]);
     });
     it("adopts connected slot types unchanged at both ends of the boundary", function () {
         const sub = H.add(graph, SUBGRAPH);

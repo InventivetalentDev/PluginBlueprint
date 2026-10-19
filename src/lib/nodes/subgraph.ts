@@ -85,7 +85,7 @@ Subgraph.prototype.syncSlots = function (this: SubgraphNode, excludeId?: number)
                     for (const id of [...(this.outputs[index].links || [])]) {
                         const link = this.graph?.links[id];
                         const otherType = link && this.graph?.getNodeById(link.target_id)?.inputs[link.target_slot]?.type;
-                        if (link && !validConnection(type, otherType!)) this.disconnectOutput(index, this.graph!.getNodeById(link.target_id));
+                        if (link && !validConnection(type, otherType!)) this.graph!.getNodeById(link.target_id)!.disconnectInput(link.target_slot);
                     }
                 }
             }
