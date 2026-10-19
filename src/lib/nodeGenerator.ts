@@ -1130,6 +1130,8 @@ function handleSlotDoubleClick(node: BukkitNode, type: "in" | "out", i: number, 
             nodeName = "constants/BooleanConstant";
         } else if (slot.type === "string" || slot.type === "java.lang.String") {
             nodeName = "constants/StringConstant";
+        } else if (slot.type === "char") {
+            nodeName = "constants/CharConstant";
         } else if (isNumberType(slot.type)) {
             nodeName = "constants/NumberConstant";
         }
