@@ -67,8 +67,32 @@ const rules: {
     node: (node: SourceNode) => boolean;
     property: string;
     check: (value: unknown, node: SourceNode, classes?: SourceClasses) => boolean;
-    message: (title: string, value: unknown) => string;
+    message: (title: string, value: unknown, node: SourceNode) => string;
 }[] = [
+    ...["codeInputs", "codeOutputs"].map(property => ({
+        node: (node: SourceNode) => node.type === "code/JavaCode", property,
+        check: (value: unknown, node: SourceNode) => {
+            if (!Array.isArray(value)) return false;
+            const inputs = property === "codeOutputs" && Array.isArray(node.properties.codeInputs) ? node.properties.codeInputs : [];
+            return value.every((slot, index) => slot && isJavaIdentifier(slot.name) && isJavaTypeName(slot.type) &&
+                !value.slice(0, index).some(previous => previous?.name === slot.name) && !inputs.some(input => input?.name === slot.name));
+        },
+        message: (title: string, value: unknown, node: SourceNode) => {
+            const direction = property === "codeInputs" ? "Input" : "Output";
+            if (!Array.isArray(value)) return `The ${direction.toLowerCase()} declarations on "${title}" must be a list of names and Java types.`;
+            const inputs = property === "codeOutputs" && Array.isArray(node.properties.codeInputs) ? node.properties.codeInputs : [];
+            const slot = value.find((slot, index) => !slot || !isJavaIdentifier(slot.name) || !isJavaTypeName(slot.type) ||
+                value.slice(0, index).some(previous => previous?.name === slot.name) || inputs.some(input => input?.name === slot.name));
+            const label = `${direction} "${typeof slot?.name === "string" ? slot.name : ""}" on "${title}"`;
+            if (!isJavaIdentifier(slot?.name)) return `${label} isn't a Java name. Use letters and numbers without spaces.`;
+            if (!isJavaTypeName(slot.type)) return `${label} has an invalid Java type. Use a type such as int or java.lang.String.`;
+            return `${label} uses a name that's already declared. Give each input and output a different name.`;
+        }
+    })),
+    {
+        node: node => node.type === "code/JavaCode", property: "code", check: value => typeof value === "string",
+        message: title => `The code on "${title}" must be text.`
+    },
     {
         node: node => node.type === "constants/NumberConstant", property: "type",
         check: value => typeof value === "string" && numberTypes.includes(value),
@@ -140,14 +164,14 @@ const rules: {
 
 export function propertyProblems(node: SourceNode, classes?: SourceClasses): {property: string; message: string}[] {
     return rules.filter(rule => rule.node(node) && !rule.check(node.properties[rule.property], node, classes))
-        .map(rule => ({property: rule.property, message: rule.message(node.title, node.properties[rule.property])}));
+        .map(rule => ({property: rule.property, message: rule.message(node.title, node.properties[rule.property], node)}));
 }
 
 export function sourceProperty(node: SourceNode, property: string, classes?: SourceClasses): string {
     const rule = rules.find(rule => rule.property === property && rule.node(node));
     const value = node.properties[property];
     if (!rule || !rule.check(value, node, classes)) {
-        throw new SourceError(rule ? rule.message(node.title, value) : `The "${property}" value on "${node.title}" has no source rule.`, node.id);
+        throw new SourceError(rule ? rule.message(node.title, value, node) : `The "${property}" value on "${node.title}" has no source rule.`, node.id);
     }
     return String(value);
 }

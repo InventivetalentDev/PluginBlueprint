@@ -237,6 +237,24 @@ describe("GraphValidator", function () {
             assert.strictEqual(problems[0].nodeId, node.id);
         });
     }
+    for (const [property, value, message] of [
+        ["codeInputs", [{name: "my name", type: "int"}], /Input "my name".*isn't a Java name/],
+        ["codeOutputs", [{name: "player", type: "java.lang.String"}], /Output "player".*already declared/],
+        ["codeInputs", [{name: "player", type: "int x; static {}"}], /Input "player".*invalid Java type/],
+        ["codeInputs", null, /input declarations.*must be a list/],
+        ["codeOutputs", [null], /Output "".*isn't a Java name/],
+        ["code", 42, /code.*must be text/]
+    ]) {
+        it("reports an invalid Java code " + property + ": " + JSON.stringify(value), function () {
+            const node = H.add(graph, "code/JavaCode", {codeInputs: [{name: "player", type: "org.bukkit.entity.Player"}]});
+            execute(graph, node);
+            node.properties[property] = value;
+            const problems = validateGraph(graph, {}).filter(problem => problem.severity === "error");
+            assert.strictEqual(problems.length, 1);
+            assert.strictEqual(problems[0].nodeId, node.id);
+            assert.match(problems[0].message, message);
+        });
+    }
     it("rejects duplicate Command names and warns about the project command list", function () {
         const first = H.add(graph, "commands/Command", {name: "heal"});
         const second = H.add(graph, "commands/Command", {name: "heal"});
