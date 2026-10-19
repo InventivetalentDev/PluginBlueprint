@@ -212,6 +212,20 @@ describe("GraphValidator", function () {
         first.properties.name = "$café_2";
         assert.deepStrictEqual(validateGraph(graph, {}), []);
     });
+    for (const [type, property, value] of [
+        ["native/Cast", "castTo", "java.lang.Object;"],
+        ["constants/NumberConstant", "number", "0; static {}"],
+        ["org.bukkit.Material", "en", "STONE;"]
+    ]) {
+        it("reports one property error on " + type, function () {
+            const node = H.add(graph, type);
+            if (node.inputs?.some(input => input.type === "@EXEC")) execute(graph, node);
+            node.properties[property] = value;
+            const problems = validateGraph(graph, {}).filter(problem => problem.severity === "error");
+            assert.strictEqual(problems.length, 1);
+            assert.strictEqual(problems[0].nodeId, node.id);
+        });
+    }
     it("rejects duplicate Command names and warns about the project command list", function () {
         const first = H.add(graph, "commands/Command", {name: "heal"});
         const second = H.add(graph, "commands/Command", {name: "heal"});

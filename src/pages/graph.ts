@@ -19,6 +19,7 @@ import $ = require("jquery");
 const KeyPics = require("key.pics") as typeof import("key.pics");
 import {updateLinkColors} from "../lib/util";
 import {validateGraph, classStore} from "../lib/graphValidator";
+import {pickNodeKeys, SourceError} from "../lib/sourceChecks";
 import type {Problem} from "../lib/graphValidator";
 import type {LiteGraphExtras} from "../types/litegraph-augment";
 import type {ProjectInfo, Snippet} from "../types/project";
@@ -430,7 +431,7 @@ function checkBeforeBuild() {
 
 function codeGenerationFailed(error: unknown) {
     $("#overlay").stop(true, true).hide();
-    showProblems([{severity: "error", message: "Code generation failed: " + (error instanceof Error ? error.message : String(error))}]);
+    showProblems([{severity: "error", nodeId: error instanceof SourceError ? error.nodeId : undefined, message: "Code generation failed: " + (error instanceof Error ? error.message : String(error))}]);
 }
 
 document.querySelector("#closeProblems")!.addEventListener("click", () => {
@@ -761,7 +762,7 @@ function configureSnippet(data: Snippet) {
 
         let node = graph.getNodeById(n.id);
         if (node) {
-            node.configure(n);
+            node.configure(pickNodeKeys(n));
             canvas.selectNode(node, true);
         }
     }
@@ -816,6 +817,7 @@ ipcRenderer.on("graphData", function (event, arg: ReturnType<Graph["serialize"]>
         console.warn("Empty graph data");
     }
     if (graph && arg && arg.nodes) {
+        arg.nodes = arg.nodes.map(pickNodeKeys);
         graph.configure(arg);
     }
     $("#overlay").fadeOut();

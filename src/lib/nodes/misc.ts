@@ -1,6 +1,7 @@
 import Colors = require("../colors");
 import {shapeAndColorsForSlotType, isPrimitiveType, handleDescDrawBackground} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
+import {sourceProperty} from "../sourceChecks";
 import type {NativeNode, NodeModule} from "../../types/nodes";
 import type {ContextMenuItem} from "../../../assets/lib/litegraph/litegraph";
 
@@ -23,10 +24,10 @@ Cast.prototype.onDrawBackground = function (this: NativeNode, ctx: CanvasRenderi
     handleDescDrawBackground.call(this, ctx);
 };
 Cast.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
-    return [this.properties.castTo + " " + output[1]];
+    return [sourceProperty(this, "castTo") + " " + output[1]];
 };
 Cast.prototype.getMethodBody = function (this: NativeNode, input: (string | null)[], output: string[]): string {
-    return output[1] + " = (" + this.properties.castTo + ") " + input[1] + ";";
+    return output[1] + " = (" + sourceProperty(this, "castTo") + ") " + input[1] + ";";
 };
 Cast.prototype.getExecAfter = function (this: NativeNode, exec: string[][]): string {
     return exec[0].join("\n");
@@ -57,7 +58,7 @@ InstanceOf.prototype.getFields = function (this: NativeNode, output: string[]): 
     return ["boolean " + output[1]];
 };
 InstanceOf.prototype.getMethodBody = function (this: NativeNode, input: (string | null)[], output: string[]): string {
-    return output[1] + " = " + input[1] + " instanceof " + this.properties.type + ";";
+    return output[1] + " = " + input[1] + " instanceof " + sourceProperty(this, "type") + ";";
 };
 InstanceOf.prototype.getExecAfter = function (this: NativeNode, exec: string[][]): string {
     return exec[0].join("\n");

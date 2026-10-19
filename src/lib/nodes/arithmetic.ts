@@ -1,6 +1,7 @@
 import Colors = require("../colors");
 import {shapeAndColorsForSlotType, isPrimitiveType, handleDescDrawBackground} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
+import {sourceProperty} from "../sourceChecks";
 import type {NativeNode, NodeModule, NodeFunction} from "../../types/nodes";
 
 const ArithmeticOperator: NodeFunction = function (this: NativeNode) {
@@ -36,7 +37,7 @@ ArithmeticOperator.prototype.onDrawBackground = function (this: NativeNode, ctx:
 };
 
 ArithmeticOperator.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
-    return [this.properties.type + " " + output[1]];
+    return [sourceProperty(this, "type") + " " + output[1]];
 };
 ArithmeticOperator.prototype.getMethodBody = function (this: NativeNode, input: (string | null)[], output: string[]): string {
     return output[1] + " = " + input[1] + this.operation + input[2] + ";";

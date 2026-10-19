@@ -1,6 +1,7 @@
 import {LiteGraph, LGraph, LGraphNode} from "../../assets/lib/litegraph/litegraph";
 import ClassDataStore = require("./classDataStore");
 import {parseTypeSwitchEnum} from "./util";
+import {propertyProblems} from "./sourceChecks";
 import type {ProjectInfo} from "../types/project";
 
 export interface Problem { severity: "error" | "warning"; nodeId?: number; message: string; }
@@ -15,7 +16,6 @@ type ValidationNode = LGraphNode & {
 interface ValidationGraph extends Pick<LGraph, "links" | "getNodeById"> { _nodes: ValidationNode[]; }
 export const classStore = new ClassDataStore();
 const primitives = new Set(["boolean", "byte", "char", "short", "int", "long", "float", "double"]);
-const keywords = new Set(("abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try void volatile while true false null _").split(" "));
 
 function needsNativeInput(graph: Pick<LGraph, "links" | "getNodeById">, node: ValidationNode, index: number): boolean {
     if (/^(arithmetic|relational|logic)\//.test(node.type || "")) return true;
@@ -66,6 +66,8 @@ export function validateGraph(graph: LGraph | ValidationGraph, projectInfo: Vali
             add("error", node, `PluginBlueprint doesn't know the node type "${node.type}" on "${node.title}". It may come from a newer version. Delete the node.`);
             continue;
         }
+
+        for (const problem of propertyProblems(node, classStore)) add("error", node, problem.message);
 
         if (node.classType === "native") {
             for (const output of node.outputs || []) {
@@ -127,9 +129,6 @@ export function validateGraph(graph: LGraph | ValidationGraph, projectInfo: Vali
         if (node.type === "variables/Set" || node.type === "variables/Get") {
             const name = String(node.properties.name ?? "");
             const type = parseTypeSwitchEnum(node.properties.type);
-            if (!/^[\p{L}\p{Nl}\p{Sc}\p{Pc}][\p{L}\p{Nl}\p{Sc}\p{Pc}\p{Nd}\p{Mc}\p{Mn}\p{Cf}]*$/u.test(name) || keywords.has(name)) {
-                add("error", node, `The variable name "${name}" on "${node.title}" isn't a Java identifier. Use a name such as count, without spaces or Java keywords.`);
-            }
             const previous = variables.get(name);
             if (previous && previous.type !== type) {
                 const message = `The variable "${name}" on "${previous.node.title}" and "${node.title}" is used as ${previous.type} and as ${type}. Use one type, or rename one of them.`;

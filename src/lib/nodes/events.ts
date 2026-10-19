@@ -1,5 +1,6 @@
 import {shapeAndColorsForSlotType} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
+import {sourceProperty} from "../sourceChecks";
 import type {NativeNode, NodeModule} from "../../types/nodes";
 
 function CancelEvent(this: NativeNode) {
@@ -13,7 +14,7 @@ function CancelEvent(this: NativeNode) {
 
 CancelEvent.title = "Cancel event";
 CancelEvent.prototype.getMethodBody = function (this: NativeNode, input: (string | null)[]): string {
-    return input[1] ? input[1] + ".setCancelled(" + this.properties.cancel + ");" : "";
+    return input[1] ? input[1] + ".setCancelled(" + sourceProperty(this, "cancel") + ");" : "";
 };
 CancelEvent.prototype.getExecAfter = function (this: NativeNode, exec: string[][]): string {
     return exec[0].join("\n");

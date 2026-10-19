@@ -16,6 +16,7 @@ const lg = require(path.join(REPO, "assets/lib/litegraph/litegraph"));
 global.LiteGraph = lg.LiteGraph; global.LGraph = lg.LGraph; global.LGraphCanvas = lg.LGraphCanvas; global.LGraphNode = lg.LGraphNode;
 const NodeGenerator = require(path.join(REPO, "out/lib/nodeGenerator"));
 const CodeGenerator = require(path.join(REPO, "out/lib/codeGenerator"));
+const {pickNodeKeys} = require(path.join(REPO, "out/lib/sourceChecks"));
 
 async function setup() {
     if (!global.__pbInit) { global.__pbInit = true; await NodeGenerator.init(); }
@@ -89,7 +90,7 @@ function loadSnippet(graph, snippet) {
             }
         }
         const node = graph.getNodeById(n.id);
-        if (node) node.configure(n);
+        if (node) node.configure(pickNodeKeys(n));
     }
     for (const g of data.groups) {
         const group = new LiteGraph.LGraphGroup();
