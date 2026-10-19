@@ -449,7 +449,7 @@ function init() {
                             for (const entry of node.optional_outputs || []) {
                                 if (!entry || node.findOutputSlot(entry[0]) !== -1) continue;
                                 const slot = entry[2];
-                                if (entry[1]?.toString().includes("{") || classStore.getClass(slot?.className)?.isDeprecated ||
+                                if (classStore.getClass(slot?.className)?.isDeprecated ||
                                     classStore.getMethod(slot?.className, slot?.methodSignature)?.isDeprecated) continue;
                                 const owner = slot?.className || classNode.className!;
                                 if (!groups.has(owner)) groups.set(owner, []);

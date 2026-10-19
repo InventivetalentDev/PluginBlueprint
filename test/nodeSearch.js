@@ -1,5 +1,6 @@
 const assert = require("assert");
 const {performance} = require("perf_hooks");
+const H = require("./support/harness");
 const ClassDataStore = require("../out/lib/classDataStore");
 const {aliases, buildSearchEntries, firstSentence, searchNodes} = require("../out/lib/nodeSearch");
 
@@ -11,27 +12,15 @@ describe("Node search", function () {
         getClass: name => store.getClass(name),
         getMethod: (owner, signature) => store.getMethod(owner, signature),
         getConstructor: (owner, signature) => store.getConstructor(owner, signature),
-        getTitle: type => type === "native/ConsoleLog" ? "ConsoleLog" : undefined
+        getTitle: type => H.LiteGraph().registered_node_types[type]?.title
     };
 
     before(async function () {
         this.timeout(30000);
+        await H.setup();
         await store.init();
-        types = ["native/ConsoleLog"];
-        for (const clazz of Object.values(store.getClassesByName())) {
-            types.push(clazz.qualifiedName);
-            for (const method of Object.values(clazz.methodsBySignature)) {
-                types.push(clazz.qualifiedName + "#" + method.fullSignature);
-                types.push(clazz.qualifiedName + "{" + method.fullSignature + "}");
-            }
-            for (const constructor of Object.values(clazz.constructorsBySignature)) {
-                types.push(clazz.qualifiedName + "#" + constructor.fullSignature);
-            }
-            for (const field of Object.values(clazz.fieldsByName)) {
-                if (field.isStatic && !field.isDeprecated) types.push(clazz.qualifiedName + "#static:" + field.type.qualifiedName);
-            }
-        }
-        entries = buildSearchEntries([...new Set(types)], lookup);
+        types = Object.keys(H.LiteGraph().registered_node_types);
+        entries = buildSearchEntries(types, lookup);
     });
 
     for (const query of ["PlayerJoinEvent", "playerjoinevent", "welcome"]) {
@@ -61,15 +50,29 @@ describe("Node search", function () {
         }
     });
 
-    it("resolves every alias to a searchable class, method or constructor", function () {
+    it("resolves every alias to a searchable native node, class, method or constructor", function () {
         for (const [keyword, targets] of Object.entries(aliases)) {
             for (const target of targets) {
-                const [owner, signature] = target.split("#");
-                assert(signature ? store.getMethod(owner, signature) || store.getConstructor(owner, signature) : store.getClass(owner), target);
+                if (target.includes("/")) {
+                    assert(H.LiteGraph().registered_node_types[target], target);
+                } else {
+                    const [owner, signature] = target.split("#");
+                    assert(signature ? store.getMethod(owner, signature) || store.getConstructor(owner, signature) : store.getClass(owner), target);
+                }
                 assert(entries.some(entry => entry.type === target), target);
                 assert(searchNodes(entries, keyword).some(entry => entry.type === target), keyword + ": " + target);
             }
         }
+    });
+
+    it("labels constants while keeping exact Sound class matches first", function () {
+        const results = searchNodes(entries, "Sound");
+        assert.equal(results[0].kind, "class");
+        assert(results.findIndex(entry => entry.type === "org.bukkit.Sound") <
+            results.findIndex(entry => entry.type === "org.bukkit.Sound#static:org.bukkit.Sound"));
+        const constant = results.find(entry => entry.type === "org.bukkit.Sound#static:org.bukkit.Sound");
+        assert.equal(constant.name, "Sound (constant)");
+        assert.equal(constant.lowerName, "sound");
     });
 
     it("requires every query word and limits results to 50", function () {

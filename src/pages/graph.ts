@@ -399,8 +399,8 @@ LGraphCanvas.prototype.showSearchBox = function (event) {
         onPick: type => {
             const node = LiteGraph.createNode(type);
             if (!node) return;
-            canvas.graph.add(node);
             node.pos = canvas.convertEventToCanvasOffset(event);
+            canvas.graph.add(node);
             canvas.setDirty(true, true);
         }
     });

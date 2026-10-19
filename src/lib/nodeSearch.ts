@@ -37,13 +37,13 @@ export const aliases: Record<string, string[]> = {
     item: ["org.bukkit.inventory.ItemStack", "org.bukkit.inventory.ItemStack#ItemStack(org.bukkit.Material, int)"],
     spawn: ["org.bukkit.RegionAccessor#spawnEntity(org.bukkit.Location, org.bukkit.entity.EntityType)"],
     teleport: ["org.bukkit.entity.Entity#teleport(org.bukkit.Location)"],
-    message: ["net.kyori.adventure.audience.Audience#sendMessage(net.kyori.adventure.text.Component)"],
-    send: ["net.kyori.adventure.audience.Audience#sendMessage(net.kyori.adventure.text.Component)"],
-    broadcast: ["org.bukkit.Server#broadcast(net.kyori.adventure.text.Component)"],
-    command: ["org.bukkit.command.Command"],
-    config: ["org.bukkit.configuration.file.FileConfiguration"],
-    variable: ["java.util.concurrent.atomic.AtomicReference"],
-    log: ["java.io.PrintStream#println(java.lang.String)"],
+    message: ["org.bukkit.command.CommandSender#sendRichMessage(java.lang.String)", "org.bukkit.command.CommandSender#sendMessage(java.lang.String)"],
+    send: ["org.bukkit.command.CommandSender#sendRichMessage(java.lang.String)", "org.bukkit.command.CommandSender#sendMessage(java.lang.String)"],
+    broadcast: ["org.bukkit.Bukkit#broadcast(net.kyori.adventure.text.Component)"],
+    command: ["commands/Command"],
+    config: ["config/ConfigValue", "config/ReloadConfig"],
+    variable: ["variables/Set", "variables/Get"],
+    log: ["native/ConsoleLog"],
     timer: ["org.bukkit.scheduler.BukkitScheduler#runTaskTimer(org.bukkit.plugin.Plugin, java.lang.Runnable, long, long)"],
     delay: ["org.bukkit.scheduler.BukkitScheduler#runTaskLater(org.bukkit.plugin.Plugin, java.lang.Runnable, long)"]
 };
@@ -107,7 +107,7 @@ export function buildSearchEntries(types: string[], lookup: SearchLookup): Searc
             }
         }
         entries.push({
-            type, name, owner, packageName, description, kind,
+            type, name: name + (kind === "constant" ? " (constant)" : ""), owner, packageName, description, kind,
             lowerName: name.toLowerCase(),
             lowerType: type.toLowerCase(),
             lowerDescription: description.toLowerCase(),
