@@ -3,6 +3,7 @@ import {LiteGraph} from "../../assets/lib/litegraph/litegraph";
 import Colors = require("./colors");
 import ClassDataStore = require("./classDataStore");
 import {getNullForType, javaType} from "./util";
+import {graphIdProblems, isJavaIdentifier, sourceProperty, sourceType, SourceError} from "./sourceChecks";
 import type {INodeInputSlot, LGraph, LGraphNode, LLink} from "../../assets/lib/litegraph/litegraph";
 import type {ClassData, ConstructorData, MethodData} from "../types/classData";
 import type {NativeNode} from "../types/nodes";
@@ -47,6 +48,11 @@ const onTabCompleteMethods: string[] = [];
 
 function generateClassCode(graph: CodegenGraph, projectInfo: Pick<ProjectInfo, "package" | "config">) {
     return new Promise<string>((resolve, reject) => {
+        if (typeof projectInfo.package !== "string" || !projectInfo.package.split(".").every(isJavaIdentifier)) {
+            throw new SourceError("The package name in Project Information isn't a valid Java package. Use something like me.yourname.myplugin.");
+        }
+        const problem = graphIdProblems(graph)[0];
+        if (problem) throw new SourceError(problem.message, problem.nodeId);
         for (const state of [classesByName, fields, eventListenerMethods, objectMethods, enumMethods, generatedMethods, constructorCalls, methodCalls, nativeCalls, javaPluginMethods, onLoadMethods, onEnableMethods, onDisableMethods, onCommandMethods, onTabCompleteMethods]) {
             state.length = 0;
         }
@@ -58,7 +64,7 @@ function generateClassCode(graph: CodegenGraph, projectInfo: Pick<ProjectInfo, "
                     if (graph._nodes[i].type === "annotations/Note") continue;
                     if (graph._nodes[i].nodeType === "BukkitStaticFieldNode") {
                         const node = graph._nodes[i];
-                        const field = classStore.getField(node.className, node.properties.field)!;
+                        const field = classStore.getField(node.className, sourceProperty(node, "field", classStore))!;
                         fields.push("private " + javaType(field.type) + nodeOutput(node.id, 0) + " = " + node.className + "." + field.name + ";");
                     } else if (graph._nodes[i].nodeType === "BukkitClassNode") {
                         let classData = classStore.getClass(graph._nodes[i].className)!;
@@ -182,10 +188,11 @@ function generateClassCode(graph: CodegenGraph, projectInfo: Pick<ProjectInfo, "
 
 function generateCodeForEventClassNode(graph: CodegenGraph, n: number, node: CodegenNode, classData: ClassData) {
     const options = [];
-    if (node.properties.priority && node.properties.priority !== "NORMAL") {
-        options.push("priority = org.bukkit.event.EventPriority." + node.properties.priority);
+    if (Object.hasOwn(node.properties, "priority")) {
+        const priority = sourceProperty(node, "priority");
+        if (priority !== "NORMAL") options.push("priority = org.bukkit.event.EventPriority." + priority);
     }
-    if (node.properties.ignoreCancelled === true) options.push("ignoreCancelled = true");
+    if (Object.hasOwn(node.properties, "ignoreCancelled") && sourceProperty(node, "ignoreCancelled") === "true") options.push("ignoreCancelled = true");
     let code = "" +
         "@org.bukkit.event.EventHandler" + (options.length ? "(" + options.join(", ") + ")" : "") + "\n" +
         "public void on" + node.id + "(" + node.type + " event) {\n" + debugCall(node.id);
@@ -228,7 +235,7 @@ function generateCodeForEventClassNode(graph: CodegenGraph, n: number, node: Cod
                         } else if (output.linkType === "getter") {
                             code += nodeOutput(node.id, o) + " = event." + methodData.name + "();\n";
                         } else {
-                            code += "  " + output.type + " output_" + o + "_" + l + " = event." + methodData.name + "();\n";
+                            code += "  " + sourceType(node, output.type) + " output_" + o + "_" + l + " = event." + methodData.name + "();\n";
                         }
                     }
 
@@ -315,7 +322,7 @@ function generateCodeForObjectClassNode(graph: CodegenGraph, n: number, node: Co
                 }
             } else {
                 if (output.linkType !== "abstractMethod") {
-                    let type = output.linkType === "this" ? output.type : javaType(classStore.getMethod(output.className, output.methodSignature)!.returnType);
+                    let type = output.linkType === "this" ? sourceType(node, output.type) : javaType(classStore.getMethod(output.className, output.methodSignature)!.returnType);
                     fields.push("private " + type + nodeOutput(node.id, o) + ";");
                 }
 
@@ -424,12 +431,12 @@ function generateCodeForEnumClassNode(graph: CodegenGraph, n: number, node: Code
         if (output.links.length > 0) {
             if (output.linkType === "method" || output.linkType === "staticMethod") continue;
 
-            let value = classData.qualifiedName + "." + node.properties.en;
+            let value = classData.qualifiedName + "." + sourceProperty(node, "en", classStore);
             if (output.linkType === "getter") {
                 let methodData = classStore.getMethod(output.className, output.methodSignature)!;
                 fields.push("private " + javaType(methodData.returnType) + nodeOutput(node.id, o) + " = " + value + "." + methodData.name + "();");
             } else {
-                fields.push("private " + output.type + nodeOutput(node.id, o) + " = " + value + ";");
+                fields.push("private " + sourceType(node, output.type) + nodeOutput(node.id, o) + " = " + value + ";");
             }
         }
     }
@@ -486,7 +493,7 @@ function generateCodeForMethodNode(graph: CodegenGraph, n: number, node: Codegen
                 if (methodData.isStatic) {
                     code += " " + classData.qualifiedName + "." + methodData.name.split("(")[0] + "(";
                 } else if (sourceNode!.classType === "enum") {
-                    code += " " + sourceNode!.className + "." + sourceNode!.properties.en + "." + methodData.name.split("(")[0] + "(";
+                    code += " " + sourceNode!.className + "." + sourceProperty(sourceNode!, "en", classStore) + "." + methodData.name.split("(")[0] + "(";
                 } else if (!node.isAbstractMethod) {
                     code += nodeV(linkInfo!.origin_id) + "." + methodData.name.split("(")[0] + "(";
                 }

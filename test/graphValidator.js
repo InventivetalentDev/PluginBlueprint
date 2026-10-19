@@ -59,6 +59,17 @@ describe("GraphValidator", function () {
         H.link(first, 0, second, "EXEC");
         assert.deepStrictEqual(validateGraph(graph, {}), []);
     });
+    it("reports a crafted link field as a damaged connection on its target node", function () {
+        const value = H.add(graph, "constants/StringConstant");
+        const log = H.add(graph, "native/ConsoleLog");
+        execute(graph, log);
+        const link = H.link(value, 0, log, 1);
+        link.origin_slot = "0; injected()";
+        const problems = validateGraph(graph, {}).filter(problem => /file is damaged/.test(problem.message));
+        assert.strictEqual(problems.length, 1);
+        assert.strictEqual(problems[0].severity, "error");
+        assert.strictEqual(problems[0].nodeId, log.id);
+    });
     for (const defect of ["origin", "target", "origin slot", "target slot", "output backlink", "input backlink"]) {
         it("rejects a dangling connection: " + defect, function () {
             const value = H.add(graph, "constants/StringConstant");
@@ -212,6 +223,20 @@ describe("GraphValidator", function () {
         first.properties.name = "$café_2";
         assert.deepStrictEqual(validateGraph(graph, {}), []);
     });
+    for (const [type, property, value] of [
+        ["native/Cast", "castTo", "java.lang.Object;"],
+        ["constants/NumberConstant", "number", "0; static {}"],
+        ["org.bukkit.Material", "en", "STONE;"]
+    ]) {
+        it("reports one property error on " + type, function () {
+            const node = H.add(graph, type);
+            if (node.inputs?.some(input => input.type === "@EXEC")) execute(graph, node);
+            node.properties[property] = value;
+            const problems = validateGraph(graph, {}).filter(problem => problem.severity === "error");
+            assert.strictEqual(problems.length, 1);
+            assert.strictEqual(problems[0].nodeId, node.id);
+        });
+    }
     it("rejects duplicate Command names and warns about the project command list", function () {
         const first = H.add(graph, "commands/Command", {name: "heal"});
         const second = H.add(graph, "commands/Command", {name: "heal"});

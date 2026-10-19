@@ -6,6 +6,7 @@ const {spawnSync} = require("child_process");
 const H = require("./support/harness");
 const ClassDataStore = require("../out/lib/classDataStore");
 const {getClasspath} = require("../out/lib/paper");
+const {SourceError, pickNodeKeys} = require("../out/lib/sourceChecks");
 const classStore = new ClassDataStore();
 const snapshotDir = path.join(__dirname, "snapshots/codegen");
 const cases = {};
@@ -294,6 +295,100 @@ describe("Codegen", function () {
         graph.links[1] = new (H.LiteGraph().LLink)(1, send.inputs[slot].type, 999, 0, send.id, slot);
         await assert.rejects(H.gen(graph), TypeError);
     });
+    it("rejects a crafted link origin slot with a SourceError on its target node", async function () {
+        const graph = await H.setup();
+        const value = H.add(graph, "constants/StringConstant");
+        const log = H.add(graph, "native/ConsoleLog");
+        const link = H.link(value, 0, log, 1);
+        link.origin_slot = "0; injected()";
+        await assert.rejects(H.gen(graph), error => error instanceof SourceError && error.nodeId === log.id && /connection has an invalid id or slot/.test(error.message));
+    });
+    it("rejects a string node id with a SourceError without an invalid node id", async function () {
+        const graph = await H.setup();
+        const node = H.add(graph, "constants/StringConstant");
+        node.id = '1"; injected(); //';
+        await assert.rejects(H.gen(graph), error => error instanceof SourceError && error.nodeId === undefined && /has an invalid id/.test(error.message));
+    });
+    for (const [type, property, value] of [
+        ["constants/NumberConstant", "number", '0; static { Runtime.getRuntime().exec("injected"); } int x = 0'],
+        ["constants/NumberConstant", "type", "int;"],
+        ["constants/BooleanConstant", "value", "false;"],
+        ["variables/Set", "name", "x;"],
+        ["variables/Get", "type", "int;"],
+        ["native/Cast", "castTo", "java.lang.Object;"],
+        ["native/InstanceOf", "type", "java.lang.Object;"],
+        ["arrays/MakeArray", "type", "java.lang.Object;"],
+        ["arithmetic/Add", "type", "int;"],
+        ["events/CancelEvent", "cancel", "true); injected(); //"],
+        ["org.bukkit.Material", "en", "STONE;"],
+        ["org.bukkit.Sound#static:org.bukkit.Sound", "field", "ENTITY_PLAYER_LEVELUP;"],
+        ["org.bukkit.event.player.PlayerJoinEvent", "priority", "HIGH) injected"],
+        ["org.bukkit.event.block.BlockBreakEvent", "ignoreCancelled", "true"]
+    ]) {
+        it("rejects crafted " + type + "." + property + " with its node id", async function () {
+            const graph = await H.setup();
+            const node = H.add(graph, type);
+            if (type === "events/CancelEvent") H.link(H.add(graph, "org.bukkit.event.block.BlockBreakEvent"), "THIS", node, "event");
+            if (type === "org.bukkit.Material") H.link(node, 0, H.add(graph, "native/ConsoleLog"), 1);
+            node.properties[property] = value;
+            await assert.rejects(H.gen(graph), error => error instanceof SourceError && error.nodeId === node.id);
+        });
+    }
+    for (const sink of ["command", "event", "object", "enum", "enum method"]) {
+        it("rejects a crafted " + sink + " slot or enum reference with its node id", async function () {
+            const graph = await H.setup();
+            if (sink === "enum method") {
+                cases["enum-method"](graph);
+                const node = graph._nodes.find(node => node.type === "org.bukkit.Material");
+                node.properties.en = "STONE;";
+                await assert.rejects(H.gen(graph), error => error instanceof SourceError && error.nodeId === node.id);
+                return;
+            }
+            const type = {command: "commands/Command", event: "org.bukkit.event.player.PlayerJoinEvent", object: "org.bukkit.entity.Player", enum: "org.bukkit.Material"}[sink];
+            const node = H.add(graph, type);
+            const slot = sink === "command" ? 1 : sink === "event" ? H.addOptOut(node, "getPlayer") : sink === "object" ? H.outIdx(node, "THIS") : 0;
+            if (sink !== "command") H.link(node, slot, H.add(graph, "native/ConsoleLog"), 1);
+            if (sink === "event") node.outputs[slot].linkType = "crafted";
+            node.outputs[slot].type = "int x;";
+            await assert.rejects(H.gen(graph), error => error instanceof SourceError && error.nodeId === node.id);
+        });
+    }
+    it("rejects a crafted project package", async function () {
+        const graph = await H.setup();
+        await assert.rejects(H.gen(graph, false, {package: "example; class Injected {}"}), error => error instanceof SourceError && error.nodeId === undefined && error.message === "The package name in Project Information isn't a valid Java package. Use something like me.yourname.myplugin.");
+    });
+    it("preserves legacy variable type mappings after validating their properties", async function () {
+        const graph = await H.setup();
+        const node = H.add(graph, "variables/Get", {name: "count"});
+        for (const type of [undefined, null, "", "any", "string"]) {
+            node.properties.type = type;
+            const code = await H.gen(graph);
+            assert(code.includes("private java.lang." + (type === "string" ? "String" : "Object") + " count;"));
+        }
+    });
+    for (const loading of ["snippet", "graph"]) {
+        it("drops metadata overrides and refreshes constant labels when loading a " + loading, async function () {
+            const graph = await H.setup();
+            const nodes = [
+                H.add(graph, "constants/StringConstant", {string: "saved"}),
+                H.add(graph, "constants/NumberConstant", {number: "5", type: "long"}),
+                H.add(graph, "constants/BooleanConstant", {value: "true"})
+            ].map(node => ({...node.serialize(), className: "Injected", classType: "event", nodeType: "BukkitClassNode", outputs: node.outputs.map(output => ({...output, label: "stale"}))}));
+            graph.clear();
+            if (loading === "snippet") H.loadSnippet(graph, {nodes, links: [], groups: []});
+            else graph.configure({nodes: nodes.map(pickNodeKeys), links: []});
+            assert.deepStrictEqual(graph._nodes.map(node => node.outputs[0].label), ["saved", "long 5", "true"]);
+            for (const node of graph._nodes) {
+                assert.strictEqual(node.classType, "native");
+                assert.strictEqual(node.className, undefined);
+                assert.strictEqual(node.nodeType, undefined);
+            }
+            const code = await H.gen(graph);
+            assert(code.includes(' = "saved";'));
+            assert(code.includes(" = 5L;"));
+            assert(code.includes(" = true;"));
+        });
+    }
     it("keeps Command arguments and outputs together through menus, removal and serialization", async function () {
         const graph = await H.setup();
         const command = H.add(graph, "commands/Command");

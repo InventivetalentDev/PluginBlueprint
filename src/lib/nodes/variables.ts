@@ -1,6 +1,7 @@
 import Colors = require("../colors");
 import {shapeAndColorsForSlotType, typeSwitchEnum, parseTypeSwitchEnum, handleDescDrawBackground} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
+import {sourceProperty} from "../sourceChecks";
 import type {NativeNode, NodeModule} from "../../types/nodes";
 
 function Set(this: NativeNode) {
@@ -20,10 +21,11 @@ Set.prototype.onDrawBackground = function (this: NativeNode, ctx: CanvasRenderin
     handleDescDrawBackground.call(this, ctx);
 };
 Set.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
-    return [parseTypeSwitchEnum(this.properties.type) + " " + this.properties.name];
+    sourceProperty(this, "type");
+    return [parseTypeSwitchEnum(this.properties.type) + " " + sourceProperty(this, "name")];
 };
 Set.prototype.getMethodBody = function (this: NativeNode, input: (string | null)[], output: string[]): string {
-    return this.properties.name + " = " + input[1] + ";";
+    return sourceProperty(this, "name") + " = " + input[1] + ";";
 };
 Set.prototype.getExecAfter = function (this: NativeNode, exec: string[][]): string {
     return exec[0].join("\n");
@@ -53,7 +55,7 @@ Get.prototype.onDrawBackground = function (this: NativeNode, ctx: CanvasRenderin
 };
 Get.prototype.getFields = Set.prototype.getFields;
 Get.prototype.getOutputExpression = function (this: NativeNode, slot: number): string {
-    return this.properties.name!;
+    return sourceProperty(this, "name");
 };
 Get.prototype.onDrawTitleBox = handleDrawTitleBox;
 

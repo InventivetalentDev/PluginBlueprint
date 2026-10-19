@@ -1,5 +1,6 @@
 import {shapeAndColorsForSlotType} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
+import {sourceType} from "../sourceChecks";
 import type {CommandArgument, NativeNode, NodeModule} from "../../types/nodes";
 import type {ContextMenuItem, LGraphCanvas} from "../../../assets/lib/litegraph/litegraph";
 
@@ -74,7 +75,7 @@ Command.prototype.onOutputRemoved = function (this: NativeNode, slot: number): v
     }
 };
 Command.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
-    return this.outputs.slice(1).map((slot, i) => slot.type + " " + output[i + 1]);
+    return this.outputs.slice(1).map((slot, i) => sourceType(this, slot.type) + " " + output[i + 1]);
 };
 Command.prototype.getOnEnable = function (this: NativeNode, input: (string | null)[], output: string[]): string {
     let name = cleanName(this.properties.name || "") || "mycommand";

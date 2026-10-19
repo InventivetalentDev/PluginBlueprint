@@ -39,6 +39,14 @@ An object Cast or Set may use `null`. **SetIndex** may store `null` in a referen
 If the panel says **Code generation failed**, read the message after the colon.
 Fix the named node or setting, then build again.
 
+## Fix a property or type
+
+If a message names a number, boolean, type, enum value, static field, or event option, edit that property on the node.
+Use a finite number (a whole number for integer types), choose true or false for booleans, and select listed values from their menus.
+Java types can use names such as `int`, `org.bukkit.entity.Player`, or `java.lang.String[]`, without spaces or generics.
+For an invalid slot type, delete the node and add it again.
+For an invalid package name, open **Project Information** and use dot-separated names such as `me.yourname.myplugin`, without spaces or Java keywords.
+
 ## Read a compiler error
 
 The Java compiler, called javac, checks the generated Java after graph validation.

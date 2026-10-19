@@ -1,5 +1,6 @@
 import Colors = require("../colors");
 import {shapeAndColorsForSlotType} from "../util";
+import {sourceProperty} from "../sourceChecks";
 import type {NativeNode, NodeModule} from "../../types/nodes";
 
 
@@ -36,11 +37,11 @@ MakeArray.prototype.onPropertyChanged = function (this: NativeNode, p: string, v
     }
 };
 MakeArray.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
-    return [this.properties.type + "[] " + output[1]];
+    return [sourceProperty(this, "type") + "[] " + output[1]];
 };
 MakeArray.prototype.getMethodBody = function (this: NativeNode, input: (string | null)[], output: string[]): string {
     let variableInputs = input.slice(1);
-    return output[1] + " = new " + this.properties.type + "[] {" + variableInputs.join(",") + "};";
+    return output[1] + " = new " + sourceProperty(this, "type") + "[] {" + variableInputs.join(",") + "};";
 };
 MakeArray.prototype.getExecAfter = function (this: NativeNode, exec: string[][]): string {
     return exec[0].join("\n");

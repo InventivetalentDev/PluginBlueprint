@@ -1,6 +1,7 @@
 import Colors = require("../colors");
 import {shapeAndColorsForSlotType, getNumberSuffix, handleDescDrawBackground} from "../util";
 import {handleDrawTitleBox} from "../fontAwesomeHelper";
+import {sourceProperty} from "../sourceChecks";
 import type {NativeNode, NodeModule} from "../../types/nodes";
 
 // String Constant
@@ -22,6 +23,7 @@ StringConstant.prototype.onPropertyChanged = function (this: NativeNode, k: stri
     this.size = this.computeSize();
 };
 StringConstant.prototype.onDrawTitleBox = handleDrawTitleBox;
+StringConstant.prototype.onConfigure = StringConstant.prototype.onPropertyChanged;
 
 // Number Constant
 
@@ -36,7 +38,8 @@ function NumberConstant(this: NativeNode) {
 
 NumberConstant.prototype.color = Colors.NUMBER_OFF;
 NumberConstant.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
-    return [this.properties.type + " " + output[0] + " = " + this.properties.number + getNumberSuffix(this.properties.type)];
+    const type = sourceProperty(this, "type");
+    return [type + " " + output[0] + " = " + sourceProperty(this, "number") + getNumberSuffix(type)];
 };
 NumberConstant.prototype.onPropertyChanged = function (this: NativeNode, k: string, p: unknown): void {
     this.outputs[0].label = this.properties.type + " " + this.properties.number;
@@ -44,6 +47,7 @@ NumberConstant.prototype.onPropertyChanged = function (this: NativeNode, k: stri
     this.size = this.computeSize();
 };
 NumberConstant.prototype.onDrawTitleBox = handleDrawTitleBox;
+NumberConstant.prototype.onConfigure = NumberConstant.prototype.onPropertyChanged;
 
 // Boolean Constant
 
@@ -57,13 +61,14 @@ function BooleanConstant(this: NativeNode) {
 
 BooleanConstant.prototype.color = Colors.BOOLEAN_OFF;
 BooleanConstant.prototype.getFields = function (this: NativeNode, output: string[]): string[] {
-    return ["boolean " + output[0] + " = " + this.properties.value];
+    return ["boolean " + output[0] + " = " + sourceProperty(this, "value")];
 };
 BooleanConstant.prototype.onPropertyChanged = function (this: NativeNode, k: string, p: unknown): void {
     this.outputs[0].label = "" + this.properties.value;
     this.size = this.computeSize();
 };
 BooleanConstant.prototype.onDrawTitleBox = handleDrawTitleBox;
+BooleanConstant.prototype.onConfigure = BooleanConstant.prototype.onPropertyChanged;
 
 // Null Constant
 
