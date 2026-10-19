@@ -551,7 +551,7 @@ function openProject(arg: string) {
         let appVersionSplit = appVersion.split(".");
         let fileVersion = data.editorVersion || "y.y.y";
         let fileVersionSplit = fileVersion.split(".");
-        if (appVersionSplit[0] !== fileVersionSplit[0] || appVersionSplit[1] !== fileVersionSplit[1]) {
+        if (appVersionSplit[0] !== fileVersionSplit[0] || isNewerVersion(fileVersion, appVersion)) {
             dialog.showMessageBox({
                 type: "warning",
                 title: "Different Editor Version",
@@ -1259,23 +1259,23 @@ function checkUpdate() {
         return response.json().then((latest: {version: string}) => {
             let currentVersion = app.getVersion();
             let updateVersion = latest.version;
-            let currentParts = currentVersion.split(".").map(Number);
-            let updateParts = updateVersion.split(".").map(Number);
-            let hasUpdate = false;
-            for (let i = 0; i < Math.max(currentParts.length, updateParts.length); i++) {
-                let current = currentParts[i] || 0;
-                let update = updateParts[i] || 0;
-                if (current !== update) {
-                    hasUpdate = update > current;
-                    break;
-                }
-            }
-            return {hasUpdate, appVersion: currentVersion, updateVersion};
+            return {hasUpdate: isNewerVersion(updateVersion, currentVersion), appVersion: currentVersion, updateVersion};
         });
     }).catch(e => {
         console.error(e);
         return {hasUpdate: false};
     });
+}
+
+function isNewerVersion(version: string, than: string): boolean {
+    let versionParts = version.split(".").map(Number);
+    let thanParts = than.split(".").map(Number);
+    for (let i = 0; i < Math.max(versionParts.length, thanParts.length); i++) {
+        let part = versionParts[i] || 0;
+        let thanPart = thanParts[i] || 0;
+        if (part !== thanPart) return part > thanPart;
+    }
+    return false;
 }
 
 function showNotification(body: string, title?: string) {
