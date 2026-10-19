@@ -41,7 +41,7 @@ export function openPicker(options: {
     let selected = 0;
     let rows: HTMLElement[] = [];
     const indexedItems = (options.items || []).map(item => ({
-        item, text: [item.label, item.detail, item.group].join(" ").toLowerCase()
+        item, label: item.label.toLowerCase(), text: [item.label, item.detail, item.group].join(" ").toLowerCase()
     }));
 
     function close() {
@@ -83,8 +83,10 @@ export function openPicker(options: {
     function render() {
         const query = input.value.trim();
         const words = query.toLowerCase().split(/\s+/);
+        const inLabel = (entry: typeof indexedItems[number]) => words.every(word => entry.label.includes(word));
         const matches = options.search ? options.search(query) : indexedItems
-            .filter(entry => words.every(word => entry.text.includes(word))).map(entry => entry.item);
+            .filter(entry => words.every(word => entry.text.includes(word)))
+            .sort((a, b) => Number(inLabel(b)) - Number(inLabel(a))).map(entry => entry.item);
         visible = matches.slice(0, 50);
         rows = [];
         list.replaceChildren();
