@@ -59,6 +59,17 @@ describe("GraphValidator", function () {
         H.link(first, 0, second, "EXEC");
         assert.deepStrictEqual(validateGraph(graph, {}), []);
     });
+    it("reports a crafted link field as a damaged connection on its target node", function () {
+        const value = H.add(graph, "constants/StringConstant");
+        const log = H.add(graph, "native/ConsoleLog");
+        execute(graph, log);
+        const link = H.link(value, 0, log, 1);
+        link.origin_slot = "0; injected()";
+        const problems = validateGraph(graph, {}).filter(problem => /file is damaged/.test(problem.message));
+        assert.strictEqual(problems.length, 1);
+        assert.strictEqual(problems[0].severity, "error");
+        assert.strictEqual(problems[0].nodeId, log.id);
+    });
     for (const defect of ["origin", "target", "origin slot", "target slot", "output backlink", "input backlink"]) {
         it("rejects a dangling connection: " + defect, function () {
             const value = H.add(graph, "constants/StringConstant");

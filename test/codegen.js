@@ -295,6 +295,20 @@ describe("Codegen", function () {
         graph.links[1] = new (H.LiteGraph().LLink)(1, send.inputs[slot].type, 999, 0, send.id, slot);
         await assert.rejects(H.gen(graph), TypeError);
     });
+    it("rejects a crafted link origin slot with a SourceError on its target node", async function () {
+        const graph = await H.setup();
+        const value = H.add(graph, "constants/StringConstant");
+        const log = H.add(graph, "native/ConsoleLog");
+        const link = H.link(value, 0, log, 1);
+        link.origin_slot = "0; injected()";
+        await assert.rejects(H.gen(graph), error => error instanceof SourceError && error.nodeId === log.id && /connection has an invalid id or slot/.test(error.message));
+    });
+    it("rejects a string node id with a SourceError without an invalid node id", async function () {
+        const graph = await H.setup();
+        const node = H.add(graph, "constants/StringConstant");
+        node.id = '1"; injected(); //';
+        await assert.rejects(H.gen(graph), error => error instanceof SourceError && error.nodeId === undefined && /has an invalid id/.test(error.message));
+    });
     for (const [type, property, value] of [
         ["constants/NumberConstant", "number", '0; static { Runtime.getRuntime().exec("injected"); } int x = 0'],
         ["constants/NumberConstant", "type", "int;"],

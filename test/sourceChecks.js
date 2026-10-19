@@ -1,7 +1,26 @@
 const assert = require("assert");
-const {isJavaIdentifier, isJavaTypeName, isNumberValue, isBooleanValue, numberTypes, propertyProblems, sourceProperty, sourceType, SourceError, NODE_KEYS, pickNodeKeys} = require("../out/lib/sourceChecks");
+const {isGraphId, graphIdProblems, isJavaIdentifier, isJavaTypeName, isNumberValue, isBooleanValue, numberTypes, propertyProblems, sourceProperty, sourceType, SourceError, NODE_KEYS, pickNodeKeys} = require("../out/lib/sourceChecks");
 
 describe("SourceChecks", function () {
+    it("accepts only non-negative safe integers for graph ids", function () {
+        for (const value of [0, 1, 42, Number.MAX_SAFE_INTEGER]) assert(isGraphId(value));
+        for (const value of [-1, 1.5, "1", "1;x", NaN, Infinity, null, undefined, Number.MAX_SAFE_INTEGER + 1, {}]) assert(!isGraphId(value));
+    });
+    it("reports each invalid node id without attaching an invalid id", function () {
+        assert.deepStrictEqual(graphIdProblems({_nodes: [{id: 0, title: "Valid"}, {id: "1", title: "Broken"}, {title: "Missing"}], links: {}}), [
+            {message: '"Broken" has an invalid id. The project or snippet file is damaged; delete the node and add it again.'},
+            {message: '"Missing" has an invalid id. The project or snippet file is damaged; delete the node and add it again.'}
+        ]);
+    });
+    it("checks every link id and slot and attaches the valid target or origin id", function () {
+        const link = {id: 1, origin_id: 0, origin_slot: 0, target_id: 42, target_slot: 0};
+        const message = "A connection has an invalid id or slot. The project or snippet file is damaged; delete the connection and connect it again.";
+        assert.deepStrictEqual(graphIdProblems({_nodes: [], links: {valid: link, empty: null}}), []);
+        for (const key of Object.keys(link)) {
+            assert.deepStrictEqual(graphIdProblems({_nodes: [], links: {broken: {...link, [key]: "1;x"}}}), [{nodeId: key === "target_id" ? 0 : 42, message}]);
+        }
+        assert.deepStrictEqual(graphIdProblems({_nodes: [], links: {broken: {...link, origin_id: "bad", target_id: -1}, missing: {}}}), [{message}, {message}]);
+    });
     it("accepts Unicode identifiers and rejects keywords and non-strings", function () {
         assert(isJavaIdentifier("$café_2"));
         for (const value of ["class", "true", "_", "a b", "3count", "", 5, null, {}]) assert(!isJavaIdentifier(value));

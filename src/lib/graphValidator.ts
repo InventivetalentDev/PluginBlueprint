@@ -1,7 +1,7 @@
 import {LiteGraph, LGraph, LGraphNode} from "../../assets/lib/litegraph/litegraph";
 import ClassDataStore = require("./classDataStore");
 import {parseTypeSwitchEnum} from "./util";
-import {propertyProblems} from "./sourceChecks";
+import {graphIdProblems, propertyProblems} from "./sourceChecks";
 import type {ProjectInfo} from "../types/project";
 
 export interface Problem { severity: "error" | "warning"; nodeId?: number; message: string; }
@@ -46,6 +46,8 @@ export function validateGraph(graph: LGraph | ValidationGraph, projectInfo: Vali
     const add = (severity: Problem["severity"], node: LGraphNode | undefined, message: string) => {
         problems.push({severity, ...(node ? {nodeId: node.id} : {}), message});
     };
+
+    for (const problem of graphIdProblems(graph as ValidationGraph)) problems.push({severity: "error", ...problem});
 
     for (const link of Object.values(graph.links)) {
         if (!link) continue;

@@ -3,7 +3,7 @@ import {LiteGraph} from "../../assets/lib/litegraph/litegraph";
 import Colors = require("./colors");
 import ClassDataStore = require("./classDataStore");
 import {getNullForType, javaType} from "./util";
-import {isJavaIdentifier, sourceProperty, sourceType, SourceError} from "./sourceChecks";
+import {graphIdProblems, isJavaIdentifier, sourceProperty, sourceType, SourceError} from "./sourceChecks";
 import type {INodeInputSlot, LGraph, LGraphNode, LLink} from "../../assets/lib/litegraph/litegraph";
 import type {ClassData, ConstructorData, MethodData} from "../types/classData";
 import type {NativeNode} from "../types/nodes";
@@ -51,6 +51,8 @@ function generateClassCode(graph: CodegenGraph, projectInfo: Pick<ProjectInfo, "
         if (typeof projectInfo.package !== "string" || !projectInfo.package.split(".").every(isJavaIdentifier)) {
             throw new SourceError("The package name in Project Information isn't a valid Java package. Use something like me.yourname.myplugin.");
         }
+        const problem = graphIdProblems(graph)[0];
+        if (problem) throw new SourceError(problem.message, problem.nodeId);
         for (const state of [classesByName, fields, eventListenerMethods, objectMethods, enumMethods, generatedMethods, constructorCalls, methodCalls, nativeCalls, javaPluginMethods, onLoadMethods, onEnableMethods, onDisableMethods, onCommandMethods, onTabCompleteMethods]) {
             state.length = 0;
         }

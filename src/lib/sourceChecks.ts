@@ -19,6 +19,27 @@ export class SourceError extends Error {
     }
 }
 
+export function isGraphId(value: unknown): value is number {
+    return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+export function graphIdProblems(graph: {_nodes: {id?: unknown; title: string}[]; links: Record<string, unknown>}): {nodeId?: number; message: string}[] {
+    const problems: {nodeId?: number; message: string}[] = [];
+    for (const node of graph._nodes) {
+        if (!isGraphId(node.id)) {
+            problems.push({message: `"${node.title}" has an invalid id. The project or snippet file is damaged; delete the node and add it again.`});
+        }
+    }
+    for (const value of Object.values(graph.links)) {
+        if (value == null) continue;
+        const link = value as Record<string, unknown>;
+        if (["id", "origin_id", "origin_slot", "target_id", "target_slot"].every(key => isGraphId(link[key]))) continue;
+        const nodeId = isGraphId(link.target_id) ? link.target_id : isGraphId(link.origin_id) ? link.origin_id : undefined;
+        problems.push({...(nodeId !== undefined ? {nodeId} : {}), message: "A connection has an invalid id or slot. The project or snippet file is damaged; delete the connection and connect it again."});
+    }
+    return problems;
+}
+
 const keywords = new Set(("abstract assert boolean break byte case catch char class const continue default do double else enum extends final finally float for goto if implements import instanceof int interface long native new package private protected public return short static strictfp super switch synchronized this throw throws transient try void volatile while true false null _").split(" "));
 export const numberTypes = ["byte", "char", "short", "int", "long", "float", "double"];
 
