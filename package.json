@@ -1,6 +1,6 @@
 {
   "name": "pluginblueprint",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Visual editor to create Paper (Minecraft server) plugins",
   "main": "out/main.js",
   "scripts": {

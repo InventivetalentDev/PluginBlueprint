@@ -109,13 +109,14 @@ Moved to Later (2026-10-18). Context isolation with a preload script, no `@elect
 
 ## Phase 4: search, types and building blocks
 
-- [ ] **B3 Search and pickers** (M). Exact matches first, readable rows with descriptions, keyword aliases, deprecated and internal members hidden everywhere, a filterable Outputs picker, and a type-to-filter enum picker.
+- [x] **S1 Validate what reaches the source** (S). Node properties, slot types, node ids, connection fields and the package name are checked before they reach `GeneratedPlugin.java`. Saved nodes keep only the keys the editor writes. Done (2026-10-19) for 2.0.1; this closes the property-injection hole found in the review.
+- [ ] **B3 Search and pickers** (M). Exact matches first, readable rows with descriptions, keyword aliases, deprecated members hidden everywhere, a filterable Outputs picker, and a type-to-filter enum picker.
 - [ ] **B4 Generics** (M, then L). Phase 1 erases type variables. Next: automatic Cast insertion, boxing and widening rules, then structured `typeArguments` in the doclet.
-- [ ] **B5b Java code node** (M). Typed inputs and outputs, a distinct look, a warning on snippet import. Validate every node property that reaches the source; this closes the property-injection hole found in the review.
+- [ ] **B5b Java code node** (M). Typed inputs and outputs, a distinct look, a warning on snippet import. No import lines.
 - [ ] **B6 Variables and persistent storage** (M). Player values backed by PDC and global values backed by a data file.
 - [ ] **C2 Simple palette and templates** (M for six blocks, L for more). Plain-language blocks that expand into normal nodes, a template gallery, and snippets that carry commands and permissions.
 - [ ] **D4 Control flow** (M). ForEach, Return/Break, an "Is null?" branch, and try/catch for checked exceptions (needs `throws` in the class data).
-- [ ] **D9 Class-data quality** (S–M). `throws`, `@ApiStatus`, nullability, the Adventure plain and legacy serializers, Brigadier, and a Paper build pinned to the class data.
+- [ ] **D9 Class-data quality** (S–M). `throws`, `@ApiStatus` (then hide internal members in search and pickers), nullability, the Adventure plain and legacy serializers, Brigadier, and a Paper build pinned to the class data.
 
 ## Phase 5: codegen rewrite and export
 
@@ -142,3 +143,7 @@ Moved to Later (2026-10-18). Context isolation with a preload script, no `@elect
 - 2026-10-18: The editor adopts the litegraph 0.7.18 default look (bigger nodes, new colours). The docs screenshots need retaking.
 - 2026-10-18: E1 Electron hardening moves to Later, so Phase 2 is L1 then T1.
 - 2026-10-18: T1 compiles everything under `src/` with `tsc` into one output folder the app runs from, with full `strict` from the start.
+- 2026-10-19: S1 is split out of B5b and ships alone as 2.0.1. B3 and B5b follow as 2.1.0.
+- 2026-10-19: The Java code node has no import lines. Its code uses fully qualified names, like all generated code, so javac errors always map to the node.
+- 2026-10-19: Hiding `@ApiStatus.Internal` members moves from B3 to D9. It needs a class-data schema change and regenerated data.
+- 2026-10-19: The Outputs picker lists the node's own class first, then inherited members grouped by declaring class, with type-to-filter. The class data has no signal for a curated "Common" list.
