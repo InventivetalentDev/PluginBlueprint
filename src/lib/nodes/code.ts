@@ -76,6 +76,17 @@ function searchTypes(query: string): PickerItem[] {
     return matches;
 }
 
+// No history step of its own: a slot made for a dropped link undoes together with the link.
+function declareSlot(node: NativeNode, input: boolean, name: string, type: string): number {
+    if (!isJavaIdentifier(name) || !isJavaTypeName(type) || slotNames(node).includes(name)) return -1;
+    const property = input ? "codeInputs" : "codeOutputs";
+    node.properties[property] = [...node.properties[property]!, {name, type}];
+    const options = shapeAndColorsForSlotType(type, {removable: true, nameLocked: true});
+    if (input) node.addInput(name, type, options);
+    else node.addOutput(name, type, options);
+    return (input ? node.inputs : node.outputs).length - 1;
+}
+
 function addSlot(node: CodeNode, canvas: CodeCanvas, event: MouseEvent, input: boolean): void {
     openPicker({
         x: event.clientX, y: event.clientY,
@@ -140,15 +151,10 @@ JavaCode.prototype.getSlotMenuOptions = function (this: CodeNode, info: {input?:
     return options;
 };
 JavaCode.prototype.addCodeSlot = function (this: CodeNode, input: boolean, name: string, type: string): number {
-    if (!isJavaIdentifier(name) || !isJavaTypeName(type) || slotNames(this).includes(name)) return -1;
-    const property = input ? "codeInputs" : "codeOutputs";
     this.graph?.beforeChange(this);
-    this.properties[property] = [...this.properties[property]!, {name, type}];
-    const options = shapeAndColorsForSlotType(type, {removable: true, nameLocked: true});
-    if (input) this.addInput(name, type, options);
-    else this.addOutput(name, type, options);
+    const index = declareSlot(this, input, name, type);
     this.graph?.afterChange(this);
-    return (input ? this.inputs : this.outputs).length - 1;
+    return index;
 };
 JavaCode.prototype.addSlotForLink = function (this: CodeNode, input: boolean, slot: INodeSlot | undefined, other: LGraphNode): number {
     const type = linkSlotType(slot?.type);
@@ -157,7 +163,7 @@ JavaCode.prototype.addSlotForLink = function (this: CodeNode, input: boolean, sl
     if (existing !== -1) return existing;
     const signature = (other as LGraphNode & {methodSignature?: unknown}).methodSignature;
     const name = slot.name === "RETURN" && typeof signature === "string" ? signature : slot.name;
-    return this.addCodeSlot(input, codeSlotName(this, name, type), type);
+    return declareSlot(this, input, codeSlotName(this, name, type), type);
 };
 JavaCode.prototype.renameCodeSlot = function (this: CodeNode, input: boolean, index: number, name: string): boolean {
     const property = input ? "codeInputs" : "codeOutputs";
@@ -232,7 +238,7 @@ JavaCode.prototype.onDrawForeground = function (this: NativeNode, ctx: CanvasRen
     ctx.font = "14px Arial";
     ctx.fillStyle = "#ddd";
     ctx.textAlign = "center";
-    ctx.fillText(canvas.connecting_output ? "+ input" : "+ output", this.size[0] / 2, this.size[1] - 10);
+    ctx.fillText(canvas.connecting_output ? "+ input" : "+ output", this.size[0] / 2, this.size[1] + 20);
     ctx.restore();
 };
 JavaCode.prototype.getFields = function (this: NativeNode, output: string[]): string[] {

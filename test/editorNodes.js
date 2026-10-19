@@ -73,6 +73,16 @@ describe("Java code node slots", function () {
         assert.equal(graph.links[code.inputs[1].link].origin_id, player.id);
     });
 
+    it("records a dropped link and its new input as one change", function () {
+        const player = H.add(graph, PLAYER);
+        const code = H.add(graph, "code/JavaCode");
+        const changes = [];
+        graph.onAfterChange = graph.onConnectionChange = () => changes.push(code.inputs.length + (code.inputs[1]?.link != null ? " linked" : ""));
+        player.connectByType(out(player, "THIS"), code, PLAYER);
+        assert.ok(changes.length > 0);
+        assert.ok(changes.every(change => change === "2 linked"), changes.join(", "));
+    });
+
     it("reuses a free input of the same type and numbers new names", function () {
         const player = H.add(graph, PLAYER);
         const code = H.add(graph, "code/JavaCode");
