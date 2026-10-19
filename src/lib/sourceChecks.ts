@@ -63,6 +63,17 @@ export function isBooleanValue(value: unknown): boolean {
     return value === true || value === false || value === "true" || value === "false";
 }
 
+function firstBadCodeSlot(slots: ({name?: unknown; type?: unknown} | null | undefined)[], node: SourceNode, property: string): {slot: typeof slots[number]; reason: "name" | "type" | "duplicate"} | undefined {
+    const inputs = property === "codeOutputs" && Array.isArray(node.properties.codeInputs) ? node.properties.codeInputs : [];
+    for (let index = 0; index < slots.length; index++) {
+        const slot = slots[index];
+        if (!isJavaIdentifier(slot?.name)) return {slot, reason: "name"};
+        if (!isJavaTypeName(slot.type)) return {slot, reason: "type"};
+        if (slots.slice(0, index).some(previous => previous?.name === slot.name) || inputs.some(input => input?.name === slot.name)) return {slot, reason: "duplicate"};
+    }
+    return undefined;
+}
+
 const rules: {
     node: (node: SourceNode) => boolean;
     property: string;
@@ -71,21 +82,14 @@ const rules: {
 }[] = [
     ...["codeInputs", "codeOutputs"].map(property => ({
         node: (node: SourceNode) => node.type === "code/JavaCode", property,
-        check: (value: unknown, node: SourceNode) => {
-            if (!Array.isArray(value)) return false;
-            const inputs = property === "codeOutputs" && Array.isArray(node.properties.codeInputs) ? node.properties.codeInputs : [];
-            return value.every((slot, index) => slot && isJavaIdentifier(slot.name) && isJavaTypeName(slot.type) &&
-                !value.slice(0, index).some(previous => previous?.name === slot.name) && !inputs.some(input => input?.name === slot.name));
-        },
+        check: (value: unknown, node: SourceNode) => Array.isArray(value) && firstBadCodeSlot(value, node, property) === undefined,
         message: (title: string, value: unknown, node: SourceNode) => {
             const direction = property === "codeInputs" ? "Input" : "Output";
             if (!Array.isArray(value)) return `The ${direction.toLowerCase()} declarations on "${title}" must be a list of names and Java types.`;
-            const inputs = property === "codeOutputs" && Array.isArray(node.properties.codeInputs) ? node.properties.codeInputs : [];
-            const slot = value.find((slot, index) => !slot || !isJavaIdentifier(slot.name) || !isJavaTypeName(slot.type) ||
-                value.slice(0, index).some(previous => previous?.name === slot.name) || inputs.some(input => input?.name === slot.name));
+            const {slot, reason} = firstBadCodeSlot(value, node, property)!;
             const label = `${direction} "${typeof slot?.name === "string" ? slot.name : ""}" on "${title}"`;
-            if (!isJavaIdentifier(slot?.name)) return `${label} isn't a Java name. Use letters and numbers without spaces.`;
-            if (!isJavaTypeName(slot.type)) return `${label} has an invalid Java type. Use a type such as int or java.lang.String.`;
+            if (reason === "name") return `${label} isn't a Java name. Use letters and numbers without spaces.`;
+            if (reason === "type") return `${label} has an invalid Java type. Use a type such as int or java.lang.String.`;
             return `${label} uses a name that's already declared. Give each input and output a different name.`;
         }
     })),
