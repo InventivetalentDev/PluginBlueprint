@@ -98,7 +98,7 @@ function init() {
 
     console.log(process.argv);
     process.argv.forEach((val, index) => {
-        if (val === "--debug") {
+        if (val === "--devtools") {
             debug = true;
             console.log("Debugging enabled");
         }

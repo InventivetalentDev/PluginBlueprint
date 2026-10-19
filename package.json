@@ -7,7 +7,7 @@
     "postinstall": "electron-builder install-app-deps",
     "build": "tsc",
     "test": "tsc && mocha",
-    "start": "tsc && electron . --debug",
+    "start": "tsc && electron . --devtools",
     "pack": "tsc && electron-builder --dir",
     "dist": "tsc && electron-builder",
     "dist:win": "tsc && electron-builder --win",
