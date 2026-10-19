@@ -1,5 +1,6 @@
 import {LGraph, LiteGraph, type LGraphCanvas, type LGraphNode, type SerializedLGraphNode, type serializedLGraph} from "../../assets/lib/litegraph/litegraph";
-import {graphIdProblems, isJavaTypeName, SourceError} from "./sourceChecks";
+import {graphIdProblems, SourceError} from "./sourceChecks";
+import {shapeAndColorsForSlotType} from "./util";
 import type {Problem} from "./graphValidator";
 import type {LiteGraphExtras} from "../types/litegraph-augment";
 
@@ -63,8 +64,8 @@ export function subgraphProblems(root: LGraph): Problem[] {
                 const nodePath = [...path, node.id];
                 if (!path.length) add("error", nodePath, `"${node.title}" must be inside a subgraph. Move it into a subgraph or delete it.`);
                 const type = node.properties.type;
-                if (type !== "" && type !== "@EXEC" && !isJavaTypeName(type)) {
-                    add("error", nodePath, `The pin type on "${node.title}" isn't valid. Use a Java type such as int or java.lang.String, or @EXEC.`);
+                if (typeof type !== "string") {
+                    add("error", nodePath, `The pin type on "${node.title}" must be text. Set the boundary node's type to a slot type such as int or @EXEC.`);
                 }
                 if (nodes.some(other => other !== node && other.type === node.type && other.id < node.id && other.properties.name === node.properties.name)) {
                     add("warning", nodePath, `More than one pin is named "${node.properties.name}". Give each pin a different name.`);
@@ -211,7 +212,7 @@ export function convertToSubgraph(graph: LGraph, nodeIds: number[]): number {
             boundary.id = ++inner.last_node_id;
             boundary.properties = {name: output.name, type: output.type};
             boundary.pos = [sub.pos[0] + (input ? -220 : 320), sub.pos[1] + (input ? sub.inputs.length : sub.outputs.length) * 80];
-            const pin = {name: output.name, type: output.type, boundaryId: boundary.id};
+            const pin = {name: output.name, type: output.type, ...shapeAndColorsForSlotType(output.type, {boundaryId: boundary.id, nameLocked: true, locked: true})};
             const ids = new Set(group.map(link => link.id));
             const replacement: LinkData = {id: input ? ++data.last_link_id : ++inner.last_link_id, oId: origin.id, oSlot: first.oSlot,
                 tId: input ? sub.id : boundary.id, tSlot: input ? sub.inputs.length : 0, type: String(output.type)};

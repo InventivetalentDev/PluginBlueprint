@@ -469,6 +469,14 @@ canvas.openSubgraph = function (inner) {
     openSubgraph.call(this, inner);
     this.ds.scale = 1;
     this.ds.offset = [0, 0];
+    const bounds = (inner as unknown as PageGraph)._nodes.map(node => node.getBounding());
+    if (bounds.length) {
+        const left = Math.min(...bounds.map(rect => rect[0]));
+        const top = Math.min(...bounds.map(rect => rect[1]));
+        const right = Math.max(...bounds.map(rect => rect[0] + rect[2]));
+        const bottom = Math.max(...bounds.map(rect => rect[1] + rect[3]));
+        this.ds.offset = [this.canvas.width / 2 - (left + right) / 2, this.canvas.height / 2 - (top + bottom) / 2];
+    }
 };
 const closeSubgraph = canvas.closeSubgraph;
 canvas.closeSubgraph = function () {
@@ -487,8 +495,17 @@ function closeAllSubgraphs() {
     }
     subgraphViews.length = 0;
 }
-canvas.drawSubgraphPanel = function () {
-    if (this.drawButton(10, 10, 90, 30, "‹ Back")) this.closeSubgraph();
+canvas.drawSubgraphPanel = function (ctx) {
+    const y = document.querySelector("#toolbar")!.getBoundingClientRect().bottom + 10;
+    if (this.drawButton(10, y, 90, 30, "‹ Back")) this.closeSubgraph();
+    const path = canvasPath(this);
+    ctx.save();
+    ctx.font = "16px Arial";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR;
+    ctx.fillText(path.map((_, i) => resolvePath(graph as unknown as Graph, path.slice(0, i + 1))!.getTitle()).join(" › "), 110, y + 15);
+    ctx.restore();
 };
 canvas.getExtraMenuOptions = function (...args: unknown[]) {
     const options = args[1] as ({content?: string} | null)[];

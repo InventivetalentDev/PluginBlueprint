@@ -2,6 +2,7 @@ const assert = require("assert");
 const H = require("./support/harness");
 const {SUBGRAPH, SUBGRAPH_INPUT, SUBGRAPH_OUTPUT, flattenGraph, convertToSubgraph, pathOf, eachGraph, resolvePath, canvasPath, subgraphProblems} = require("../out/lib/subgraphs");
 const {pickNodeKeys, SourceError} = require("../out/lib/sourceChecks");
+const {validateProject, classStore} = require("../out/lib/graphValidator");
 const {nodeForLine} = require("../out/lib/javacErrors");
 const History = require("../out/lib/history");
 
@@ -161,7 +162,14 @@ describe("Subgraphs", function () {
         pin(sub, true, "int", "value");
         const duplicate = pin(sub, true, "bad type", "value");
         assert(subgraphProblems(graph).some(problem => problem.severity === "warning" && problem.path[1] === duplicate.id));
-        assert(subgraphProblems(graph).some(problem => problem.severity === "error" && /pin type/.test(problem.message)));
+        for (const type of ["", "@EXEC", "int", "bad type", "org.bukkit.command.CommandSender#sendRichMessage(java.lang.String)", "org.bukkit.entity.Player,org.bukkit.entity.HumanEntity"]) {
+            duplicate.properties.type = type;
+            assert(!subgraphProblems(graph).some(problem => problem.severity === "error"), type);
+        }
+        for (const type of [42, null, undefined, {}, []]) {
+            duplicate.properties.type = type;
+            assert(subgraphProblems(graph).some(problem => problem.severity === "error" && /pin type/.test(problem.message)));
+        }
         duplicate.id = "bad";
         assert.throws(() => flattenGraph(graph), error => error instanceof SourceError && error.path[0] === sub.id);
     });
@@ -183,6 +191,11 @@ describe("Subgraphs", function () {
         assert.strictEqual(sub.inputs[0].type, "java.lang.String");
         assert.strictEqual(sub.outputs.length, 1);
         assert.strictEqual(sub.outputs[0].type, "@EXEC");
+        for (const slot of [...sub.inputs, ...sub.outputs]) {
+            assert.strictEqual(slot.locked, true);
+            assert.strictEqual(slot.nameLocked, true);
+            assert.strictEqual(typeof slot.color_on, "string");
+        }
         assert(sub.subgraph.getNodeById(first.id));
         assert(sub.subgraph.getNodeById(second.id));
         assert.strictEqual(graph._nodes[1], sub);
@@ -192,6 +205,23 @@ describe("Subgraphs", function () {
         assert.deepStrictEqual(targets(flat.graph, flat.graph.getNodeById(text.id)), [a.id, b.id]);
         assert.deepStrictEqual(targets(flat.graph, a), [b.id]);
         assert.deepStrictEqual(targets(flat.graph, b), [outside.id]);
+    });
+    it("validates and generates a converted method with an outside REF connection", async function () {
+        await classStore.init();
+        const command = H.add(graph, "commands/Command", {name: "hello"});
+        const sender = H.add(graph, "org.bukkit.command.CommandSender");
+        H.link(command, "sender", sender, "REF");
+        H.link(command, "EXEC", sender, "EXEC");
+        const output = H.addOptOut(sender, "sendRichMessage(String)");
+        const send = H.add(graph, sender.outputs[output].type);
+        H.link(sender, output, send, "REF");
+        H.link(sender, "EXEC", send, "EXEC");
+        const text = H.add(graph, "constants/StringConstant", {string: "<green>Hello!"});
+        H.link(text, 0, send, "message");
+        const id = convertToSubgraph(graph, [send.id, text.id]);
+        assert(graph.getNodeById(id).inputs.some(slot => slot.type === "org.bukkit.command.CommandSender#sendRichMessage(java.lang.String)"));
+        assert.deepStrictEqual(validateProject(graph, {}).filter(problem => problem.severity === "error"), []);
+        assert((await H.gen(graph)).includes(".sendRichMessage("));
     });
     it("keeps outgoing fan-out in order after conversion", function () {
         const first = H.add(graph, "native/Cast");
