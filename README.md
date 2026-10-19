@@ -38,7 +38,7 @@ Use Node.js 24.
 
 ```sh
 npm ci        # Install dependencies.
-npm start     # Start the app.
+npm start     # Start the app with DevTools open.
 npm test      # Run the tests.
 npm run dist  # Build an installer for your platform.
 ```
