@@ -95,8 +95,10 @@ Nodes represent events, objects, method calls, and fixed values.
 
 ### Add and connect nodes
 
-1. Double-click an empty part of the canvas to open the search box.
-2. Type part of a class name, such as `PlayerJoin`, and choose a node.
+1. Double-click an empty part of the canvas, or select **Search** in the
+   toolbar, to open the search box.
+2. Type a class name, such as `PlayerJoinEvent`, or a keyword, such as `welcome`,
+   and choose a node. Each result shows its name, description, and package.
 3. If you need an output that is hidden, right-click the node and choose
    **Outputs**, then select the output.
 4. Double-click an output to create its matching node already connected.

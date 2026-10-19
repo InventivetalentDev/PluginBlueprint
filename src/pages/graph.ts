@@ -20,6 +20,9 @@ const KeyPics = require("key.pics") as typeof import("key.pics");
 import {updateLinkColors} from "../lib/util";
 import {validateGraph, classStore} from "../lib/graphValidator";
 import {pickNodeKeys, SourceError} from "../lib/sourceChecks";
+import {buildSearchEntries, searchNodes} from "../lib/nodeSearch";
+import {openPicker} from "../lib/picker";
+import type {SearchEntry} from "../lib/nodeSearch";
 import type {Problem} from "../lib/graphValidator";
 import type {LiteGraphExtras} from "../types/litegraph-augment";
 import type {ProjectInfo, Snippet} from "../types/project";
@@ -312,15 +315,19 @@ graph.onNodeAdded = function (n) {
         n.size = n.computeSize();
     }
     trackGraphChange();
-    // hide inside the history's timeout to prevent hiding it instantly
-    if (!history.paused) {
-        $("#helpBox").hide();
-    }
+    updateEmptyHint();
 };
 graph.onNodeRemoved = function (n) {
     console.debug("[HISTORY] onNodeRemoved");
     trackGraphChange();
+    updateEmptyHint();
 };
+graph.onConfigure = function () {
+    updateEmptyHint();
+};
+function updateEmptyHint() {
+    $("#emptyHint").prop("hidden", graph._nodes.length > 0);
+}
 graph.onConnectionChange = function () {
     console.debug("[HISTORY] onConnectionChange");
     trackGraphChange();
@@ -377,10 +384,65 @@ graph.onNodeConnectionChange = function (slotType, node, slot) {
     updateLinkColors(slotType, node, slot);
 };
 
-LGraphCanvas.search_limit = 100;
+let searchEntries: SearchEntry[] | undefined;
+LGraphCanvas.prototype.showSearchBox = function (event) {
+    if (!event) return;
+    const canvas = this;
+    searchEntries ||= buildSearchEntries(Object.keys(LiteGraph.registered_node_types), {
+        getClass: name => classStore.getClass(name),
+        getMethod: (owner, signature) => classStore.getMethod(owner, signature),
+        getConstructor: (owner, signature) => classStore.getConstructor(owner, signature),
+        getTitle: type => (LiteGraph.registered_node_types[type] as {title?: string}).title
+    });
+    $("#helpBox").hide();
+    try {
+        localStorage.setItem("searchUsed", "1");
+    } catch (e) {
+    }
+    openPicker({
+        x: event.clientX, y: event.clientY,
+        placeholder: "Search nodes",
+        search: query => searchNodes(searchEntries!, query).map(entry => ({
+            value: entry.type, label: entry.name, detail: entry.description, note: entry.packageName
+        })),
+        onPick: type => {
+            const node = LiteGraph.createNode(type);
+            if (!node) return;
+            node.pos = canvas.convertEventToCanvasOffset(event);
+            canvas.graph.add(node);
+            canvas.setDirty(true, true);
+        }
+    });
+};
+
+const showEditPropertyValue = LGraphCanvas.prototype.showEditPropertyValue;
+LGraphCanvas.prototype.showEditPropertyValue = function (node, name, options) {
+    if (!node || node.properties[name] === undefined) return showEditPropertyValue.call(this, node, name, options);
+    const info = node.getPropertyInfo(name) as {type?: string; values?: (string | number)[] | Record<string, unknown>};
+    if (info.type !== "enum" || !info.values || Object.keys(info.values).length <= 12) {
+        return showEditPropertyValue.call(this, node, name, options);
+    }
+    const values = info.values;
+    const rect = this.canvas.getBoundingClientRect();
+    openPicker({
+        x: options?.event?.clientX ?? options?.position?.[0] ?? rect.left + rect.width / 2,
+        y: options?.event?.clientY ?? options?.position?.[1] ?? rect.top + rect.height / 2,
+        placeholder: "Filter " + name,
+        items: Array.isArray(values) ? values.map(value => ({value: String(value), label: String(value)})) :
+            Object.entries(values).map(([value, label]) => ({value, label: String(label)})),
+        onPick: selected => {
+            let value = Array.isArray(values) ? selected : values[selected];
+            if (typeof node.properties[name] === "number") value = Number(value);
+            node.setProperty(name, value);
+            node.graph?.onNodePropertyChanged?.(node, name, value);
+            options?.onclose?.();
+            node.setDirtyCanvas(true, true);
+        }
+    });
+};
+
 LiteGraph.NODE_TITLE_COLOR = "#d0d0d0";
 LiteGraph.DEFAULT_GROUP_FONT_SIZE = 24;
-LiteGraph.search_show_all_on_open = false;
 var canvas = new LGraphCanvas("#mycanvas", graph);
 Object.assign(window, {canvas});
 canvas.allow_reconnect_links = false;
@@ -475,6 +537,10 @@ $("body")[0].addEventListener("keydown", function (event) {
 });
 canvas.resize();
 
+$("#searchNodes").on("click", () => {
+    const rect = canvas.canvas.getBoundingClientRect();
+    canvas.showSearchBox(new MouseEvent("dblclick", {clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2}));
+});
 $("#saveGraph").on("click", () => saveGraph());
 $("#buildReload").on("click", () => generateCodeCompilePackage("ifRunning"));
 $("#testPlugin").on("click", () => generateCodeCompilePackage("start"));
@@ -820,6 +886,7 @@ ipcRenderer.on("graphData", function (event, arg: ReturnType<Graph["serialize"]>
         arg.nodes = arg.nodes.map(pickNodeKeys);
         graph.configure(arg);
     }
+    updateEmptyHint();
     $("#overlay").fadeOut();
 
     history.unpause();
@@ -950,7 +1017,8 @@ ipcRenderer.on("highlightNode", function (event, arg: {node: number}) {
     if (graph.getNodeById(arg.node)) canvas.setZoom(2);
 });
 
-// HelpBox timeout
-setTimeout(function () {
-    $("#helpBox").hide();
-}, 60000);
+// The help bar stays until the search has been used once.
+try {
+    if (localStorage.getItem("searchUsed")) $("#helpBox").hide();
+} catch (e) {
+}

@@ -11,6 +11,21 @@ const classStore = new ClassDataStore();
 const snapshotDir = path.join(__dirname, "snapshots/codegen");
 const cases = {};
 
+cases["java-code"] = graph => {
+    const event = H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
+    const code = H.add(graph, "code/JavaCode", {
+        codeInputs: [{name: "player", type: "org.bukkit.entity.Player"}],
+        codeOutputs: [{name: "greeting", type: "java.lang.String"}],
+        code: 'greeting = "Hi " + player.getName();'
+    });
+    code.onConfigure();
+    const log = H.add(graph, "native/ConsoleLog");
+    H.link(event, "EXEC", code, "EXEC");
+    H.link(event, H.addOptOut(event, "getPlayer"), code, "player");
+    H.link(code, "EXEC", log, "EXEC");
+    H.link(code, "greeting", log, 1);
+};
+
 for (const name of ["join-message", "hello-command", "block-protect", "timed-broadcast", "starter-kit"]) {
     cases[name] = graph => H.loadSnippet(graph, JSON.parse(fs.readFileSync(path.join(__dirname, "../docs/examples", name + ".pbs"), "utf8")));
 }
@@ -318,6 +333,7 @@ describe("Codegen", function () {
         ["native/Cast", "castTo", "java.lang.Object;"],
         ["native/InstanceOf", "type", "java.lang.Object;"],
         ["arrays/MakeArray", "type", "java.lang.Object;"],
+        ["code/JavaCode", "codeInputs", [{name: "player", type: "int x; static {}"}]],
         ["arithmetic/Add", "type", "int;"],
         ["events/CancelEvent", "cancel", "true); injected(); //"],
         ["org.bukkit.Material", "en", "STONE;"],
@@ -389,6 +405,35 @@ describe("Codegen", function () {
             assert(code.includes(" = true;"));
         });
     }
+    it("keeps Java code declarations and links through adding, removal and serialization", async function () {
+        const graph = await H.setup();
+        const node = H.add(graph, "code/JavaCode");
+        const add = (direction, name, type) => node.addCodeSlot(direction === "input", name, type);
+        add("input", "player", "org.bukkit.entity.Player");
+        add("output", "greeting", "java.lang.String");
+        assert.strictEqual(add("input", "greeting", "int"), -1);
+        assert.strictEqual(add("output", "bad name", "int"), -1);
+        assert.strictEqual(node.inputs.length, 2);
+        assert.strictEqual(node.outputs.length, 2);
+        const answer = "greeting = player.getName();";
+        node.getMenuOptions({prompt(title, value, callback) { callback(answer); }})[0].callback(null, {}, {});
+        assert.strictEqual(node.properties.code, answer);
+        const log = H.add(graph, "native/ConsoleLog");
+        H.link(node, "greeting", log, 1);
+        const saved = graph.serialize();
+        saved.nodes.find(saved => saved.id === node.id).outputs[1].name = "stale";
+        saved.nodes.find(saved => saved.id === node.id).outputs[1].type = "int";
+        graph.configure(saved);
+        const restored = graph.getNodeById(node.id);
+        assert.strictEqual(restored.outputs[1].name, "greeting");
+        assert.strictEqual(restored.outputs[1].label, "greeting");
+        assert.strictEqual(restored.outputs[1].type, "java.lang.String");
+        assert(restored.outputs[1].links.length === 1 && restored.outputs[1].removable);
+        restored.removeInput(1);
+        restored.removeOutput(1);
+        assert.deepStrictEqual(restored.properties.codeInputs, []);
+        assert.deepStrictEqual(restored.properties.codeOutputs, []);
+    });
     it("keeps Command arguments and outputs together through menus, removal and serialization", async function () {
         const graph = await H.setup();
         const command = H.add(graph, "commands/Command");

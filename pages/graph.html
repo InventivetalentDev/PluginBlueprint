@@ -122,6 +122,17 @@
                 height: 70%;
             }
 
+            #emptyHint {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #ffffffa0;
+                font-size: 20px;
+                pointer-events: none;
+                z-index: 17;
+            }
+
             #problemsPanel {
                 position: absolute;
                 bottom: 12px;
@@ -162,10 +173,54 @@
             .problem-row { text-align: left; overflow-wrap: anywhere; }
             #problemsPanel .error { border-left: 3px solid #e34c4c; }
             #problemsPanel .warning { border-left: 3px solid #edb54a; }
+
+            .node-picker {
+                position: fixed;
+                z-index: 30;
+                width: min(460px, 100vw);
+                max-height: min(540px, 100vh);
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+                padding: 8px;
+                border: 1px solid #777;
+                border-radius: 3px;
+                background-color: #222;
+                color: #eee;
+                font-size: 14px;
+            }
+
+            .node-picker input {
+                flex: none;
+                width: 100%;
+                box-sizing: border-box;
+                margin: 0 0 8px;
+                padding: 8px;
+                border: 1px solid #777;
+                border-radius: 3px;
+                background-color: #333;
+                color: #eee;
+                font: inherit;
+                caret-color: #bde8ff;
+            }
+
+            .node-picker input::placeholder { color: #bbb; }
+            .node-picker input:focus { outline: 2px solid #bde8ff; outline-offset: -2px; }
+            .node-picker ::selection { background-color: #bde8ff; color: #222; }
+            .picker-results { overflow: auto; min-height: 0; scrollbar-color: #777 #222; }
+            .picker-row { padding: 8px; border-radius: 3px; cursor: pointer; overflow-wrap: anywhere; }
+            .picker-row:hover, .picker-row.selected { background-color: #444; }
+            .picker-row.selected { outline: 1px solid #bde8ff; outline-offset: -1px; }
+            .picker-label { font-weight: 600; }
+            .picker-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .picker-detail, .picker-note { color: #bbb; margin-top: 3px; }
+            .picker-group, .picker-status { color: #bbb; padding: 8px; }
+            .picker-group { font-weight: 600; }
         </style>
     </head>
     <body>
         <div id="toolbar" role="toolbar" aria-label="Editor actions">
+            <button id="searchNodes" type="button" title="Search nodes to add (or double-click the canvas)">Search</button>
             <button id="saveGraph" type="button">Save</button>
             <button id="buildReload" type="button">Build &amp; Reload</button>
             <button id="testPlugin" type="button">Test</button>
@@ -182,9 +237,10 @@
                 <img src="../assets/images/spinner.svg">
             </div>
         </div>
+        <div id="emptyHint" hidden>Double-click anywhere to add a node</div>
         <div id="helpBox">
             <div class="helpBox-shortcut">
-                <i class="keypics" data-type="mouse" data-color="dark" data-label="x2" data-fontFamily="RobotoMono">left</i>&nbsp;Search / Auto-Link
+                <i class="keypics" data-type="mouse" data-color="dark" data-label="x2" data-fontFamily="RobotoMono">left</i>&nbsp;Search nodes
             </div>
             <div class="helpBox-shortcut">
                 <i class="keypics" data-type="mouse" data-color="dark" data-fontFamily="RobotoMono">right</i>&nbsp;Menu

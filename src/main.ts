@@ -551,7 +551,7 @@ function openProject(arg: string) {
         let appVersionSplit = appVersion.split(".");
         let fileVersion = data.editorVersion || "y.y.y";
         let fileVersionSplit = fileVersion.split(".");
-        if (appVersionSplit[0] !== fileVersionSplit[0] || appVersionSplit[1] !== fileVersionSplit[1]) {
+        if (appVersionSplit[0] !== fileVersionSplit[0] || isNewerVersion(fileVersion, appVersion)) {
             dialog.showMessageBox({
                 type: "warning",
                 title: "Different Editor Version",
@@ -1148,10 +1148,24 @@ function importSnippet(file: string) {
     if (!file) {
         return;
     }
-    fs.readFile(file, function (err, data) {
+    fs.readFile(file, async function (err, data) {
         if (err) throw err;
         if (!win) return;
-        win.webContents.send("importSnippet", JSON.parse(data.toString()));
+        const snippet = JSON.parse(data.toString());
+        const codeNodes = snippet.nodes.filter((node: {type: string}) => node.type === "code/JavaCode");
+        if (codeNodes.length) {
+            const preview = codeNodes.map((node: {properties?: {code?: unknown}}) => typeof node.properties?.code === "string" ? node.properties.code.split("\n").slice(0, 10).join("\n") : "").join("\n\n");
+            const {response} = await dialog.showMessageBox(win, {
+                type: "warning",
+                buttons: ["Cancel", "Add snippet"],
+                defaultId: 0,
+                cancelId: 0,
+                message: `This snippet contains ${codeNodes.length} Java code ${codeNodes.length === 1 ? "node" : "nodes"}.`,
+                detail: "Java code nodes run whatever code they contain on your server. Only add this snippet if you trust where it came from.\n\n" + preview
+            });
+            if (response !== 1) return;
+        }
+        win.webContents.send("importSnippet", snippet);
     });
 }
 
@@ -1245,23 +1259,23 @@ function checkUpdate() {
         return response.json().then((latest: {version: string}) => {
             let currentVersion = app.getVersion();
             let updateVersion = latest.version;
-            let currentParts = currentVersion.split(".").map(Number);
-            let updateParts = updateVersion.split(".").map(Number);
-            let hasUpdate = false;
-            for (let i = 0; i < Math.max(currentParts.length, updateParts.length); i++) {
-                let current = currentParts[i] || 0;
-                let update = updateParts[i] || 0;
-                if (current !== update) {
-                    hasUpdate = update > current;
-                    break;
-                }
-            }
-            return {hasUpdate, appVersion: currentVersion, updateVersion};
+            return {hasUpdate: isNewerVersion(updateVersion, currentVersion), appVersion: currentVersion, updateVersion};
         });
     }).catch(e => {
         console.error(e);
         return {hasUpdate: false};
     });
+}
+
+function isNewerVersion(version: string, than: string): boolean {
+    let versionParts = version.split(".").map(Number);
+    let thanParts = than.split(".").map(Number);
+    for (let i = 0; i < Math.max(versionParts.length, thanParts.length); i++) {
+        let part = versionParts[i] || 0;
+        let thanPart = thanParts[i] || 0;
+        if (part !== thanPart) return part > thanPart;
+    }
+    return false;
 }
 
 function showNotification(body: string, title?: string) {

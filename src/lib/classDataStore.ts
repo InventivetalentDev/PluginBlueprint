@@ -148,7 +148,6 @@ class ClassDataStore {
     }
 
     getClassesByName() {
-        console.log(this);
         return this.classStore;
     }
 

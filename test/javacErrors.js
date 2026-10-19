@@ -18,7 +18,7 @@ describe("JavacErrors", function () {
         assert.deepStrictEqual(parseJavacErrors("Note: nothing\n1 warning\n"), []);
         assert.strictEqual(parseJavacErrors("C:\\project space\\GeneratedPlugin.java:7: error: cannot find symbol")[0].line, 7);
     });
-    for (const [snapshot, text, node] of [["variables", "greeting =  node_4_output_0;", 3], ["type-variable", "node_5_output_1 = node_4.get", 5]]) {
+    for (const [snapshot, text, node] of [["variables", "greeting =  node_4_output_0;", 3], ["type-variable", "node_5_output_1 = node_4.get", 5], ["java-code", 'greeting = "Hi " + player.getName();', 3]]) {
         it("maps " + snapshot + " to the enclosing node rather than the source node", function () {
             const source = fs.readFileSync(path.join(__dirname, "snapshots/codegen", snapshot + ".java"), "utf8");
             const line = source.split("\n").findIndex(line => line.includes(text)) + 1;

@@ -110,9 +110,9 @@ Moved to Later (2026-10-18). Context isolation with a preload script, no `@elect
 ## Phase 4: search, types and building blocks
 
 - [x] **S1 Validate what reaches the source** (S). Node properties, slot types, node ids, connection fields and the package name are checked before they reach `GeneratedPlugin.java`. Saved nodes keep only the keys the editor writes. Done (2026-10-19) for 2.0.1; this closes the property-injection hole found in the review.
-- [ ] **B3 Search and pickers** (M). Exact matches first, readable rows with descriptions, keyword aliases, deprecated members hidden everywhere, a filterable Outputs picker, and a type-to-filter enum picker.
+- [x] **B3 Search and pickers** (M). Exact matches first, readable rows with descriptions, keyword aliases, deprecated members hidden everywhere, a filterable Outputs picker, and a type-to-filter enum picker. Done (2026-10-19): MakeArray also takes its type from its first connection. Hiding internal members moved to D9.
 - [ ] **B4 Generics** (M, then L). Phase 1 erases type variables. Next: automatic Cast insertion, boxing and widening rules, then structured `typeArguments` in the doclet.
-- [ ] **B5b Java code node** (M). Typed inputs and outputs, a distinct look, a warning on snippet import. No import lines.
+- [x] **B5b Java code node** (M). Typed inputs and outputs, a distinct look, a warning on snippet import. No import lines. Done (2026-10-19): inputs are `final` locals, outputs are locals copied back after the code, and javac errors in the code map to the node.
 - [ ] **B6 Variables and persistent storage** (M). Player values backed by PDC and global values backed by a data file.
 - [ ] **C2 Simple palette and templates** (M for six blocks, L for more). Plain-language blocks that expand into normal nodes, a template gallery, and snippets that carry commands and permissions.
 - [ ] **D4 Control flow** (M). ForEach, Return/Break, an "Is null?" branch, and try/catch for checked exceptions (needs `throws` in the class data).
