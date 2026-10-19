@@ -1,5 +1,6 @@
 import fs = require("fs");
 import {LiteGraph} from "../../assets/lib/litegraph/litegraph";
+import {flattenGraph, hasSubgraphs} from "./subgraphs";
 import Colors = require("./colors");
 import ClassDataStore = require("./classDataStore");
 import {getNullForType, javaType} from "./util";
@@ -46,8 +47,10 @@ const onDisableMethods: string[] = [];
 const onCommandMethods: string[] = [];
 const onTabCompleteMethods: string[] = [];
 
-function generateClassCode(graph: CodegenGraph, projectInfo: Pick<ProjectInfo, "package" | "config">) {
+function generateClassCode(root: CodegenGraph | LGraph, projectInfo: Pick<ProjectInfo, "package" | "config">) {
     return new Promise<string>((resolve, reject) => {
+        let graph = root as CodegenGraph;
+        if (hasSubgraphs(graph)) graph = flattenGraph(graph as unknown as LGraph).graph as unknown as CodegenGraph;
         if (typeof projectInfo.package !== "string" || !projectInfo.package.split(".").every(isJavaIdentifier)) {
             throw new SourceError("The package name in Project Information isn't a valid Java package. Use something like me.yourname.myplugin.");
         }

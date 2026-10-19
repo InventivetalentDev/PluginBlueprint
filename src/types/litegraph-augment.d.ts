@@ -1,6 +1,6 @@
 import "../../assets/lib/litegraph/litegraph";
 import type {INodeInputSlot, INodeOutputSlot, INodeSlot, LGraphGroup, LGraphNode, LGraphNodeConstructor, LLink, Vector2, Vector4} from "../../assets/lib/litegraph/litegraph";
-import type {SlotOptions} from "./nodes";
+import type {SlotOptions, SubgraphNode} from "./nodes";
 import type {IconName, IconPrefix} from "@fortawesome/fontawesome-svg-core";
 
 export type SlotType = string | number | null;
@@ -10,6 +10,7 @@ declare module "../../assets/lib/litegraph/litegraph" {
     interface LGraphNode {
         addInput(name: string, type: SlotType, options?: Partial<INodeInputSlot>): INodeInputSlot;
         addOutput(name: string, type: SlotType, options?: Partial<INodeOutputSlot>): INodeOutputSlot;
+        subgraph?: import("../../assets/lib/litegraph/litegraph").LGraph;
         desc?: string;
         description?: string;
         descBlockHeight?: number;
@@ -28,6 +29,8 @@ declare module "../../assets/lib/litegraph/litegraph" {
     }
 
     interface LGraph {
+        _subgraph_node?: SubgraphNode;
+        onGetNodeMenuOptions?(options: import("../../assets/lib/litegraph/litegraph").ContextMenuItem[], node: LGraphNode): void;
         onNodeConnectionChange?(slotType: number, node: LGraphNode, slot: number, otherNode?: LGraphNode, otherSlot?: number): void;
         onNodePropertyChanged?(node: LGraphNode, property: string, value: unknown): void;
         onNodeRemoved(node: LGraphNode): void;
@@ -38,6 +41,8 @@ declare module "../../assets/lib/litegraph/litegraph" {
     }
 
     interface LGraphCanvas {
+        drawSubgraphPanel(ctx: CanvasRenderingContext2D): void;
+        drawButton(x: number, y: number, width: number, height: number, text: string, background?: string): boolean;
         setZoom(value: number, center?: Vector2): void;
     }
 

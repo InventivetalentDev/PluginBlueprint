@@ -1,4 +1,4 @@
-import type {ContextMenuItem, IWidget, LGraphCanvas, LGraphNode} from "../../assets/lib/litegraph/litegraph";
+import type {ContextMenuItem, IWidget, LGraph, LGraphCanvas, LGraphNode} from "../../assets/lib/litegraph/litegraph";
 
 export interface CommandArgument {
     name: string;
@@ -10,7 +10,14 @@ export interface CodeSlot {
     type: string;
 }
 
+export interface SubgraphNode extends LGraphNode {
+    subgraph: LGraph;
+    _syncPaused?: boolean;
+    syncSlots(excludeId?: number): void;
+}
+
 export interface SlotOptions {
+    boundaryId?: number;
     locked?: boolean;
     nameLocked?: boolean;
     removable?: boolean;

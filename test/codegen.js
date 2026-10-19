@@ -283,6 +283,32 @@ cases["config-values"] = graph => {
     return {config: configEntries};
 };
 
+cases["subgraph-inline"] = graph => {
+    const event = H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
+    const text = H.add(graph, "constants/StringConstant", {string: "Inside a subgraph"});
+    const sub = H.add(graph, "graph/Subgraph");
+    const log = H.add(sub.subgraph, "native/ConsoleLog");
+    const exec = H.add(sub.subgraph, "graph/SubgraphInput", {name: "run", type: "@EXEC"});
+    const value = H.add(sub.subgraph, "graph/SubgraphInput", {name: "message", type: "java.lang.String"});
+    H.link(event, "EXEC", sub, 0);
+    H.link(text, 0, sub, 1);
+    H.link(exec, 0, log, "EXEC");
+    H.link(value, 0, log, 1);
+};
+cases["subgraph-nested"] = graph => {
+    const event = H.add(graph, "org.bukkit.event.player.PlayerJoinEvent");
+    const sub = H.add(graph, "graph/Subgraph");
+    const input = H.add(sub.subgraph, "graph/SubgraphInput", {type: "@EXEC"});
+    const nested = H.add(sub.subgraph, "graph/Subgraph");
+    const nestedInput = H.add(nested.subgraph, "graph/SubgraphInput", {type: "@EXEC"});
+    const log = H.add(nested.subgraph, "native/ConsoleLog");
+    const text = H.add(nested.subgraph, "constants/StringConstant", {string: "Nested subgraph"});
+    H.link(event, "EXEC", sub, 0);
+    H.link(input, 0, nested, 0);
+    H.link(nestedInput, 0, log, "EXEC");
+    H.link(text, 0, log, 1);
+};
+
 describe("Codegen", function () {
     this.timeout(30000);
     before(async function () {
@@ -295,6 +321,17 @@ describe("Codegen", function () {
             const projectInfo = build(graph);
             const code = (await H.gen(graph, true, projectInfo)).replace(/\r\n/g, "\n");
             if (name === "note-ignored") assert.strictEqual(code, fs.readFileSync(path.join(snapshotDir, "join-message.java"), "utf8").replace(/\r\n/g, "\n"));
+            if (name === "subgraph-inline") {
+                const twin = new LGraph();
+                twin.last_node_id = 1;
+                const event = H.add(twin, "org.bukkit.event.player.PlayerJoinEvent");
+                const text = H.add(twin, "constants/StringConstant", {string: "Inside a subgraph"});
+                twin.last_node_id = 4;
+                const log = H.add(twin, "native/ConsoleLog");
+                H.link(event, "EXEC", log, "EXEC");
+                H.link(text, 0, log, 1);
+                assert.strictEqual(code, (await H.gen(twin, true)).replace(/\r\n/g, "\n"));
+            }
             const file = path.join(snapshotDir, name + ".java");
             if (process.env.UPDATE_SNAPSHOTS === "1") fs.writeFileSync(file, code);
             else assert.strictEqual(code, fs.readFileSync(file, "utf8").replace(/\r\n/g, "\n"));

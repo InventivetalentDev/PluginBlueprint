@@ -3,6 +3,7 @@ import paper = require("./lib/paper");
 import {findJdk, downloadJdk} from "./lib/jdk";
 import javaCompiler = require("./lib/javaCompiler");
 import {makePluginYml} from "./lib/pluginYml";
+import {nestedNodes} from "./lib/sourceChecks";
 import {makeConfigYml} from "./lib/configYml";
 import {defaultAuthor, defaultPackage} from "./lib/projectDefaults";
 import {getSetting, setSetting, type AppSettings} from "./lib/settings";
@@ -1152,7 +1153,7 @@ function importSnippet(file: string) {
         if (err) throw err;
         if (!win) return;
         const snippet = JSON.parse(data.toString());
-        const codeNodes = snippet.nodes.filter((node: {type: string}) => node.type === "code/JavaCode");
+        const codeNodes = nestedNodes<any>(snippet.nodes).filter((node: {type: string}) => node.type === "code/JavaCode");
         if (codeNodes.length) {
             const preview = codeNodes.map((node: {properties?: {code?: unknown}}) => typeof node.properties?.code === "string" ? node.properties.code.split("\n").slice(0, 10).join("\n") : "").join("\n\n");
             const {response} = await dialog.showMessageBox(win, {
